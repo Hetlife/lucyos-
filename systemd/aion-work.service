@@ -1,0 +1,8 @@
+[Unit]
+Description=AION continuous build loop
+
+[Service]
+Type=oneshot
+Environment=AION_HOME=@AION_HOME@
+WorkingDirectory=@REPO@
+ExecStart=@REPO@/scripts/build_loop.sh

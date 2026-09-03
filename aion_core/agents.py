@@ -40,6 +40,9 @@ DEFAULT_AGENTS = [
     dict(agent_id="ollama-local", role="worker", model="llama3.1:8b", model_class="A",
          cost_class="none", capabilities="classify,extract,format,summarize,log_parse,monitor,tag",
          max_complexity=2, allowed_tools="fs_read"),
+    dict(agent_id="cloud-sonnet", role="worker", model="claude-sonnet-5", model_class="B",
+         cost_class="medium", capabilities="code,research,debug,write,plan_execute",
+         max_complexity=4, allowed_tools="fs,shell"),
     dict(agent_id="cloud-cheap", role="worker", model="claude-haiku-4-5-20251001", model_class="B",
          cost_class="low", capabilities="code,research,debug,write", max_complexity=3,
          allowed_tools="fs,shell"),
@@ -105,10 +108,27 @@ def route(kind: str, complexity: int = 2, stakes: str = "low", ambiguity: str = 
     return _pick(cls, "; ".join(reason) or f"routine {kind or 'work'} within class {cls} capability")
 
 
+def preferred(cls: str) -> str | None:
+    """The agent the owner wants for a class, when more than one qualifies."""
+    return db.get_meta(f"preferred_agent_{cls}", "") or None
+
+
+def set_preferred(cls: str, agent_id: str) -> None:
+    db.set_meta(f"preferred_agent_{cls}", agent_id)
+    db.log_event("aion", "route.preferred", cls, agent_id)
+
+
 def _pick(cls: str, reason: str) -> dict:
-    row = db.connect().execute(
-        "SELECT agent_id FROM agents WHERE model_class=? AND enabled=1 "
-        "ORDER BY reliability DESC LIMIT 1", (cls,)).fetchone()
+    conn = db.connect()
+    want = preferred(cls)
+    row = None
+    if want:
+        row = conn.execute(
+            "SELECT agent_id FROM agents WHERE agent_id=? AND enabled=1", (want,)).fetchone()
+    if row is None:
+        row = conn.execute(
+            "SELECT agent_id FROM agents WHERE model_class=? AND enabled=1 "
+            "ORDER BY reliability DESC LIMIT 1", (cls,)).fetchone()
     return {"model_class": cls, "agent_id": row["agent_id"] if row else None, "reason": reason}
 
 

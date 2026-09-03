@@ -7,7 +7,8 @@ AION_HOME="${AION_HOME:-${HOME}/openclaw/shared_brain}"
 UNITS="${HOME}/.config/systemd/user"
 mkdir -p "${UNITS}"
 
-for unit in aion-bridge.service aion-maintenance.service aion-maintenance.timer; do
+for unit in aion-bridge.service aion-maintenance.service aion-maintenance.timer \
+            aion-work.service aion-work.timer; do
   sed -e "s|@REPO@|${REPO}|g" -e "s|@AION_HOME@|${AION_HOME}|g" \
       "${REPO}/systemd/${unit}" > "${UNITS}/${unit}"
   echo "wrote ${UNITS}/${unit}"
@@ -15,7 +16,9 @@ done
 
 systemctl --user daemon-reload
 systemctl --user enable --now aion-maintenance.timer
-echo "maintenance timer enabled"
+systemctl --user enable --now aion-work.timer
+echo "maintenance timer enabled (nightly)"
+echo "build loop enabled (every 10 minutes, stops on a major milestone)"
 echo
 echo "Start the bridge when its token is set:"
 echo "  aion secrets set WHATSAPP_BRIDGE_TOKEN"

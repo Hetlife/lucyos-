@@ -9,7 +9,8 @@ from pathlib import Path
 
 from . import (agents, approvals, backup, bootstrap, config, db, errors, fable, health,
                memory, metrics, notebook, owner_setup, packets, reports, resume, router,
-               security, seed, sessions, tasks, util, plan, worker, governor)
+               security, seed, sessions, tasks, util, plan, worker, governor, handoff,
+               milestones)
 
 
 def _print(text):
@@ -195,7 +196,12 @@ def _main(argv=None) -> int:
     wk.add_argument("--dry-run", action="store_true")
 
     sub.add_parser("capabilities", help="what this machine can execute right now")
+    ms = sub.add_parser("milestones", help="measured progress toward the mission")
+    ms.add_argument("--new", action="store_true",
+                    help="print only major milestones reached since last check")
     sub.add_parser("governor", help="apply the budget policy to the queue now")
+    hf = sub.add_parser("handoff", help="hand unattended work to the cheap worker")
+    hf.add_argument("op", choices=["status", "now", "prompt"], nargs="?", default="status")
 
     ac = sub.add_parser("allow-command", help="allowlist a command prefix for the worker")
     ac.add_argument("prefix")
@@ -413,6 +419,19 @@ def _main(argv=None) -> int:
         _print(result)
     elif cmd == "governor":
         _print(governor.enforce())
+    elif cmd == "handoff":
+        if args.op == "now":
+            _print(handoff.execute("requested by the owner"))
+        elif args.op == "prompt":
+            _print(handoff.build_prompt().read_text())
+        else:
+            _print(handoff.status())
+    elif cmd == "milestones":
+        if args.new:
+            fresh = [c for c in milestones.newly_reached() if c in milestones.MAJOR]
+            _print(" ".join(fresh) if fresh else "none")
+        else:
+            _print(milestones.report())
     elif cmd == "capabilities":
         _print(worker.capability_report())
     elif cmd == "allow-command":

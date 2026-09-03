@@ -11,7 +11,7 @@ spends money.
 """
 from __future__ import annotations
 
-from . import db, memory, metrics, tasks, util
+from . import db, handoff, memory, metrics, tasks, util
 
 # governor state -> what class C work becomes, and whether B work drops to A.
 POLICY = {
@@ -70,7 +70,12 @@ def enforce(*, announce: bool = True) -> dict:
         db.log_event("governor", "downshift", now_state,
                      f"{len(result['demoted'])} demoted, {len(result['held'])} held")
         result["message"] = _message(now_state, result)
-        if announce and now_state in ("STOP", "HANDOFF"):
+        if now_state in ("STOP", "HANDOFF"):
+            # Switch the unattended loop to the cheap worker without waiting for
+            # the owner to notice. The alert it writes replaces ours.
+            result["handoff"] = handoff.execute(
+                f"budget governor reached {now_state}.")
+        elif announce:
             db.set_meta("owner_alert", result["message"])
     return result
 

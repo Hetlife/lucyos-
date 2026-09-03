@@ -130,6 +130,9 @@ def ensure() -> int:
         db.set_meta("build_budget_cap_inr", "2000")
         db.set_meta("paused", "0")
         db.set_meta("safe_mode", "0")
+        # The unattended loop runs on Sonnet: strong enough to execute a plan
+        # without supervision, far cheaper than a strong-reasoning session.
+        db.set_meta("preferred_agent_B", "cloud-sonnet")
     from . import notebook
     if not (root / "NOTEBOOK.md").exists():
         notebook.ensure()

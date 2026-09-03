@@ -204,3 +204,49 @@ class TestBudgetCeilingBehaviour(AionTest):
         self.assertEqual(tasks.get(free)["status"], "DONE")
         self.assertEqual(tasks.get(paid)["status"], "WAITING")
         self.assertTrue(any("budget ceiling" in s["why"] for s in result["skipped"]))
+
+
+class TestHandoffAndMilestones(AionTest):
+    def test_governor_hands_off_automatically_at_stop(self):
+        from aion_core import agents, handoff
+        tasks.create("anything", model_class="C", kind="code")
+        metrics.record_usage("strong", "C", cost_inr=2000)
+        result = governor.enforce()
+        self.assertEqual(result["handoff"]["status"], "HANDED_OFF")
+        self.assertEqual(agents.preferred("B"), "cloud-sonnet")
+        self.assertTrue(handoff.prompt_path().exists())
+        self.assertIn("claude-sonnet-5", str(agents.get("cloud-sonnet")["model"]))
+
+    def test_handoff_prompt_tells_the_cheap_session_what_not_to_do(self):
+        from aion_core import handoff
+        text = handoff.build_prompt().read_text()
+        self.assertIn("Do not re-plan", text)
+        self.assertIn("Do not touch class C", text)
+        self.assertIn("aion boot", text)
+
+    def test_handoff_is_idempotent(self):
+        from aion_core import handoff
+        first = handoff.execute("test")
+        again = handoff.execute("test")
+        self.assertEqual(first["status"], "HANDED_OFF")
+        self.assertEqual(again["status"], "ALREADY_HANDED_OFF")
+
+    def test_routing_follows_the_handoff(self):
+        from aion_core import agents, handoff
+        handoff.execute("test")
+        self.assertEqual(agents.route("code")["agent_id"], "cloud-sonnet")
+
+    def test_milestones_need_evidence_not_projections(self):
+        from aion_core import milestones
+        metrics.record_money("revenue", 500000, stage="FORECAST", description="pipeline")
+        self.assertFalse(milestones.check()["M0"]["reached"])
+        metrics.record_money("revenue", 1000, stage="ACTUAL", evidence="pay_REAL1",
+                             description="first customer")
+        self.assertTrue(milestones.check()["M0"]["reached"])
+
+    def test_a_milestone_is_recorded_once(self):
+        from aion_core import milestones
+        metrics.record_money("revenue", 1000, stage="ACTUAL", evidence="pay_REAL1")
+        self.assertIn("M0", milestones.newly_reached())
+        self.assertNotIn("M0", milestones.newly_reached())
+        self.assertIn("M0", milestones.reached())
