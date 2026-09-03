@@ -9,6 +9,26 @@ from __future__ import annotations
 
 from . import agents, db, memory, resume, tasks, util
 
+MISSION = (
+    "Run a portfolio of businesses autonomously and produce INR 1,00,000 per month "
+    "of real, evidenced net profit, with the owner's involvement limited to approvals "
+    "sent from a phone. Real capital is injected later, once the machinery is proven.")
+
+# Milestones toward the mission.  Each is a measurement, never a projection, and
+# each must be proved before the next is attempted.
+MILESTONES = [
+    ("M0", "First real rupee", "one ACTUAL revenue row carrying a transaction reference"),
+    ("M1", "First repeat customer", "the same payer pays twice without the owner prompting"),
+    ("M2", "Unit economics proven",
+     "revenue minus every attributable cost is positive across at least 10 deliveries"),
+    ("M3", "One business hands-off for 30 days",
+     "30 consecutive days in which the owner approved but never operated"),
+    ("M4", "INR 25,000/month net", "three consecutive months at or above, all ACTUAL"),
+    ("M5", "Second business onboarded",
+     "a second project reaches M2 reusing this machinery rather than a rewrite"),
+    ("M6", "INR 1,00,000/month net", "three consecutive months at or above, all ACTUAL"),
+]
+
 OBJECTIVE = ("Reach the first rupee of real, evidenced revenue while the owner's "
              "involvement stays limited to approvals sent from WhatsApp.")
 
@@ -33,6 +53,15 @@ DECISIONS = [
      "Deterministic code first, then local model, then cheap cloud, then strong model",
      "Most of this workload is mechanical. Paying a strong model to format text or "
      "count rows is waste that compounds daily."),
+    ("mission scope",
+     "Nothing in the control layer may be hard-coded to one business",
+     "A lakh a month from a single lucky offer is not the goal; machinery that onboards "
+     "the next business without a rewrite is. Every project carries its own `project` key "
+     "and anything business-specific lives in PROJECTS/, never in aion_core/."),
+    ("growth honesty",
+     "A milestone counts only when measured, never when projected",
+     "The path runs M0 to M6 in order. Skipping one because a spreadsheet says the next is "
+     "reachable is how a system convinces its owner it is working while earning nothing."),
     ("money honesty",
      "Revenue is only ACTUAL with transaction evidence; forecasts stay labelled",
      "A forecast recorded as revenue makes the whole system lie to its owner about "
@@ -62,6 +91,66 @@ TASKS = [
         success_criteria="Every leaf task carries a success criterion and a validation method, "
                          "and is routed to the cheapest class that can do it",
         next_action="Run `aion context <TASK_ID>` for each leaf and save the work orders")),
+    ("Design and build the AION phone interface (backend + UI)", dict(
+        model_class="C", kind="architecture", priority=1, impact=5, probability=0.75,
+        unlocks=3, info_gain=2, cost=1, risk=2, time_est=3,
+        description=(
+            "The owner runs this from an iPhone. WhatsApp covers commands and approvals; "
+            "this is the richer surface for reading state and acting quickly.\n\n"
+            "BACKEND — hosted on the Ubuntu PC / OpenClaw, never a third party:\n"
+            "  - Extend bridges/whatsapp_bridge.py's HTTP server, or add bridges/http_server.py, "
+            "serving a small JSON API over localhost plus the LAN address.\n"
+            "  - Endpoints, all read-only except the last: GET /api/status, /api/tasks, "
+            "/api/blockers, /api/money, /api/errors, /api/agents, /api/report; "
+            "POST /api/command {message} routed through router.handle so the phone and "
+            "WhatsApp share exactly one command implementation.\n"
+            "  - Auth: a bearer token compared with hmac.compare_digest, read from the 0600 "
+            "secret store. No cookies, no login form, no third-party auth.\n"
+            "  - Bind 127.0.0.1 by default; reaching it from outside the house is the owner's "
+            "tunnel (Tailscale or ssh -L), documented, never an open port.\n"
+            "  - Every response already passes security.redact; keep it that way.\n\n"
+            "UI — one mobile-first page, installable to the home screen:\n"
+            "  - Thumb-reachable: status at the top, a single action list, big tap targets, "
+            "no horizontal scrolling, readable at arm's length in sunlight.\n"
+            "  - Approval cards render with APPROVE and DENY as two large buttons that post "
+            "the exact command form; a confirm step prevents a fat-finger approval.\n"
+            "  - Local storage: cache the last status, tasks and blockers so the page opens "
+            "instantly and still shows the last known state with an explicit 'as of' time "
+            "when the PC is unreachable. Never cache anything from /api/report that could "
+            "carry sensitive operational detail beyond the session.\n"
+            "  - The token lives in localStorage, is enterable once, and is clearable with a "
+            "visible 'forget this device' control.\n"
+            "  - Dark and light, system-following. No external fonts, scripts or CDNs, so it "
+            "works with the house internet down.\n\n"
+            "SCREENS the owner actually needs:\n"
+            "  1. MONEY FIRST. The top of the page answers, in this order: am I making money, "
+            "how much, from where. Per project: real revenue, real cost, net, and the trend "
+            "since last week. Projections appear only under a separate labelled heading, "
+            "never mixed into the real figures.\n"
+            "  2. WHAT CHANGED. A short feed of what actually happened since the owner last "
+            "looked: tasks completed with their evidence, money in, failures, decisions "
+            "taken. Not a log dump.\n"
+            "  3. NEEDS YOU. Every open approval as a card, plus anything blocked on the "
+            "owner. This is the only place the system asks for anything.\n"
+            "  4. TAP TO ADD. One prominent button to capture an idea, a company, a project "
+            "or a note in a few seconds, offline-capable: it queues locally and posts when "
+            "the PC is reachable. It writes through router.handle, so it lands in the same "
+            "triage queue as a WhatsApp message. Let the owner tag it as idea / company / "
+            "project so it creates the right thing.\n"
+            "  5. FEEDBACK THAT MOVES WORK. Where the system presents an option, a draft or "
+            "a proposed direction, the owner can react in one tap (yes / no / this one) and "
+            "optionally type a line. That reaction must change what the machine does next: "
+            "it writes a decision and updates the task, it is not a comment box. Multiple "
+            "choices render as choice cards, one tap each.\n\n"
+            "Decompose the build into a PLAN so cheap models implement it; you design and "
+            "review, you do not hand-write every line."),
+        success_criteria=(
+            "The owner opens the page on their iPhone over the tunnel, sees live status, "
+            "approves a real approval from it, and the same page still renders the last "
+            "known state with the PC switched off"),
+        validation_method="New tests covering auth rejection, redaction of every endpoint, "
+                          "and the approve round trip; plus a screenshot from the phone",
+        next_action="Write the API surface and the plan, then `aion plan apply`")),
     ("Adversarially review the bridge's external exposure", dict(
         model_class="C", priority=2, impact=4, probability=0.8, unlocks=2, info_gain=2,
         cost=1, risk=1, time_est=1,
@@ -94,6 +183,23 @@ TASKS = [
         success_criteria="`aion money` shows real revenue, real cost and net, each backed by "
                          "a transaction reference",
         next_action="aion money-add cost <amount> --evidence <reference> for each live cost")),
+    ("Define the milestone ladder to INR 1,00,000/month and instrument M0", dict(
+        model_class="C", kind="finance_reason", priority=1, impact=5, probability=0.7,
+        unlocks=3, info_gain=3, cost=1, risk=1, time_est=2,
+        description=(
+            "The mission is INR 1,00,000/month of real net profit across a portfolio of "
+            "businesses, run autonomously, with real capital injected later.\n\n"
+            "Work out what must be true at each milestone M0-M6: the offer, the unit "
+            "economics, the delivery cost including model spend, the capital the owner would "
+            "need to inject and when, and the point at which a second business can be "
+            "onboarded without rewriting anything.\n\n"
+            "State plainly which milestones this machinery can reach unassisted and which "
+            "need a capability that does not exist yet, then queue those capabilities as "
+            "tasks. Instrument M0 so reaching it is detected, not claimed."),
+        success_criteria=("Each milestone has a number, a proof method and the capability it "
+                          "needs; M0 is detected automatically by `aion money`"),
+        validation_method="A recorded decision plus queued capability tasks",
+        next_action="Read the mission and milestones in memory, then write the ladder")),
     ("Set up an encrypted off-machine backup of private_state", dict(
         model_class="DET", priority=3, impact=4, probability=0.9, cost=1, risk=1,
         description="Backups deliberately exclude secrets, so the secret store has no copy. "
@@ -110,6 +216,12 @@ def apply() -> dict:
         result["skipped"] = 1
         return result
 
+    memory.remember("preference", "mission", MISSION,
+                    confidence="VERIFIED_FACT", source="owner directive")
+    for code, name, proof in MILESTONES:
+        memory.remember("fact", f"milestone {code} {name}",
+                        f"{name}. Proved by: {proof}. Status: not reached.",
+                        confidence="VERIFIED_FACT", source="mission ladder")
     memory.remember("preference", "owner objective", OBJECTIVE,
                     confidence="VERIFIED_FACT", source="owner directive")
     for subject, decision, rationale in DECISIONS:

@@ -22,10 +22,15 @@ class TestSeed(AionTest):
     def test_design_outranks_and_gates_decomposition(self):
         seed.apply()
         top = tasks.ready(50)[0]
-        self.assertIn("Design the first real revenue experiment", top["title"])
+        # Mission-level framing outranks a single experiment, and both outrank
+        # the decomposition that depends on the experiment existing.
+        self.assertEqual(top["model_class"], "C")
+        design = [t for t in tasks.ready(50)
+                  if t["title"].startswith("Design the first real revenue")][0]
+        self.assertIn(design["task_id"], [t["task_id"] for t in tasks.ready(50)[:3]])
         decompose = [t for t in tasks.by_status("READY")
                      if t["title"].startswith("Decompose")][0]
-        self.assertEqual(decompose["dependencies"], top["task_id"])
+        self.assertEqual(decompose["dependencies"], design["task_id"])
         self.assertNotIn(decompose["task_id"], [t["task_id"] for t in tasks.ready(50)])
 
     def test_a_seeded_install_reaches_fable_ready(self):
@@ -57,3 +62,32 @@ class TestSeed(AionTest):
 
 if __name__ == "__main__":
     unittest.main()
+
+
+class TestMission(AionTest):
+    def test_mission_and_milestones_are_stored(self):
+        seed.apply()
+        self.assertTrue(memory.search("portfolio businesses autonomously"))
+        for code, _, _ in seed.MILESTONES:
+            self.assertTrue(memory.search(f"milestone {code}"), f"{code} missing")
+
+    def test_money_report_shows_progress_against_the_mission(self):
+        from aion_core import metrics, reports
+        seed.apply()
+        self.assertIn("Mission: INR 1,00,000/month", reports.money())
+        metrics.record_money("revenue", 1000, stage="ACTUAL", evidence="pay_TEST1")
+        self.assertIn("1.0% of it", reports.money())
+
+    def test_a_projection_does_not_move_mission_progress(self):
+        from aion_core import metrics, reports
+        seed.apply()
+        metrics.record_money("revenue", 500000, stage="FORECAST", description="pipeline")
+        self.assertIn("at 0.0% of it", reports.money())
+
+    def test_the_portfolio_is_not_hard_coded_to_one_business(self):
+        seed.apply()
+        a = tasks.create("work for business A", project="alpha")
+        b = tasks.create("work for business B", project="beta")
+        self.assertEqual(tasks.get(a)["project"], "alpha")
+        self.assertEqual(tasks.get(b)["project"], "beta")
+        self.assertEqual(len(tasks.ready(50)), len(seed.TASKS) - 1 + 2)

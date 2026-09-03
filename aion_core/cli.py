@@ -9,7 +9,7 @@ from pathlib import Path
 
 from . import (agents, approvals, backup, bootstrap, config, db, errors, fable, health,
                memory, metrics, notebook, owner_setup, packets, reports, resume, router,
-               security, seed, sessions, tasks, util)
+               security, seed, sessions, tasks, util, plan, worker, governor)
 
 
 def _print(text):
@@ -24,7 +24,7 @@ def main(argv=None) -> int:
     try:
         return _main(argv)
     except (tasks.TaskError, approvals.ApprovalError, packets.PacketError,
-            security.SecretLeak, memory.ValueError if False else ValueError,
+            security.SecretLeak, plan.PlanError, worker.Refused, ValueError,
             FileNotFoundError, CliError) as exc:
         print(f"error: {exc}", file=sys.stderr)
         return 2
@@ -185,6 +185,23 @@ def _main(argv=None) -> int:
     ss.add_argument("--outcome", default="")
     ss.add_argument("--resume-point", default="")
     ss.add_argument("--spend", type=float, default=0.0)
+
+    pl = sub.add_parser("plan", help="apply, check or inspect a strong-model plan")
+    pl.add_argument("op", choices=["apply", "check", "template", "status"])
+    pl.add_argument("target", nargs="?", help="plan file, or plan id for status")
+
+    wk = sub.add_parser("work", help="run the autonomous execution loop")
+    wk.add_argument("--max", type=int, default=5)
+    wk.add_argument("--dry-run", action="store_true")
+
+    sub.add_parser("capabilities", help="what this machine can execute right now")
+    sub.add_parser("governor", help="apply the budget policy to the queue now")
+
+    ac = sub.add_parser("allow-command", help="allowlist a command prefix for the worker")
+    ac.add_argument("prefix")
+
+    cc = sub.add_parser("set-cloud-cmd", help="command template for the cheap cloud worker")
+    cc.add_argument("template", help="must contain {prompt_file}")
 
     ctx = sub.add_parser("context", help="build a task-specific context packet")
     ctx.add_argument("task_id")
@@ -372,6 +389,40 @@ def _main(argv=None) -> int:
             _print("\n".join(f"{r['session_id']} {r['actor']:9} {r['started_at'][:16]} "
                              f"{r['status']:7} INR{r['spend_inr']:>6} {(r['outcome'] or '')[:60]}"
                              for r in sessions.index()) or "no sessions recorded")
+    elif cmd == "plan":
+        if args.op == "template":
+            _print(str(plan.write_schema()))
+        elif args.op == "status":
+            if not args.target:
+                raise CliError("usage: aion plan status <PLAN_ID>")
+            _print(plan.status(args.target))
+        else:
+            if not args.target:
+                raise CliError(f"usage: aion plan {args.op} <file.json>")
+            doc = plan.load(Path(args.target))
+            problems = plan.validate(doc)
+            if args.op == "check":
+                _print("plan is executable" if not problems
+                       else "problems:\n  - " + "\n  - ".join(problems))
+                return 0 if not problems else 1
+            result = plan.apply(doc, source=str(args.target))
+            reports.render_markdown_surfaces()
+            _print(result)
+    elif cmd == "work":
+        result = worker.work(max_tasks=args.max, dry_run=args.dry_run)
+        _print(result)
+    elif cmd == "governor":
+        _print(governor.enforce())
+    elif cmd == "capabilities":
+        _print(worker.capability_report())
+    elif cmd == "allow-command":
+        worker.allow_command(args.prefix)
+        _print(f"allowlisted: {args.prefix!r}")
+    elif cmd == "set-cloud-cmd":
+        if "{prompt_file}" not in args.template:
+            raise CliError("the template must contain {prompt_file}")
+        db.set_meta("cloud_worker_cmd", args.template)
+        _print(f"cloud worker: {args.template}")
     elif cmd == "context":
         from . import context
         _print(context.build(args.task_id))

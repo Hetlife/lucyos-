@@ -47,6 +47,10 @@ CREATE TABLE IF NOT EXISTS tasks (
     retry_count       INTEGER NOT NULL DEFAULT 0,
     last_error        TEXT,
     next_action       TEXT NOT NULL DEFAULT '',
+    kind              TEXT NOT NULL DEFAULT '',
+    exec_command      TEXT NOT NULL DEFAULT '',
+    validation_command TEXT NOT NULL DEFAULT '',
+    plan_id           TEXT,
     evidence          TEXT NOT NULL DEFAULT '',
     created_at        TEXT NOT NULL,
     updated_at        TEXT NOT NULL,
@@ -275,6 +279,7 @@ def connect(path: Path | None = None) -> sqlite3.Connection:
     except sqlite3.OperationalError:
         # SQLite build without FTS5: memory search falls back to LIKE.
         HAS_FTS = False
+    _migrate(conn)
     conn.execute(
         "INSERT INTO meta(key, value) VALUES('schema_version', ?) "
         "ON CONFLICT(key) DO UPDATE SET value=excluded.value",
@@ -283,6 +288,27 @@ def connect(path: Path | None = None) -> sqlite3.Connection:
     conn.commit()
     _conn, _conn_path = conn, target
     return conn
+
+
+# Columns added after the first release.  Additive only: never drop or rename,
+# so an older database keeps working and an older binary keeps reading a newer one.
+_ADDED_COLUMNS = {
+    "tasks": [
+        ("kind", "TEXT NOT NULL DEFAULT ''"),
+        ("exec_command", "TEXT NOT NULL DEFAULT ''"),
+        ("validation_command", "TEXT NOT NULL DEFAULT ''"),
+        ("plan_id", "TEXT"),
+    ],
+}
+
+
+def _migrate(conn: sqlite3.Connection) -> None:
+    for table, columns in _ADDED_COLUMNS.items():
+        have = {r["name"] for r in conn.execute(f"PRAGMA table_info({table})")}
+        for name, spec in columns:
+            if name not in have:
+                conn.execute(f"ALTER TABLE {table} ADD COLUMN {name} {spec}")
+    conn.commit()
 
 
 def close() -> None:

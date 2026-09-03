@@ -5,8 +5,8 @@ can carry a credential into WhatsApp.
 """
 from __future__ import annotations
 
-from . import (agents, approvals, config, db, errors, memory, metrics, packets,
-               resume, security, tasks, util)
+from . import (agents, approvals, config, db, errors, governor, memory, metrics,
+               packets, resume, security, tasks, util)
 
 
 def _clean(text: str) -> str:
@@ -15,6 +15,7 @@ def _clean(text: str) -> str:
 
 def status() -> str:
     counts = tasks.counts()
+    unblocked = len(tasks.ready(200))
     pend = approvals.pending()
     open_errs = errors.open_errors(limit=5)
     m = metrics.money()
@@ -33,15 +34,32 @@ def status() -> str:
         f"AION STATUS · {util.now()}",
         f"System: {'healthy' if healthy else ('degraded — ' + ', '.join(health.get('failing', [])) if health else 'never checked')}"
         + (f" · {' + '.join(mode)}" if mode else ""),
-        f"Tasks: {counts.get('READY', 0)} ready, {counts.get('RUNNING', 0)} running, "
-        f"{counts.get('BLOCKED', 0)} blocked, {counts.get('DONE', 0)} done",
+        f"Tasks: {unblocked} ready to run, {counts.get('RUNNING', 0)} running, "
+        f"{counts.get('BLOCKED', 0) + counts.get('WAITING', 0)} blocked or waiting, "
+        f"{counts.get('DONE', 0)} done",
         f"Money: ₹{m['real_revenue_inr']} real revenue, ₹{m['real_cost_inr']} cost, "
         f"₹{m['real_net_inr']} net",
         f"Approvals waiting: {', '.join(r['approval_id'] for r in pend) or 'none'}",
         f"Unresolved errors: {len(open_errs)}",
-        f"Next action: {nxt['title'] if nxt else 'queue empty — needs triage'}",
+        f"Next action: {nxt['title'] if nxt else _nothing_runnable(counts)}",
     ]
+    alert = governor.pending_alert()
+    if alert:
+        lines += ["", f"⚠ {alert}"]
     return _clean("\n".join(lines))
+
+
+def _nothing_runnable(counts: dict) -> str:
+    """Say *why* nothing is runnable — 'queue empty' is usually a lie."""
+    if counts.get("WAITING"):
+        return f"{counts['WAITING']} task(s) waiting on a missing executor — send `blockers`"
+    if counts.get("BLOCKED"):
+        return f"{counts['BLOCKED']} task(s) blocked — send `blockers`"
+    if counts.get("NEEDS_APPROVAL"):
+        return "everything left needs your approval — send `blockers`"
+    if counts.get("NEEDS_REVIEW"):
+        return "remaining work is class C — it needs a strong-model session"
+    return "queue empty — decompose the objective into executable tasks"
 
 
 def today() -> str:
@@ -65,8 +83,11 @@ def today() -> str:
 def money() -> str:
     m = metrics.money()
     b = metrics.budget_status()
+    target = 100000.0
+    pct = round(100 * m["real_net_inr"] / target, 2) if m["real_net_inr"] > 0 else 0.0
     lines = [
         "MONEY (real only unless labelled)",
+        f"Mission: INR 1,00,000/month net - currently at {pct}% of it",
         f"Real revenue: ₹{m['real_revenue_inr']}",
         f"Real cost: ₹{m['real_cost_inr']} (incl. ₹{m['model_spend_month_inr']} model spend this month)",
         f"Real net: ₹{m['real_net_inr']}",

@@ -18,7 +18,7 @@ FIELDS = (
     "project parent_task title description status priority impact probability unlocks "
     "info_gain cost risk time_est human_dependence owner_agent model_class dependencies "
     "blockers approval_id success_criteria validation_method output_location next_action "
-    "evidence last_error"
+    "evidence last_error kind exec_command validation_command plan_id"
 ).split()
 
 
@@ -123,7 +123,7 @@ def complete(task_id: str, evidence: str, next_action: str = "") -> None:
     resume.checkpoint(
         last_verified_success=f"{task_id}: {evidence}"[:400],
         next_action=(f"work {nxt['task_id']}: {nxt['next_action'] or nxt['title']}"
-                     if nxt else "queue empty — triage or decompose the objective"),
+                     if nxt else _nothing_runnable_note()),
     )
 
 
@@ -140,6 +140,19 @@ def fail(task_id: str, error: str) -> str:
     update(task_id, status=status, retry_count=retries, last_error=error,
            owner_agent=None)
     return status
+
+
+def _nothing_runnable_note() -> str:
+    c = counts()
+    if c.get("WAITING"):
+        return f"{c['WAITING']} task(s) waiting on a missing executor — see `aion blockers`"
+    if c.get("BLOCKED"):
+        return f"{c['BLOCKED']} task(s) blocked — root-cause them before adding work"
+    if c.get("NEEDS_APPROVAL"):
+        return "everything left needs owner approval"
+    if c.get("NEEDS_REVIEW"):
+        return "remaining work is class C — open a strong-model session"
+    return "queue empty — decompose the objective into executable tasks"
 
 
 def value(row) -> float:

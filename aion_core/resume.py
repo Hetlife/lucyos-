@@ -5,7 +5,8 @@ context or a model switch never loses the thread.
 """
 from __future__ import annotations
 
-from . import approvals, config, db, errors, metrics, notebook, packets, sessions, tasks, util
+from . import (approvals, config, db, errors, governor, metrics, notebook, packets,
+               sessions, tasks, util)
 
 KEYS = ["objective", "current_state", "current_task", "last_verified_success",
         "last_failure", "bottleneck", "next_action", "files_to_read"]
@@ -145,7 +146,9 @@ def boot() -> dict:
                   else "failing: " + ", ".join(health["failing"])})
 
     budget = metrics.budget_status()
-    steps.append({"step": "budget", "detail": budget["governor"]})
+    shift = governor.enforce()
+    steps.append({"step": "budget", "detail": budget["governor"]
+                  + (f" — {shift['message']}" if shift["changed"] else "")})
 
     prev = load()
     nxt = tasks.next_task()

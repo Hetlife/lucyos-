@@ -273,6 +273,31 @@ HORIZON
 Work autonomously for the available 5-8 hour window where platform limits allow.
 Do not stretch work to fill time.
 
+YOUR PRIMARY OUTPUT IS A PLAN, NOT CODE
+Most of your value is decomposition. For each job above, produce a PLAN and
+apply it, so cheap and local models execute it afterwards without you:
+
+  1. `aion plan template`  -> writes the schema you fill in
+  2. write <name>.json with steps, each carrying:
+       kind, model_class (DET/A/B — reserve C for what only you can do),
+       depends_on, exec_command (DET) or prompt (A/B),
+       validation_command that exits 0 only if the step really worked,
+       success_criteria a human would recognise
+  3. `aion plan check <file>`  -> refuses a plan with an unverifiable step
+  4. `aion plan apply <file>`  -> becomes a dependency-ordered queue
+  5. `aion work --max 10`      -> the loop executes it and records evidence
+
+A step you cannot express as a command or a prompt is not yet decomposed.
+Aim to leave fewer than 20% of steps at class C.
+
+SPEND TARGET
+Land this session between INR 1,000 and 2,000 total, under it if the work
+allows. The governor downshifts automatically as you spend: at 50% queued C
+work is demoted to B, at 75% B drops to A, and at 100% strong work is held and
+the owner is told. You do not have to manage this by hand — but check
+`aion money` before starting anything large, and prefer writing a plan over
+doing the work yourself whenever a cheaper class could do it.
+
 RULES
 - Use deterministic code and cheaper models for anything routine; you are here
   for architecture, hard debugging, security, economics and decomposition.
