@@ -10,7 +10,7 @@ because it would look like control.
 """
 from __future__ import annotations
 
-from . import config, db, memory, security, tasks, util
+from . import config, db, memory, security, sevaa, tasks, util
 
 KINDS = ("idea", "company", "project", "note")
 
@@ -168,3 +168,42 @@ def feed(limit: int = 20) -> list[dict]:
     items.sort(key=lambda i: i["at"] or "", reverse=True)
     return [{k: security.redact(v) if isinstance(v, str) else v for k, v in item.items()}
             for item in items[:limit]]
+
+
+def external_event(event: dict, *, source: str = "sevaa") -> dict:
+    """An event from the revenue module becomes a triage task and an owner alert.
+
+    Idempotent per (type, lead_id).  Rejects anything carrying PII: the payload
+    contract in `sevaa.py` is enforced here, not trusted.
+    """
+    problems = sevaa.validate_event(event)
+    if problems:
+        db.log_event(source, "event.rejected", str(event.get("type")), "; ".join(problems))
+        raise ValueError("; ".join(problems))
+    lead_id = int(event["lead_id"])
+    key = f"{source}:{event['type']}:{lead_id}"
+    if db.seen(key, "external_event"):
+        return {"status": "DUPLICATE", "lead_id": lead_id, "task_id": None}
+
+    score = event.get("score")
+    city = security.redact(str(event.get("city") or "unknown city"))[:40]
+    summary = security.redact(str(event.get("requirement_summary") or ""))[:sevaa.REQUIREMENT_SUMMARY_MAX]
+    title = f"Enquiry #{lead_id} score {score if score is not None else '?'} — {city}"
+    task_id = tasks.create(
+        title,
+        project="sevaa-sales-os",
+        kind="triage",
+        status="TRIAGE",
+        priority=1,
+        impact=5,
+        human_dependence=1,
+        description=(f"Real public enquiry from the {source} funnel. Source: {event.get('source') or 'unknown'}. "
+                     f"Stage: {event.get('stage') or 'unknown'}. Requirement: {summary or 'not given'}.\n\n"
+                     "Contact details are NOT here by design — open the founder console to see them."),
+        success_criteria="lead reviewed in the founder console and moved to a pipeline stage",
+        next_action=f"open the founder console, review lead #{lead_id}, decide qualify/reject",
+    )
+    db.set_meta("owner_alert", f"New enquiry #{lead_id} (score {score}, {city}). "
+                               f"Triage task {task_id}. Details are in the founder console, not here.")
+    db.log_event(source, "event.enquiry", str(lead_id), title)
+    return {"status": "SAVED", "lead_id": lead_id, "task_id": task_id}

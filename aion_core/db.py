@@ -270,7 +270,11 @@ def connect(path: Path | None = None) -> sqlite3.Connection:
     if _conn is not None:
         _conn.close()
     Path(target).parent.mkdir(parents=True, exist_ok=True)
-    conn = sqlite3.connect(target, timeout=15)
+    # The bridge serves HTTP on a server thread while the CLI/loop uses the main
+    # thread.  Access is serialised (HTTPServer is single-threaded and the loop
+    # never runs concurrently with a request in the same process), so sharing
+    # one connection across threads is safe; without this flag SQLite refuses.
+    conn = sqlite3.connect(target, timeout=15, check_same_thread=False)
     conn.row_factory = sqlite3.Row
     conn.executescript(SCHEMA)
     try:

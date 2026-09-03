@@ -29,7 +29,7 @@ from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 
-from aion_core import bootstrap, config, db, resume, router, security, util  # noqa: E402
+from aion_core import bootstrap, config, db, intake, resume, router, security, sevaa, util  # noqa: E402
 
 MAX_MESSAGE_BYTES = 4096
 
@@ -108,6 +108,9 @@ class Handler(BaseHTTPRequestHandler):
             return self._send(413, {"error": "payload too large"})
         raw = self.rfile.read(length)
 
+        if self.path.rstrip("/") == "/api/events":
+            return self._handle_event(raw)
+
         if self.secret_token:
             provided = self.headers.get("X-Bridge-Token", "")
             if not hmac.compare_digest(provided, self.secret_token):
@@ -127,6 +130,24 @@ class Handler(BaseHTTPRequestHandler):
         if db.seen(f"wa:{message_id}", "whatsapp_webhook"):
             return self._send(200, {"reply": "", "duplicate": True})
         self._send(200, {"reply": reply_to(message, sender=sender)})
+
+    def _handle_event(self, raw: bytes) -> None:
+        """Signed events from the revenue module (S01).  Verified before parsed."""
+        key = sevaa.secret()
+        if not key:
+            return self._send(503, {"error": "event ingestion not configured"})
+        if not sevaa.verify(raw, self.headers.get(sevaa.SIGNATURE_HEADER), key):
+            db.log_event("bridge", "event.auth_failed", self.client_address[0])
+            return self._send(401, {"error": "bad signature"})
+        try:
+            event = json.loads(raw.decode("utf-8"))
+        except (json.JSONDecodeError, UnicodeDecodeError):
+            return self._send(400, {"error": "invalid json"})
+        try:
+            result = intake.external_event(event)
+        except ValueError as exc:
+            return self._send(400, {"error": str(exc)})
+        self._send(200, {"ok": True, **result})
 
     def do_GET(self):  # noqa: N802
         self._send(200, {"ok": True, "service": "aion-whatsapp-bridge"})
