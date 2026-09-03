@@ -79,6 +79,49 @@ def record_money(kind: str, amount_inr: float, *, stage: str = "ACTUAL", project
     conn.commit()
 
 
+def by_project() -> list[dict]:
+    """Am I making money, how much, and from where — per business."""
+    rows = db.connect().execute(
+        "SELECT project, kind, stage, COALESCE(SUM(amount_inr),0) s FROM finance "
+        "GROUP BY project, kind, stage").fetchall()
+    agg: dict = {}
+    for r in rows:
+        entry = agg.setdefault(r["project"], {"project": r["project"], "revenue": 0.0,
+                                              "cost": 0.0, "net": 0.0, "forecast": 0.0})
+        if r["stage"] == "ACTUAL":
+            if r["kind"] in ("revenue", "cost"):
+                entry[r["kind"]] += r["s"]
+        elif r["kind"] == "revenue":
+            entry["forecast"] += r["s"]
+    for entry in agg.values():
+        entry["net"] = round(entry["revenue"] - entry["cost"], 2)
+        entry["revenue"] = round(entry["revenue"], 2)
+        entry["cost"] = round(entry["cost"], 2)
+        entry["forecast"] = round(entry["forecast"], 2)
+    return sorted(agg.values(), key=lambda e: -e["net"])
+
+
+def trend(days: int = 7) -> dict:
+    """Net over the last N days against the N before it."""
+    from datetime import date, timedelta
+    today_d = date.today()
+    start = (today_d - timedelta(days=days)).isoformat()
+    prior = (today_d - timedelta(days=days * 2)).isoformat()
+    conn = db.connect()
+
+    def net(a: str, b: str) -> float:
+        r = conn.execute(
+            "SELECT COALESCE(SUM(CASE WHEN kind='revenue' THEN amount_inr "
+            "WHEN kind='cost' THEN -amount_inr ELSE 0 END),0) n FROM finance "
+            "WHERE stage='ACTUAL' AND day >= ? AND day < ?", (a, b)).fetchone()
+        return round(r["n"], 2)
+
+    current = net(start, (today_d + timedelta(days=1)).isoformat())
+    previous = net(prior, start)
+    return {"days": days, "current": current, "previous": previous,
+            "change": round(current - previous, 2)}
+
+
 def money() -> dict:
     conn = db.connect()
     rows = conn.execute(

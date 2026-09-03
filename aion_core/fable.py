@@ -38,6 +38,19 @@ def current_phase() -> str:
     return db.get_meta("fable_phase", "1")
 
 
+def phase_cap(phase: str) -> float:
+    """The owner may lower a phase cap; the stored value always wins."""
+    return float(db.get_meta(f"fable_phase_{phase}_cap", PHASES[phase]["cap_inr"]))
+
+
+def set_phase_cap(phase: str, cap_inr: float) -> float:
+    if phase not in PHASES:
+        raise ValueError(f"phase must be one of {sorted(PHASES)}")
+    db.set_meta(f"fable_phase_{phase}_cap", str(float(cap_inr)))
+    db.log_event("owner", "fable.phase_cap", phase, f"INR {cap_inr}")
+    return phase_cap(phase)
+
+
 def set_phase(phase: str) -> dict:
     if phase not in PHASES:
         raise ValueError(f"phase must be one of {sorted(PHASES)}")
@@ -53,13 +66,13 @@ def budget() -> dict:
     phase = current_phase()
     # Spend is attributed to the phase it was recorded under.
     phase_used = float(db.get_meta(f"fable_phase_{phase}_spend", "0"))
-    phase_cap = PHASES[phase]["cap_inr"]
+    cap = phase_cap(phase)
     return {
         "phase": phase,
         "phase_name": PHASES[phase]["name"],
-        "phase_cap_inr": phase_cap,
+        "phase_cap_inr": cap,
         "phase_used_inr": round(phase_used, 2),
-        "phase_remaining_inr": round(phase_cap - phase_used, 2),
+        "phase_remaining_inr": round(cap - phase_used, 2),
         "phase_needs_machine": PHASES[phase]["needs_machine"],
         "currency": "INR",
         "maximum_cumulative_authorization": BUDGET_CAP_INR,
@@ -171,6 +184,28 @@ REPO_URL = "https://github.com/Hetlife/lucyos-"
 BRANCH = "claude/aion-whatsapp-control-1seild"
 
 
+def _scope_note(cap: float) -> str:
+    """Ask for less when the budget is small.  One finished artifact beats four
+    sketches, and a small ceiling makes that trade-off for you."""
+    if cap <= 600:
+        return f"""SCOPE FOR AN INR {cap:.0f} SESSION — READ THIS BEFORE STARTING
+This budget buys one good decision, not four documents. Do artifact 1 properly
+and one plan (artifact 3) for its first three steps. Skip artifacts 2 and 4
+entirely; tomorrow's session has budget for them and will have the machine.
+
+Concretely: do not write a long milestone analysis tonight. Write the experiment
+so sharply that tomorrow's session cannot misinterpret it, then stop."""
+    if cap <= 1200:
+        return f"""SCOPE FOR AN INR {cap:.0f} SESSION
+Artifacts 1 and 3 in full, artifact 2 briefly, artifact 4 only if budget remains.
+Artifact 1 is worth more than 2, which is worth more than 3, which is worth more
+than 4. If you can only finish one, finish 1 properly."""
+    return """HOW TO SPEND THE BUDGET
+Artifact 1 is worth more than 2, which is worth more than 3, which is worth more
+than 4. If you can only finish one, finish 1 properly. A vague experiment wastes
+tomorrow's budget; a sharp one directs it."""
+
+
 def _offline_prompt() -> str:
     """Phase 1: reasoning only.  No machine, so no claim of execution."""
     b = budget()
@@ -191,8 +226,7 @@ Pure reasoning that survives contact with the machine tomorrow. Your output is
 three artifacts the owner saves as files. Nothing else counts.
 
 BUDGET: INR {b['phase_cap_inr']:.0f} FOR THIS SESSION. HARD CEILING.
-Phase 1 of 2. Phase 2 (INR {PHASES['2']['cap_inr']:.0f}) runs tomorrow on the machine.
-Cumulative authorisation across both: INR {BUDGET_CAP_INR:.0f}.
+Phase 1 of 2. Phase 2 (INR {phase_cap('2'):.0f}) runs tomorrow on the machine.
 Stop at the ceiling even mid-thought; tomorrow's session resumes from your files.
 Spend the budget on judgement, not on length. A short, decidable artifact beats a
 long one.
@@ -243,14 +277,11 @@ OPTIONAL FOURTH, ONLY IF BUDGET REMAINS
    compromised bridge could reach. Each finding needs a concrete failing
    scenario, not a category name.
 
-HOW TO SPEND THE BUDGET
-Artifact 1 is worth more than 2, which is worth more than 3, which is worth more
-than 4. If you can only finish one, finish 1 properly. A vague experiment wastes
-tomorrow's INR {PHASES['2']['cap_inr']:.0f}; a sharp one directs it.
+{_scope_note(b['phase_cap_inr'])}
 
-FINISH BY OUTPUTTING, IN ORDER
+FINISH BY OUTPUTTING, IN ORDER (only the artifacts the SCOPE block asked for)
   - EXPERIMENT.md in full, in a code block
-  - MILESTONE_LADDER.md in full, in a code block
+  - MILESTONE_LADDER.md in full, in a code block, if in scope
   - each plan-<name>.json in full, in its own code block
   - a HANDOFF section: what you assumed, what you could not determine, what
     tomorrow's session should do first, and your best estimate of what you spent
