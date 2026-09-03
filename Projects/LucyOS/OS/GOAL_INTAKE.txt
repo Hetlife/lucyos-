@@ -1,0 +1,3 @@
+No project goal has been received yet.
+
+Keep future goal files separate from the AION OS architecture and task system.

@@ -1,0 +1,20 @@
+AION AGENT-TO-AGENT HANDOFF PROTOCOL
+=====================================
+
+Separate AI sessions do not directly share hidden memory.
+
+The Linux machine state is the bridge.
+
+Before handing off:
+- run quick cycle;
+- run full verification after meaningful changes;
+- update AION_STATE.md;
+- update AION_TASK_QUEUE.md;
+- update state/AION_MACHINE_STATE.json;
+- record exact resume command;
+- never include secrets.
+
+Never paste `private_state/` into model context.
+
+If GitHub is later connected, it may become an additional synchronization layer.
+Until then, the Linux project directory is authoritative.

@@ -1,0 +1,25 @@
+{
+  "schema_version": 1,
+  "required_fields": {
+    "checkpoint_id": "stable identifier",
+    "revision": "integer incremented on every update",
+    "updated_at": "ISO-8601 timestamp",
+    "active_task_id": "task identifier or null",
+    "active_lane": "deterministic|high|normal|local",
+    "objective": "short objective",
+    "completed": ["verified completed step"],
+    "evidence": ["path, command, hash, or test result"],
+    "open_errors": ["sanitized error"],
+    "blocked_on": "approval or external dependency or null",
+    "next_step": "one bounded next action",
+    "resume_command": "exact safe command or instruction",
+    "token_notes": "what was avoided or delegated locally",
+    "sensitivity": "public|internal|confidential"
+  },
+  "rules": [
+    "Never store secrets",
+    "Never overwrite a checkpoint without increasing revision",
+    "Keep the next step executable by a smaller model when safe",
+    "Keep consequential actions in blocked_on until explicitly approved"
+  ]
+}

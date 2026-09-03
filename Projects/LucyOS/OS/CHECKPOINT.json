@@ -1,0 +1,32 @@
+{
+  "schema_version": 1,
+  "checkpoint_id": "lucyos-aion-intake-2026-09-04",
+  "revision": 2,
+  "updated_at": "2026-09-04T00:48:00+05:30",
+  "active_task_id": "AION-HANDOFF-SYSTEM-COMPLETE",
+  "active_lane": "normal",
+  "objective": "Maintain a resumable AION/LucyOS operating system with low-token execution.",
+  "completed": [
+    "AION architecture, constitution, adversarial review, handoff protocol, state, and setup guide received.",
+    "SEVAA deployment bundle received and SHA-256/integrity checked.",
+    "AION task queue stored in the LucyOS OS layer.",
+    "OS structure kept separate from the project goal layer.",
+    "NX notification preference recorded: use only for milestones, approvals, or help needed.",
+    "Model handoff protocol, high-model plan, low-token queue, checkpoint schema, resume card, and approval register created and validated."
+  ],
+  "evidence": [
+    "Projects/LucyOS/OS/AION_MANIFEST.json",
+    "Projects/LucyOS/OS/AION_TASK_QUEUE.md",
+    "SEVAA bundle intake: 198 entries; integrity passed; supplied hash matched"
+  ],
+  "open_errors": [
+    "Memory search index requires rebuild because its stored model differs from the active index expectation.",
+    "SEVAA has not yet been restored to a working project path or locally verified from the bundle.",
+    "GitHub CLI authentication is not configured; no push has been performed."
+  ],
+  "blocked_on": null,
+  "next_step": "Inspect existing SEVAA project state, stage the bundle without overwriting anything, then run local verification.",
+  "resume_command": "Read this file and LOW_TOKEN_QUEUE.md; then inspect ~/sevaa-sales-os and the verified bundle before staging.",
+  "token_notes": "Use deterministic file/status checks first; send only compact evidence packs to larger models; use qwen3.5:2b for extraction and summarisation only.",
+  "sensitivity": "internal"
+}
