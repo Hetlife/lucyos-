@@ -1,0 +1,10 @@
+#!/usr/bin/env python3
+"""aion — entry point.  Put this directory on PATH or symlink into ~/.local/bin."""
+import sys
+from pathlib import Path
+
+sys.path.insert(0, str(Path(__file__).resolve().parent))
+from aion_core.cli import main
+
+if __name__ == "__main__":
+    raise SystemExit(main())

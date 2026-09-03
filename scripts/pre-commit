@@ -1,0 +1,18 @@
+#!/usr/bin/env bash
+# Git pre-commit hook: block a commit that carries credential-shaped content
+# and run the test suite.  Install with: scripts/install_hooks.sh
+set -euo pipefail
+REPO="$(git rev-parse --show-toplevel)"
+
+if ! "${REPO}/aion" scan "${REPO}"; then
+  echo
+  echo "COMMIT BLOCKED: credential-shaped content found above."
+  echo "Move the value into the secret store (aion secrets set NAME)."
+  echo "If it is a deliberate test fixture, add the file to .secretscanignore."
+  exit 1
+fi
+
+if ! python3 -m unittest discover -s "${REPO}/tests" -t "${REPO}" -q; then
+  echo "COMMIT BLOCKED: tests failing."
+  exit 1
+fi
