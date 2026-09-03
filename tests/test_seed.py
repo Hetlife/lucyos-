@@ -47,7 +47,7 @@ class TestSeed(AionTest):
         fable.build_pack()
         prompt = (self.tmp / "FABLE" / "FABLE_START_PROMPT.txt").read_text()
         self.assertIn(str(self.tmp), prompt)
-        self.assertIn("INR 2000", prompt)
+        self.assertIn("INR 4000", prompt)
         self.assertIn("aion boot", prompt)
         self.assertIn("Design the first real revenue experiment", prompt)
 
@@ -57,7 +57,7 @@ class TestSeed(AionTest):
         self.assertEqual(fable.budget()["used"], 0.0)
         metrics.record_usage("strong", "C", cost_inr=200)
         self.assertEqual(fable.budget()["used"], 200.0)
-        self.assertEqual(fable.budget()["remaining"], 1800.0)
+        self.assertEqual(fable.budget()["remaining"], 3800.0)
 
 
 if __name__ == "__main__":
@@ -91,3 +91,34 @@ class TestMission(AionTest):
         self.assertEqual(tasks.get(a)["project"], "alpha")
         self.assertEqual(tasks.get(b)["project"], "beta")
         self.assertEqual(len(tasks.ready(50)), len(seed.TASKS) - 1 + 2)
+
+
+class TestTwoPhaseBudget(AionTest):
+    def test_phases_split_the_authorisation(self):
+        from aion_core import fable
+        b = fable.budget()
+        self.assertEqual(b["phase"], "1")
+        self.assertEqual(b["phase_cap_inr"], 1000.0)
+        self.assertFalse(b["phase_needs_machine"])
+        self.assertEqual(b["maximum_cumulative_authorization"], 4000.0)
+
+    def test_spend_is_attributed_to_the_active_phase(self):
+        from aion_core import fable, metrics
+        metrics.record_usage("strong", "C", cost_inr=400)
+        self.assertEqual(fable.budget()["phase_used_inr"], 400.0)
+        self.assertEqual(fable.budget()["phase_remaining_inr"], 600.0)
+        fable.set_phase("2")
+        b = fable.budget()
+        self.assertEqual(b["phase_used_inr"], 0.0, "phase 2 starts fresh")
+        self.assertEqual(b["phase_cap_inr"], 3000.0)
+        self.assertTrue(b["phase_needs_machine"])
+        self.assertEqual(b["used"], 400.0, "cumulative spend still counts everything")
+
+    def test_offline_prompt_forbids_claiming_execution(self):
+        from aion_core import fable
+        fable.build_pack()
+        text = (self.tmp / "FABLE" / "FABLE_OFFLINE_PROMPT.txt").read_text()
+        self.assertIn("Do not claim you ran anything", text)
+        self.assertIn("INR 1000", text)
+        self.assertIn("EXPERIMENT.md", text)
+        self.assertIn("validation_command", text)

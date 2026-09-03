@@ -13,8 +13,19 @@ from . import (agents, approvals, config, db, errors, health, metrics, packets,
                resume, security, tasks, util)
 
 PACK = "FABLE"
-BUDGET_CAP_INR = 2000.0
-STAGED_FIRST_TOPUP_INR = 750.0
+# Two phases, authorised separately by the owner.
+#   Phase 1 runs without the machine: pure reasoning, artifacts the owner saves.
+#   Phase 2 runs on the machine: apply, verify, execute.
+PHASES = {
+    "1": {"name": "offline planning", "cap_inr": 1000.0,
+          "needs_machine": False,
+          "output": "an experiment design, a milestone ladder and draft plan files"},
+    "2": {"name": "on-machine execution", "cap_inr": 3000.0,
+          "needs_machine": True,
+          "output": "plans applied and verified, the queue executing on cheap models"},
+}
+BUDGET_CAP_INR = sum(p["cap_inr"] for p in PHASES.values())
+STAGED_FIRST_TOPUP_INR = PHASES["1"]["cap_inr"]
 
 
 def pack_dir() -> Path:
@@ -23,10 +34,33 @@ def pack_dir() -> Path:
     return d
 
 
+def current_phase() -> str:
+    return db.get_meta("fable_phase", "1")
+
+
+def set_phase(phase: str) -> dict:
+    if phase not in PHASES:
+        raise ValueError(f"phase must be one of {sorted(PHASES)}")
+    db.set_meta("fable_phase", phase)
+    db.set_meta("build_budget_cap_inr", str(BUDGET_CAP_INR))
+    db.log_event("owner", "fable.phase", phase, PHASES[phase]["name"])
+    return budget()
+
+
 def budget() -> dict:
     b = metrics.budget_status()
     used = b["strong_model_spend_inr"]
+    phase = current_phase()
+    # Spend is attributed to the phase it was recorded under.
+    phase_used = float(db.get_meta(f"fable_phase_{phase}_spend", "0"))
+    phase_cap = PHASES[phase]["cap_inr"]
     return {
+        "phase": phase,
+        "phase_name": PHASES[phase]["name"],
+        "phase_cap_inr": phase_cap,
+        "phase_used_inr": round(phase_used, 2),
+        "phase_remaining_inr": round(phase_cap - phase_used, 2),
+        "phase_needs_machine": PHASES[phase]["needs_machine"],
         "currency": "INR",
         "maximum_cumulative_authorization": BUDGET_CAP_INR,
         "used": used,
@@ -34,6 +68,7 @@ def budget() -> dict:
         "percent_used": b["strong_model_pct"],
         "governor": b["governor"],
         "recommended_first_topup": STAGED_FIRST_TOPUP_INR,
+        "phases": PHASES,
         "thresholds": {
             "25": "architecture and persistent state established",
             "50": "shift routine execution down to local/cheap models",
@@ -132,6 +167,101 @@ def readiness_report() -> str:
     return "\n".join(lines)
 
 
+REPO_URL = "https://github.com/Hetlife/lucyos-"
+BRANCH = "claude/aion-whatsapp-control-1seild"
+
+
+def _offline_prompt() -> str:
+    """Phase 1: reasoning only.  No machine, so no claim of execution."""
+    b = budget()
+    return f"""YOU ARE THE STRONG-REASONING NODE FOR AN AION SYSTEM YOU CANNOT TOUCH TONIGHT.
+
+THE MACHINE IS NOT AVAILABLE. You have no shell, no `aion` command, no shared
+brain. Every rule below follows from that single fact.
+
+WHAT YOU MUST NOT DO
+- Do not claim you ran anything. You cannot run anything.
+- Do not write code that needs to be executed to be trusted.
+- Do not design anything whose correctness depends on inspecting live state.
+- Do not invent facts about the machine, the leads, the money or the market.
+  Where you need a fact you do not have, write UNKNOWN and say how to get it.
+
+WHAT YOU ARE FOR TONIGHT
+Pure reasoning that survives contact with the machine tomorrow. Your output is
+three artifacts the owner saves as files. Nothing else counts.
+
+BUDGET: INR {b['phase_cap_inr']:.0f} FOR THIS SESSION. HARD CEILING.
+Phase 1 of 2. Phase 2 (INR {PHASES['2']['cap_inr']:.0f}) runs tomorrow on the machine.
+Cumulative authorisation across both: INR {BUDGET_CAP_INR:.0f}.
+Stop at the ceiling even mid-thought; tomorrow's session resumes from your files.
+Spend the budget on judgement, not on length. A short, decidable artifact beats a
+long one.
+
+CONTEXT YOU MAY READ
+The repository is public: {REPO_URL} (branch {BRANCH}).
+Read only these, and only if you need them:
+  README.md                     what the system is
+  TOMORROW.md                   how it gets installed
+  aion_core/seed.py             the mission, milestones, standing decisions, queue
+  aion_core/plan.py             the PLAN format you must emit (TEMPLATE at the top)
+  bridges/whatsapp_bridge.py    only for artifact 3
+  aion_core/router.py           only for artifact 3
+Do not read the rest. It will not change your answer and it costs money.
+
+THE THREE ARTIFACTS
+
+1. EXPERIMENT.md — the first real revenue experiment
+   One offer, one channel, one buyer type. Include: the hypothesis stated so it
+   can be false; the unit economics with every cost named including model spend;
+   the minimum valid test; the cost ceiling in INR; the time window; the success
+   condition and the failure condition, both as numbers; and the decision each
+   outcome forces. If a number is unknown, write UNKNOWN and name the cheapest
+   way to learn it. An experiment that cannot fail is not an experiment.
+
+2. MILESTONE_LADDER.md — the path to INR 1,00,000/month net
+   The mission and milestones M0-M6 are in seed.py. For each: the number that
+   defines it, how it is measured from real rows, the capability the system
+   needs to reach it, and whether that capability exists today. State plainly
+   which milestones the current machinery can reach unassisted. Say where real
+   capital would have to be injected and roughly how much. Be honest about which
+   milestone is the real wall — it is rarely the last one.
+
+3. plan-<name>.json — one or more executable plans
+   Use the PLAN format in aion_core/plan.py. Every step needs: kind, model_class
+   (DET, A or B — reserve C only for what genuinely needs a strong model),
+   depends_on, exec_command for DET steps or prompt for A/B steps, a
+   validation_command that exits 0 only if the step really worked, and a
+   success_criteria a human would recognise.
+   Tomorrow `aion plan check` will reject any step lacking a way to verify it,
+   so write them as if a hostile reviewer runs that check — because one does.
+   Assume a fresh Ubuntu machine with Python 3.11, git, and the repo at ~/lucyos.
+   Do not assume Ollama, network access to paid APIs, or any credential.
+
+OPTIONAL FOURTH, ONLY IF BUDGET REMAINS
+4. SECURITY_REVIEW.md — attack the bridge on paper: replay, forged sender,
+   oversized payload, injection through message text, token handling, and what a
+   compromised bridge could reach. Each finding needs a concrete failing
+   scenario, not a category name.
+
+HOW TO SPEND THE BUDGET
+Artifact 1 is worth more than 2, which is worth more than 3, which is worth more
+than 4. If you can only finish one, finish 1 properly. A vague experiment wastes
+tomorrow's INR {PHASES['2']['cap_inr']:.0f}; a sharp one directs it.
+
+FINISH BY OUTPUTTING, IN ORDER
+  - EXPERIMENT.md in full, in a code block
+  - MILESTONE_LADDER.md in full, in a code block
+  - each plan-<name>.json in full, in its own code block
+  - a HANDOFF section: what you assumed, what you could not determine, what
+    tomorrow's session should do first, and your best estimate of what you spent
+
+The owner will save these to ~/lucyos/incoming/ tomorrow and run:
+  aion plan check incoming/plan-<name>.json
+  aion plan apply incoming/plan-<name>.json
+Then the cheap loop executes them. Write for that reader.
+"""
+
+
 def build_pack() -> list[str]:
     """Write the whole launch pack.  Idempotent; safe to re-run any time."""
     d = pack_dir()
@@ -140,6 +270,7 @@ def build_pack() -> list[str]:
         "README.md": _readme(),
         "FABLE_MASTER_PROMPT.md": _master_prompt(),
         "FABLE_START_PROMPT.txt": _start_prompt(),
+        "FABLE_OFFLINE_PROMPT.txt": _offline_prompt(),
         "FABLE_CONTEXT.md": _context(),
         "FABLE_TASK_QUEUE.md": _task_queue(),
         "FABLE_DECISIONS.md": _decisions(),

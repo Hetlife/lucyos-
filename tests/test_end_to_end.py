@@ -129,8 +129,11 @@ class TestFullPipeline(AionTest):
                      "FABLE_TASK_QUEUE.md", "FABLE_COMPLETION_CRITERIA.md"):
             self.assertTrue((d / name).exists(), f"{name} missing")
         budget = fable.budget()
-        self.assertEqual(budget["maximum_cumulative_authorization"], 2000.0)
-        self.assertEqual(budget["remaining"], 2000.0)
+        self.assertEqual(budget["maximum_cumulative_authorization"], 4000.0)
+        self.assertEqual(budget["remaining"], 4000.0)
+        self.assertEqual(budget["phase"], "1")
+        self.assertFalse(budget["phase_needs_machine"])
+        self.assertEqual(budget["phase_cap_inr"], 1000.0)
         ok, gaps = fable.is_ready()
         self.assertIsInstance(ok, bool)
         # With no class-C task queued the pack must refuse to declare readiness.

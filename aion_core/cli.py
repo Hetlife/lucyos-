@@ -48,6 +48,8 @@ def _main(argv=None) -> int:
     sub.add_parser("owner-setup", help="regenerate OWNER_SETUP_REQUIRED.md")
     sub.add_parser("fable-pack", help="build/refresh the Fable launch pack")
     sub.add_parser("fable-ready", help="run the Fable readiness test")
+    fp = sub.add_parser("fable-phase", help="show or set the funding phase")
+    fp.add_argument("phase", nargs="?", choices=["1", "2"])
     sub.add_parser("seed", help="seed the opening objective, decisions and task queue")
     bk = sub.add_parser("backup", help="create a backup and restore-test it")
     bk.add_argument("--verify-only", action="store_true")
@@ -248,6 +250,8 @@ def _main(argv=None) -> int:
         _print("\n".join(fable.build_pack()))
     elif cmd == "fable-ready":
         _print(fable.readiness_report())
+    elif cmd == "fable-phase":
+        _print(fable.set_phase(args.phase) if args.phase else fable.budget())
     elif cmd == "seed":
         result = seed.apply()
         if result["skipped"]:

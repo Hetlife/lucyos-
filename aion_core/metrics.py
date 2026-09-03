@@ -17,6 +17,11 @@ def record_usage(model: str, model_class: str, *, input_tokens: int = 0, output_
         (util.now(), util.today(), util.month(), model, model_class, task_id, input_tokens,
          output_tokens, cost_inr, 1 if success else 0, retries, 1 if escalated else 0, note))
     conn.commit()
+    if model_class == "C" and cost_inr:
+        # Attribute strong-model spend to the phase that authorised it.
+        phase = db.get_meta("fable_phase", "1")
+        key = f"fable_phase_{phase}_spend"
+        db.set_meta(key, str(round(float(db.get_meta(key, "0")) + cost_inr, 2)))
 
 
 def spend(period: str = "day") -> float:
