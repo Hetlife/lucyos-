@@ -108,11 +108,23 @@ def release_stale(max_age_s: int = config.STALE_CLAIM_SECONDS) -> list[str]:
 
 
 def complete(task_id: str, evidence: str, next_action: str = "") -> None:
-    """DONE requires evidence.  Refuses an empty proof string."""
+    """DONE requires evidence.  Refuses an empty proof string.
+
+    Completing a task is the SAVE step of the execution loop, so the resume
+    point is refreshed here — otherwise a crash right after a completion would
+    resume from work that is already finished.
+    """
     if not evidence or not evidence.strip():
         raise TaskError("cannot mark DONE without evidence (test run, measurement or observation)")
     update(task_id, status="DONE", evidence=evidence, next_action=next_action,
            completed_at=util.now())
+    from . import resume  # late import: resume depends on this module
+    nxt = next_task()
+    resume.checkpoint(
+        last_verified_success=f"{task_id}: {evidence}"[:400],
+        next_action=(f"work {nxt['task_id']}: {nxt['next_action'] or nxt['title']}"
+                     if nxt else "queue empty — triage or decompose the objective"),
+    )
 
 
 def fail(task_id: str, error: str) -> str:

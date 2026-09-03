@@ -33,6 +33,7 @@ def checkpoint(**kw) -> dict:
             {"task_id": nxt["task_id"], "title": nxt["title"], "value": tasks.value(nxt)}
             if nxt else None),
     })
+    state["bottleneck"] = _fresh_bottleneck(state.get("bottleneck", ""), nxt)
     if not state.get("next_action") and nxt is not None:
         state["next_action"] = f"work {nxt['task_id']}: {nxt['next_action'] or nxt['title']}"
     util.write_json(_path(), state)
@@ -40,6 +41,22 @@ def checkpoint(**kw) -> dict:
     db.set_meta("last_checkpoint", state["at"])
     db.log_event("aion", "checkpoint", state.get("current_task", ""), state.get("next_action", ""))
     return state
+
+
+_TASK_REF = __import__("re").compile(r"\bTASK-[A-Z0-9]{6,}\b")
+
+
+def _fresh_bottleneck(current: str, nxt) -> str:
+    """A bottleneck naming a finished task is stale; recompute it."""
+    if not current:
+        return current
+    for ref in _TASK_REF.findall(current):
+        row = tasks.get(ref)
+        if row is None or row["status"] in ("DONE", "CANCELLED"):
+            if nxt is not None:
+                return f"execution capacity on {nxt['task_id']}"
+            return "empty ready queue — decompose the objective into executable tasks"
+    return current
 
 
 def load() -> dict:

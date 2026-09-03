@@ -155,3 +155,19 @@ class TestMemory(AionTest):
 
 if __name__ == "__main__":
     unittest.main()
+
+
+class TestBottleneckFreshness(AionTest):
+    def test_bottleneck_stops_naming_a_completed_task(self):
+        done = tasks.create("finish me", impact=5)
+        nxt = tasks.create("the next thing", impact=4)
+        resume.checkpoint(bottleneck=f"execution capacity on {done}")
+        tasks.complete(done, "evidence: it ran")
+        state = resume.checkpoint()
+        self.assertNotIn(done, state["bottleneck"])
+        self.assertIn(nxt, state["bottleneck"])
+
+    def test_a_live_bottleneck_is_left_alone(self):
+        live = tasks.create("still going")
+        resume.checkpoint(bottleneck=f"execution capacity on {live}")
+        self.assertIn(live, resume.checkpoint()["bottleneck"])

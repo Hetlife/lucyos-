@@ -50,3 +50,21 @@ class TestTasks(AionTest):
 
 if __name__ == "__main__":
     unittest.main()
+
+
+class TestCompletionRefreshesResume(AionTest):
+    def test_resume_point_moves_on_after_a_completion(self):
+        from aion_core import resume
+        first = tasks.create("first job", impact=5, cost=1)
+        second = tasks.create("second job", impact=4, cost=1, next_action="do the second thing")
+        resume.checkpoint(next_action=f"work {first} : first job")
+        tasks.complete(first, "ran the thing: it worked")
+        state = resume.load()
+        self.assertIn(second, state["next_action"])
+        self.assertIn("it worked", state["last_verified_success"])
+
+    def test_empty_queue_after_completion_says_so(self):
+        from aion_core import resume
+        only = tasks.create("the only job")
+        tasks.complete(only, "evidence recorded")
+        self.assertIn("queue empty", resume.load()["next_action"])

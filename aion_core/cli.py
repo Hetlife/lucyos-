@@ -9,14 +9,28 @@ from pathlib import Path
 
 from . import (agents, approvals, backup, bootstrap, config, db, errors, fable, health,
                memory, metrics, notebook, owner_setup, packets, reports, resume, router,
-               security, sessions, tasks, util)
+               security, seed, sessions, tasks, util)
 
 
 def _print(text):
     print(text if isinstance(text, str) else json.dumps(text, indent=2, default=str))
 
 
+class CliError(Exception):
+    """A user-facing failure: printed as one line, never as a traceback."""
+
+
 def main(argv=None) -> int:
+    try:
+        return _main(argv)
+    except (tasks.TaskError, approvals.ApprovalError, packets.PacketError,
+            security.SecretLeak, memory.ValueError if False else ValueError,
+            FileNotFoundError, CliError) as exc:
+        print(f"error: {exc}", file=sys.stderr)
+        return 2
+
+
+def _main(argv=None) -> int:
     p = argparse.ArgumentParser(prog="aion", description="AION control layer")
     sub = p.add_subparsers(dest="cmd", required=True)
 
@@ -33,6 +47,7 @@ def main(argv=None) -> int:
     sub.add_parser("owner-setup", help="regenerate OWNER_SETUP_REQUIRED.md")
     sub.add_parser("fable-pack", help="build/refresh the Fable launch pack")
     sub.add_parser("fable-ready", help="run the Fable readiness test")
+    sub.add_parser("seed", help="seed the opening objective, decisions and task queue")
     bk = sub.add_parser("backup", help="create a backup and restore-test it")
     bk.add_argument("--verify-only", action="store_true")
 
@@ -210,6 +225,14 @@ def main(argv=None) -> int:
         _print("\n".join(fable.build_pack()))
     elif cmd == "fable-ready":
         _print(fable.readiness_report())
+    elif cmd == "seed":
+        result = seed.apply()
+        if result["skipped"]:
+            _print("already seeded — nothing changed")
+        else:
+            reports.render_markdown_surfaces()
+            _print(f"seeded {result['decisions']} decisions and "
+                   f"{len(result['tasks'])} opening tasks")
     elif cmd == "backup":
         if not args.verify_only:
             _print(f"created {backup.create()}")

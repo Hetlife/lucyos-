@@ -45,8 +45,7 @@ def check_shared_brain() -> dict:
 
 
 def check_inbox() -> dict:
-    root = config.home()
-    pending = len(list((root / "INBOX" / "pending").glob("*"))) if (root / "INBOX" / "pending").is_dir() else 0
+    pending = len(packets.pending_files())
     stats = packets.stats()
     failed = stats.get("FAILED", 0)
     return {"name": "sync_inbox", "ok": failed == 0,

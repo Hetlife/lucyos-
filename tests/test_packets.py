@@ -120,3 +120,13 @@ class TestPackets(AionTest):
 
 if __name__ == "__main__":
     unittest.main()
+
+
+class TestPacketApprovalQuality(AionTest):
+    def test_packet_approval_says_what_the_source_did_not_state(self):
+        from aion_core import approvals
+        packets.ingest(PACKET)
+        card = approvals.render(approvals.pending()[0])
+        self.assertNotIn("COST: none", card)
+        self.assertIn("not stated by the source packet", card)
+        self.assertIn("REVIEW", card)

@@ -27,8 +27,10 @@ esac
 
 export AION_HOME
 "${REPO}/aion" init
+"${REPO}/aion" seed
 "${REPO}/aion" secrets init >/dev/null
 "${REPO}/aion" backup >/dev/null
+"${REPO}/aion" fable-pack >/dev/null
 echo
 "${REPO}/aion" health || true
 echo

@@ -174,9 +174,15 @@ def _ingest_approvals(sections: dict, project: str) -> list[str]:
     for line in _lines(sections.get("APPROVALS REQUIRED", "")):
         if line.lower() in ("none", "n/a", "-"):
             continue
-        made.append(approvals.create(line, project=project,
-                                     why="requested by external sync packet",
-                                     owner_action=line, recommendation="REVIEW"))
+        unstated = "not stated by the source packet — establish before deciding"
+        made.append(approvals.create(
+            line, project=project,
+            why="requested by an external AI session; it did not justify the cost",
+            owner_action=line, cost=unstated, max_downside=unstated,
+            expected_benefit=unstated, reversibility="unknown",
+            prepared="nothing — this arrived as a request, not as prepared work",
+            resumes="establish cost, downside and reversibility, then re-ask",
+            recommendation="REVIEW — do not approve until the blanks above are filled"))
     return made
 
 
@@ -203,6 +209,16 @@ def _detect_conflicts(sections: dict) -> list[str]:
     return conflicts
 
 
+def is_packet_file(path: Path) -> bool:
+    """The folder's own documentation and dotfiles are not packets."""
+    return path.is_file() and path.name != "README.md" and not path.name.startswith(".")
+
+
+def pending_files() -> list[Path]:
+    d = config.home() / "INBOX" / "pending"
+    return [p for p in sorted(d.glob("*")) if is_packet_file(p)] if d.is_dir() else []
+
+
 def ingest_inbox() -> list[dict]:
     """Process every file in INBOX/pending, moving it to processed/ or failed/."""
     root = config.home()
@@ -212,12 +228,7 @@ def ingest_inbox() -> list[dict]:
     for d in (pending, processed, failed):
         d.mkdir(parents=True, exist_ok=True)
     results = []
-    for path in sorted(pending.glob("*")):
-        if not path.is_file():
-            continue
-        # The folder's own documentation is not a packet.
-        if path.name == "README.md" or path.name.startswith("."):
-            continue
+    for path in pending_files():
         try:
             text = path.read_text(encoding="utf-8")
         except (UnicodeDecodeError, OSError) as exc:
