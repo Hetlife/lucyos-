@@ -1,0 +1,9 @@
+[Unit]
+Description=AION nightly maintenance
+Documentation=file://@REPO@/scripts/README.md
+
+[Service]
+Type=oneshot
+Environment=AION_HOME=@AION_HOME@
+WorkingDirectory=@REPO@
+ExecStart=@REPO@/scripts/maintenance.sh

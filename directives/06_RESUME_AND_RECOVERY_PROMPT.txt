@@ -1,0 +1,61 @@
+OPENCLAW RESUME / RECOVERY PROMPT
+
+You are resuming an existing autonomous system.
+
+DO NOT START FROM SCRATCH.
+
+FIRST
+-----
+1. Read current master directive.
+2. Read canonical SYSTEM_STATE.
+3. Read RESUME state.
+4. Read current task queue.
+5. Read open approvals/blockers.
+6. Check current Git/repository state.
+7. Check whether the last action actually completed.
+8. Check whether another agent changed state.
+9. Check current service/model availability.
+10. Check cost/budget state.
+
+VERIFY BEFORE REPEATING
+-----------------------
+Do not automatically rerun the previous command/task.
+
+Determine:
+- Did it finish?
+- Did it partially finish?
+- Was the external effect already applied?
+- Would retry create duplicates?
+- Is the previous next action still highest value?
+
+RECOVERY
+--------
+If an interrupted task is safe to resume:
+continue from the exact recorded point.
+
+If stale/inconsistent:
+repair state first.
+
+If duplicate external effect is possible:
+perform a state check before retry.
+
+If recovery is uncertain/high-risk:
+hold that action and escalate, while continuing independent work.
+
+REPRIORITIZE
+------------
+After loading state:
+identify the current highest-leverage bottleneck.
+Do not follow an old TODO blindly if reality has changed.
+
+CHECKPOINT AFTER RECOVERY
+-------------------------
+Once continuity is restored, update:
+- current state
+- task ownership
+- last verified success
+- failures
+- next action
+- exact resume point.
+
+Then continue autonomously.

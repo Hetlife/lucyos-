@@ -1,0 +1,22 @@
+[Unit]
+Description=AION WhatsApp bridge
+Documentation=file://@REPO@/docs/WHATSAPP_COMMANDS.md
+After=network-online.target
+
+[Service]
+Type=simple
+Environment=AION_HOME=@AION_HOME@
+WorkingDirectory=@REPO@
+# The token is read from the 0600 secret store, never from this unit file.
+ExecStart=/bin/bash -lc 'set -a; [ -f "@AION_HOME@/private_state/secrets.env" ] && . "@AION_HOME@/private_state/secrets.env"; set +a; exec /usr/bin/python3 @REPO@/bridges/whatsapp_bridge.py webhook --host 127.0.0.1 --port 8765'
+Restart=always
+RestartSec=5
+# Bound the blast radius of a bridge bug.
+NoNewPrivileges=true
+PrivateTmp=true
+ProtectSystem=strict
+ProtectHome=read-only
+ReadWritePaths=@AION_HOME@
+
+[Install]
+WantedBy=default.target

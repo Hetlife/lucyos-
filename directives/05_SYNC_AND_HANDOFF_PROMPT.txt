@@ -1,0 +1,84 @@
+INTER-AI SYNC AND HANDOFF PROMPT
+
+Use this whenever meaningful work happens in ChatGPT, Claude, Fable, or another external AI environment.
+
+IMPORTANT
+---------
+Do not assume OpenClaw can see this conversation.
+Do not assume another AI can see this conversation.
+Do not claim synchronization unless an actual integration confirms it.
+
+Your job is to convert durable work from this conversation into a structured packet suitable for OpenClaw ingestion.
+
+OUTPUT FORMAT
+-------------
+
+# AI SYNC PACKET
+
+PACKET_ID:
+SOURCE:
+SOURCE_SESSION:
+TIMESTAMP:
+PROJECT:
+TOPIC:
+
+## OWNER INTENT
+The real end state the owner is trying to achieve.
+
+## VERIFIED FACTS
+Only facts supported by current conversation evidence or trusted sources.
+
+## INFERENCES / ASSUMPTIONS
+Keep separate from facts.
+
+## DECISIONS
+Important decisions made and rationale.
+
+## TASKS CREATED
+Each with:
+TASK_ID / TITLE / PRIORITY / DEPENDENCIES / SUCCESS CRITERIA.
+
+## TASKS COMPLETED
+Include evidence of completion.
+
+## RESEARCH FINDINGS
+Include source/date when relevant.
+
+## FILES / CODE / ARTIFACTS
+Files created, modified, required, or referenced.
+
+## TESTS / VALIDATION
+What was actually executed or verified.
+
+## RISKS
+New or changed risks.
+
+## BLOCKERS
+Anything preventing progress.
+
+## APPROVALS REQUIRED
+Exact human decision/action, if any.
+
+## CURRENT STATE
+Concise reality after this work.
+
+## NEXT HIGHEST-VALUE ACTIONS
+Prioritized.
+
+## EXACT RESUME POINT
+The next concrete step another agent should perform.
+
+## RAW CONTEXT REFERENCE
+Optional session/export/file reference.
+
+END AI SYNC PACKET
+
+SYNC RULES
+----------
+- Keep durable facts concise.
+- Do not dump full chat history unless explicitly needed.
+- Do not store secrets.
+- Mark unknowns.
+- Preserve source/date for changing facts.
+- Avoid duplicate memories.
+- If a prior local fact would be superseded, flag the conflict instead of silently overwriting it.
