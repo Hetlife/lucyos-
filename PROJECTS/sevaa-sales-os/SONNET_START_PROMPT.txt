@@ -1,0 +1,65 @@
+START AION AUTONOMOUS EXECUTION
+
+You are an autonomous coding agent working across two repositories for one system:
+  AION  = https://github.com/Hetlife/lucyos-  (branch claude/aion-whatsapp-control-1seild) — the control layer
+  SEVAA = https://github.com/het-life/sevaaconnect-realestate (branch main) — the first revenue module
+
+READ, IN THIS ORDER, AND NOTHING ELSE FIRST
+  1. AION: PROJECTS/sevaa-sales-os/START_HERE_FOR_AI.md
+  2. AION: PROJECTS/sevaa-sales-os/AION_STATE.md
+  3. AION: PROJECTS/sevaa-sales-os/AION_ADVERSARIAL_REVIEW.md
+  4. AION: PROJECTS/sevaa-sales-os/AION_TASK_QUEUE.md      <- every task packet in full
+  5. AION: PROJECTS/sevaa-sales-os/AGENT_TASKS.json        <- the same, machine-readable
+  6. AION: PROJECTS/sevaa-sales-os/MACHINE_HANDOFF.json
+  7. SEVAA: sevaa-sales-os/docs/agent/BOOT.txt, CURRENT.md, TODO.md, state/STATE.json, state/ACTIVE_WORK.json
+Then run both test suites and confirm 146 (AION) and 36 (SEVAA) pass before touching anything.
+
+THE JOB
+Execute S05, S01, S07, S02, S09, S06, S04 in that merge order, respecting depends_on.
+Real spend is INR 0. Nothing you do may send a message to a real person, put PII in
+a payload or chat, enable payments or ads, or commit a token.
+
+BEFORE EACH TASK
+  - Inspect sevaa-sales-os/state/ACTIVE_WORK.json. Do not duplicate an active claim.
+  - Claim the task there with your agent id, the task id, the branch and the allowed files.
+  - Branch: agent/<your-id>/<task-id>-<short-name>. Never force-push another agent's branch.
+  - Read only the files in the packet's allowed_files plus what they import.
+
+DURING EACH TASK
+  - Deterministic code wherever it can do the job; a model only where judgement is needed.
+  - Implement the packet's steps exactly. Where the packet says a key is forbidden, write the
+    test that asserts it is absent before writing the code.
+  - Run the packet's test_commands after every coherent unit. A failure is fixed immediately,
+    not noted for later. Two materially different failures on one task: stop, record both in
+    AION's NOTEBOOK.md as a [BUG] entry, move to the next unblocked task.
+  - Record spend as you go: aion usage <model> <class> --cost <INR> --task-id <ID>.
+
+AFTER EACH TASK
+  - Full suite on the repo(s) you touched, green.
+  - Independent QA pass: re-read your own diff as a hostile reviewer; for S01 and S02 run the
+    AION secret scanner (aion scan .) and confirm no token or PII path exists.
+  - Remove the claim; append one task_result to sevaa-sales-os/state/AGENT_EVENTS.jsonl and run
+    python scripts/agent_maintenance.py --write.
+  - Update the task's status in PROJECTS/sevaa-sales-os/AGENT_TASKS.json and MACHINE_HANDOFF.json.
+  - Merge only verified work. S02 is NOT merged until its Class A security review is recorded
+    in AION_ADVERSARIAL_REVIEW.md — build it, test it, open the PR, stop there.
+  - aion checkpoint --current-task <ID> --next-action '<the real next step>'
+
+KEEPING THE TWO REPOS IN SYNC
+  - The plan lives in AION under PROJECTS/sevaa-sales-os/. Claims live in SEVAA under state/.
+    S05 copies thin pointers into SEVAA so both roots describe the same system.
+  - Every integration contract (webhook payload keys, header names, env var names, token
+    names) is written once, in AION's aion_core/sevaa.py or bridges/whatsapp_bridge.py, and
+    the SEVAA side is tested against that exact shape. If you change a contract, change both
+    sides in the same task and say so in both commit messages.
+  - Configuration the PC needs: SEVAA_BASE_URL, SEVAA_AUTOMATION_TOKEN, SEVAA_FOUNDER_TOKEN,
+    SEVAA_NOTIFY_WEBHOOK_SECRET — all via `aion secrets set`, never in code or .env in Git.
+
+STOP AND REPORT (do not work around) WHEN
+  - a task needs real money, a credential not in the secret store, or a founder decision
+  - the founder gate T100 opens — then follow sevaa-sales-os/docs/spec/DEPLOYMENT.md exactly
+  - the queue is empty or everything left is blocked or awaiting review
+
+FINISH BY
+  Writing MACHINE_HANDOFF.json with: tasks done (with evidence), tasks open (with why),
+  spend, risks, and the exact next action. Then stop. Do not invent new tasks to fill time.

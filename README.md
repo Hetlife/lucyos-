@@ -53,7 +53,8 @@ Full setup, services, backups and recovery: `docs/OPERATIONS.md`.
 | `docs/` | Architecture, WhatsApp commands, operations |
 | `scripts/` | Install, services, nightly maintenance, pre-commit |
 | `systemd/` | User unit templates for the bridge and the nightly timer |
-| `tests/` | 86 tests covering every rule above |
+| `tests/` | 146 tests covering every rule above |
+| `PROJECTS/` | One folder per business. `sevaa-sales-os/` holds the plan, task packets and start prompt for the first revenue module |
 | `<AION_HOME>/` | The shared brain: state, memory, inbox, logs (created, not committed) |
 
 Default `AION_HOME` is `~/openclaw/shared_brain`. It is machine state and is
