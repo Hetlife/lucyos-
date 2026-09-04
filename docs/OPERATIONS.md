@@ -21,6 +21,26 @@ systemctl --user enable --now aion-bridge.service
 loginctl enable-linger "$USER"           # keep running when logged out
 ```
 
+## Private phone interface
+
+Set a separate interface token locally, install the service, and keep it bound
+to loopback:
+
+```bash
+aion secrets set AION_INTERFACE_TOKEN
+scripts/install_services.sh
+systemctl --user enable --now aion-interface.service
+systemctl --user status aion-interface.service
+```
+
+From a laptop, an SSH tunnel is enough: `ssh -N -L
+8787:127.0.0.1:8787 <ubuntu-pc>`, then open `http://127.0.0.1:8787`. For an
+iPhone and home-screen installation, expose the same loopback service through
+a private HTTPS tunnel such as Tailscale Serve. Never bind port 8787 to a public
+interface. Enter the token once in the page; **Forget this device** removes it.
+The page caches only its summary snapshot and queues captures while offline;
+the full report is never persisted in browser storage.
+
 The nightly timer runs `scripts/maintenance.sh` at 03:15: boot loop, notebook
 sync, backup with a real restore test, doc regeneration, secret scan and a deep
 health check, all inside one logged session.

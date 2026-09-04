@@ -1,0 +1,9 @@
+{
+  "name": "AION Control",
+  "short_name": "AION",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#f3f1eb",
+  "theme_color": "#17231c",
+  "icons": []
+}

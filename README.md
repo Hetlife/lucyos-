@@ -18,6 +18,7 @@ owner       authority           the only source of Tier-3 approval
 scripts/install.sh
 aion boot
 python3 bridges/whatsapp_bridge.py stdin     # type `status`, `tasks`, `help`
+python3 bridges/http_server.py               # private phone UI on 127.0.0.1:8787
 ```
 
 Full setup, services, backups and recovery: `docs/OPERATIONS.md`.
@@ -48,7 +49,7 @@ Full setup, services, backups and recovery: `docs/OPERATIONS.md`.
 |---|---|
 | `aion` | The CLI entry point |
 | `aion_core/` | The control layer — see its README for a module map |
-| `bridges/` | Transport adapters (stdin, file, webhook) |
+| `bridges/` | Transport adapters and authenticated phone HTTP server |
 | `directives/` | The owner's prompt bundle: the authority layer |
 | `docs/` | Architecture, WhatsApp commands, operations |
 | `scripts/` | Install, services, nightly maintenance, pre-commit |

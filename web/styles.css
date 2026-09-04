@@ -1,0 +1,40 @@
+:root {
+  color-scheme: light dark;
+  --bg: #f3f1eb; --card: #fffdf8; --ink: #17231c; --muted: #68736c;
+  --line: #d9ded8; --accent: #d6ff4b; --accent-ink: #17231c;
+  --danger: #a73b34; --shadow: 0 12px 32px rgba(23,35,28,.08);
+}
+@media (prefers-color-scheme: dark) {
+  :root { --bg:#101713; --card:#18221c; --ink:#edf5ee; --muted:#a7b3aa; --line:#314139; --accent:#c8f04a; --accent-ink:#101713; --danger:#ff8d82; --shadow:none; }
+}
+* { box-sizing: border-box; }
+html { font-family: ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif; background:var(--bg); color:var(--ink); }
+body { margin:0; min-height:100vh; padding:env(safe-area-inset-top) max(18px, env(safe-area-inset-right)) calc(88px + env(safe-area-inset-bottom)) max(18px, env(safe-area-inset-left)); }
+header { max-width:720px; margin:0 auto; min-height:88px; display:flex; align-items:center; justify-content:space-between; }
+h1,h2,p { margin-top:0; } h1 { font-size:1.45rem; margin-bottom:0; letter-spacing:-.03em; } h2 { font-size:1.15rem; margin-bottom:14px; }
+main { max-width:720px; margin:0 auto; }
+.eyebrow { margin:0 0 4px; font-size:.68rem; font-weight:800; letter-spacing:.16em; color:var(--muted); }
+.card { background:var(--card); border:1px solid var(--line); border-radius:22px; padding:20px; margin-bottom:14px; box-shadow:var(--shadow); overflow:hidden; }
+.hero { border-top:5px solid var(--accent); }
+pre { margin:0; white-space:pre-wrap; overflow-wrap:anywhere; font:500 .9rem/1.5 ui-monospace, SFMono-Regular, Menlo, monospace; }
+.connection { border-radius:999px; display:inline-block; padding:7px 11px; margin:0 0 14px; font-size:.76rem; font-weight:750; }
+.connection.online { background:#d8f3dc; color:#17552c; }.connection.offline { background:#efe3c4; color:#664d12; }
+button,input,textarea { font:inherit; }
+button { min-height:48px; border:0; border-radius:14px; padding:0 18px; font-weight:800; cursor:pointer; }
+.primary { width:100%; background:var(--accent); color:var(--accent-ink); }
+.icon { width:48px; padding:0; font-size:1.6rem; background:var(--card); color:var(--ink); border:1px solid var(--line); }
+.danger { color:var(--danger); background:transparent; border:1px solid currentColor; width:100%; }
+label { display:block; font-size:.82rem; font-weight:700; margin-bottom:7px; }
+input[type=password],textarea { width:100%; border:1px solid var(--line); border-radius:14px; background:var(--bg); color:var(--ink); padding:13px; margin-bottom:12px; font-size:16px; }
+textarea { resize:vertical; min-height:92px; }
+.chips { display:grid; grid-template-columns:repeat(4,1fr); gap:7px; margin-bottom:16px; }
+.chips input { position:absolute; opacity:0; }.chips span { display:block; text-align:center; border:1px solid var(--line); border-radius:999px; padding:9px 4px; font-size:.75rem; }
+.chips input:checked + span { background:var(--ink); color:var(--card); border-color:var(--ink); }
+.approval { border-top:1px solid var(--line); padding:14px 0; }.approval:first-child { border-top:0; padding-top:0; }
+.approval-actions { display:grid; grid-template-columns:1fr 1fr; gap:9px; margin-top:10px; }.approve { background:var(--accent); color:var(--accent-ink); }.deny { background:transparent; color:var(--danger); border:1px solid currentColor; }
+.muted,#as-of { color:var(--muted); font-size:.8rem; } summary { cursor:pointer; font-weight:750; margin-bottom:14px; }
+#toast { position:fixed; left:50%; bottom:calc(18px + env(safe-area-inset-bottom)); transform:translateX(-50%) translateY(120px); max-width:calc(100% - 36px); background:var(--ink); color:var(--card); padding:12px 18px; border-radius:999px; transition:.2s; z-index:10; text-align:center; font-size:.85rem; }
+#toast.show { transform:translateX(-50%) translateY(0); }
+[hidden] { display:none !important; }
+@media (min-width:650px) { #dashboard { display:grid; grid-template-columns:1fr 1fr; gap:14px; } #dashboard[hidden]{display:none}.card{margin:0}.hero,.capture,.settings{grid-column:1/-1} }
+@media (prefers-reduced-motion:reduce) { * { transition:none !important; } }

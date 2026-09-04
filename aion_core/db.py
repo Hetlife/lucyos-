@@ -7,6 +7,7 @@ truth; the markdown is the human view.
 from __future__ import annotations
 
 import sqlite3
+import threading
 from pathlib import Path
 
 from . import config
@@ -255,20 +256,21 @@ CREATE TRIGGER IF NOT EXISTS memory_au AFTER UPDATE ON memory BEGIN
 END;
 """
 
-_conn: sqlite3.Connection | None = None
-_conn_path: str | None = None
+_thread_state = threading.local()
 
 HAS_FTS = True
 
 
 def connect(path: Path | None = None) -> sqlite3.Connection:
-    """Process-wide connection, re-opened if AION_DB changes (tests)."""
-    global _conn, _conn_path, HAS_FTS
+    """One connection per thread, re-opened if AION_DB changes (tests)."""
+    global HAS_FTS
     target = str(Path(path or config.db_path()).expanduser())
-    if _conn is not None and _conn_path == target:
-        return _conn
-    if _conn is not None:
-        _conn.close()
+    conn = getattr(_thread_state, "conn", None)
+    conn_path = getattr(_thread_state, "conn_path", None)
+    if conn is not None and conn_path == target:
+        return conn
+    if conn is not None:
+        conn.close()
     Path(target).parent.mkdir(parents=True, exist_ok=True)
     conn = sqlite3.connect(target, timeout=15)
     conn.row_factory = sqlite3.Row
@@ -286,7 +288,7 @@ def connect(path: Path | None = None) -> sqlite3.Connection:
         (str(config.SCHEMA_VERSION),),
     )
     conn.commit()
-    _conn, _conn_path = conn, target
+    _thread_state.conn, _thread_state.conn_path = conn, target
     return conn
 
 
@@ -312,10 +314,10 @@ def _migrate(conn: sqlite3.Connection) -> None:
 
 
 def close() -> None:
-    global _conn, _conn_path
-    if _conn is not None:
-        _conn.close()
-    _conn, _conn_path = None, None
+    conn = getattr(_thread_state, "conn", None)
+    if conn is not None:
+        conn.close()
+    _thread_state.conn, _thread_state.conn_path = None, None
 
 
 def get_meta(key: str, default: str | None = None) -> str | None:

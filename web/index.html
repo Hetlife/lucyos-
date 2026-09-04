@@ -1,0 +1,93 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+  <meta name="theme-color" content="#17231c">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <title>AION Control</title>
+  <link rel="manifest" href="/manifest.json">
+  <link rel="stylesheet" href="/styles.css">
+  <script src="/app.js" defer></script>
+</head>
+<body>
+  <header>
+    <div><span class="eyebrow">LUCYOS</span><h1>AION Control</h1></div>
+    <button id="refresh" class="icon" aria-label="Refresh">↻</button>
+  </header>
+
+  <main>
+    <div id="connection" class="connection offline">Offline · showing saved state</div>
+
+    <section id="unlock" class="card auth">
+      <p class="eyebrow">PRIVATE CONNECTION</p>
+      <h2>Connect this device</h2>
+      <p>Enter the interface token stored on your AION PC. It stays on this device.</p>
+      <form id="token-form">
+        <label for="token">Interface token</label>
+        <input id="token" type="password" autocomplete="current-password" required>
+        <button type="submit" class="primary">Connect</button>
+      </form>
+    </section>
+
+    <div id="dashboard" hidden>
+      <section class="hero card">
+        <p class="eyebrow">MONEY FIRST</p>
+        <h2>Real position</h2>
+        <pre id="money">No saved figures yet.</pre>
+      </section>
+
+      <section class="card">
+        <p class="eyebrow">SYSTEM</p>
+        <h2>Right now</h2>
+        <pre id="status">No saved status yet.</pre>
+      </section>
+
+      <section class="card">
+        <p class="eyebrow">NEEDS YOU</p>
+        <h2>Decisions and blockers</h2>
+        <div id="approvals"></div>
+        <pre id="blockers">Nothing saved.</pre>
+      </section>
+
+      <section class="card">
+        <p class="eyebrow">WHAT CHANGED</p>
+        <h2>Since today began</h2>
+        <pre id="today">No saved activity yet.</pre>
+      </section>
+
+      <section class="card">
+        <p class="eyebrow">ACTION LIST</p>
+        <h2>Top work</h2>
+        <pre id="tasks">No saved tasks yet.</pre>
+      </section>
+
+      <section class="card capture">
+        <p class="eyebrow">TAP TO ADD</p>
+        <h2>Capture without losing it</h2>
+        <form id="capture-form">
+          <div class="chips" role="group" aria-label="Capture type">
+            <label><input type="radio" name="kind" value="IDEA" checked><span>Idea</span></label>
+            <label><input type="radio" name="kind" value="COMPANY"><span>Company</span></label>
+            <label><input type="radio" name="kind" value="PROJECT"><span>Project</span></label>
+            <label><input type="radio" name="kind" value="NOTE"><span>Note</span></label>
+          </div>
+          <label for="capture">What should AION remember?</label>
+          <textarea id="capture" rows="3" required maxlength="2000"></textarea>
+          <button class="primary" type="submit">Add to AION</button>
+        </form>
+        <p id="queue-count" class="muted"></p>
+      </section>
+
+      <section class="card settings">
+        <details>
+          <summary>Device and connection</summary>
+          <p id="as-of">No saved snapshot.</p>
+          <button id="forget" class="danger">Forget this device</button>
+        </details>
+      </section>
+    </div>
+  </main>
+  <div id="toast" role="status" aria-live="polite"></div>
+</body>
+</html>

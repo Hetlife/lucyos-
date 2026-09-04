@@ -1,0 +1,20 @@
+[Unit]
+Description=AION private phone interface
+Documentation=file://@REPO@/docs/OPERATIONS.md
+After=network-online.target
+
+[Service]
+Type=simple
+Environment=AION_HOME=@AION_HOME@
+WorkingDirectory=@REPO@
+ExecStart=/usr/bin/python3 @REPO@/bridges/http_server.py --host 127.0.0.1 --port 8787
+Restart=always
+RestartSec=5
+NoNewPrivileges=true
+PrivateTmp=true
+ProtectSystem=strict
+ProtectHome=read-only
+ReadWritePaths=@AION_HOME@
+
+[Install]
+WantedBy=default.target
