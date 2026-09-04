@@ -129,7 +129,7 @@ PHASE 1 — AION ONLINE ON MARK-2
              http://127.0.0.1:8765/api/status | head -c 400
         unset TOKEN
      REQUIRED RESULTS:
-        - the second command prints 401  (no token = refused)
+        - the second command prints 401  (an unauthenticated call is refused)
         - the third returns JSON containing "money", "feed" and "needs_you"
      If the unauthenticated call does NOT return 401, stop the bridge and report
      — the token check is not working and it must not run in that state.
