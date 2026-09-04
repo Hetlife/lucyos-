@@ -9,7 +9,10 @@ running system as of 2026-09-04, not aspirational.
 
 ## 1. What this is
 
-AION is a personal, always-on AI operations layer. It runs permanently on one
+LucyOS is a personal, always-on business partner, not a productivity tool.
+The owner brings ideas; LucyOS carries them through evidence, testing and
+execution — proposing, building, measuring, and telling the owner honestly
+when an idea is failing rather than looking busy. It runs permanently on one
 Linux server; the owner steers it from a phone. Three layers:
 
 ```
@@ -88,11 +91,14 @@ folder there, never restructuring the OS.
 
 ## 4. How this makes money — the real path, not a projection
 
-The mission is not "build a better AI tool." It is: **use this
-infrastructure to find, test and scale one real, legal source of income**,
-then repeat. The concrete first attempt is SEVAA Sales OS — a FastAPI+SQLite
-B2B sales system for a real business (SevaaConnect Solutions, architecture /
-interior design / modular construction).
+The mission is not "build a better AI tool." It is: **the owner and LucyOS
+work through a portfolio of real ideas together**, using this infrastructure
+to find, test and scale legal sources of income, killing weak ideas cheaply
+and doubling down only where evidence justifies it. SEVAA Sales OS is the
+first idea in that portfolio, not the only one it will ever run — a
+FastAPI+SQLite B2B sales system for a real business (SevaaConnect Solutions,
+architecture / interior design / modular construction). A second idea gets
+its own row in `PROJECTS/REGISTRY.md` and its own folder, the same way.
 
 The path, as designed, is not skippable:
 ```
