@@ -16,11 +16,14 @@ PACK = "FABLE"
 # Two phases, authorised separately by the owner.
 #   Phase 1 runs without the machine: pure reasoning, artifacts the owner saves.
 #   Phase 2 runs on the machine: apply, verify, execute.
+#   The owner's directive sets a HARD cumulative ceiling of INR 2,000. The split
+#   follows its guideline: ~35% architecture and decisions (phase 1), the rest —
+#   orchestration, debugging, review and an unspent reserve — on the machine.
 PHASES = {
-    "1": {"name": "offline planning", "cap_inr": 1000.0,
+    "1": {"name": "offline planning", "cap_inr": 700.0,
           "needs_machine": False,
           "output": "an experiment design, a milestone ladder and draft plan files"},
-    "2": {"name": "on-machine execution", "cap_inr": 3000.0,
+    "2": {"name": "on-machine execution", "cap_inr": 1300.0,
           "needs_machine": True,
           "output": "plans applied and verified, the queue executing on cheap models"},
 }
