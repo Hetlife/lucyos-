@@ -124,8 +124,10 @@ PHASE 1 — AION ONLINE ON MARK-2
 1.12 PROVE IT WORKS. "active" only proves a process started. Actually call it:
         curl -s http://127.0.0.1:8765/ | head
         curl -s -o /dev/null -w "%{http_code}\n" http://127.0.0.1:8765/api/status
-        curl -s -H "Authorization: Bearer <the PHONE_API_TOKEN>" \
+        read -rs TOKEN        # paste the phone token; it will not echo or hit history
+        curl -s -H "Authorization: Bearer $TOKEN" \
              http://127.0.0.1:8765/api/status | head -c 400
+        unset TOKEN
      REQUIRED RESULTS:
         - the second command prints 401  (no token = refused)
         - the third returns JSON containing "money", "feed" and "needs_you"
