@@ -61,6 +61,22 @@ only reported healthy after it has actually been restored. The last 14 are kept.
 To restore for real: stop the bridge, extract the archive over the shared brain,
 run `aion health --deep`.
 
+`aion backup` deliberately never touches `private_state/` — a copy of your
+secrets never enters an archive that might land on a shared drive. That means
+a disk failure costs every credential unless you separately back up secrets.
+For that:
+
+```bash
+scripts/backup_secrets.sh                # prompts for a passphrase, encrypts, restore-tests
+scripts/backup_secrets.sh --verify-only   # re-verify the latest one
+```
+
+GPG symmetric encryption (AES256) — no cloud credential, no key pair. Not run
+by the nightly timer on purpose: the passphrase must live somewhere other than
+this disk (your head, a password manager), or an off-machine copy is
+worthless against the exact failure it's meant to survive. Run it yourself,
+periodically, and copy the resulting `.gpg` file off this machine.
+
 ## Recovery after a crash or a model switch
 
 Run `aion boot`. It verifies the brain, ingests the sync inbox, applies notebook
