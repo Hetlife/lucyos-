@@ -73,3 +73,93 @@ def validate_event(event: dict) -> list[str]:
     if summary is not None and (not isinstance(summary, str) or len(summary) > REQUIREMENT_SUMMARY_MAX):
         problems.append(f"requirement_summary must be a string of at most {REQUIREMENT_SUMMARY_MAX} chars")
     return problems
+
+
+# --- S07: SEVAA figures inside AION status/today ------------------------
+#
+# Uses the automation token only (never the founder token — that is reserved
+# for S02's approval decisions).  Every field surfaced here is a count from
+# /api/v2/internal/daily-brief, which itself carries no PII (checked against
+# its actual FastAPI handler in the SEVAA repo).  Nothing from /api/v2/approvals
+# or /api/v2/followups — which DO include lead_name/lead_company — is ever
+# read here or forwarded into a report; S02 (a separate task) is the only
+# place those individual objects are touched, and even there only an
+# approval's action text, never the lead identity.
+
+import json
+import time
+import urllib.error
+import urllib.request
+
+from . import bootstrap
+
+CACHE_SECONDS = 60
+_cache: dict = {"at": 0.0, "brief": None, "error": None}
+
+
+class SevaaError(Exception):
+    pass
+
+
+def base_url() -> str:
+    return bootstrap.get_secret(BASE_URL_ENV) or os.environ.get(BASE_URL_ENV, "").strip() \
+        or "http://127.0.0.1:8000"
+
+
+def automation_token() -> str | None:
+    return bootstrap.get_secret(AUTOMATION_TOKEN_NAME) or os.environ.get(AUTOMATION_TOKEN_NAME) or None
+
+
+def founder_token() -> str | None:
+    return bootstrap.get_secret(FOUNDER_TOKEN_NAME) or os.environ.get(FOUNDER_TOKEN_NAME) or None
+
+
+def _get(path: str, token: str, timeout: float = 5.0) -> dict:
+    opener = urllib.request.build_opener(urllib.request.ProxyHandler({}))
+    req = urllib.request.Request(
+        base_url().rstrip("/") + path,
+        headers={"Authorization": f"Bearer {token}", "X-Actor": "aion-automation"},
+        method="GET",
+    )
+    with opener.open(req, timeout=timeout) as r:
+        return json.loads(r.read().decode("utf-8"))
+
+
+def daily_brief(*, force: bool = False) -> dict:
+    """Cached counts from SEVAA.  Never raises; failure is a normal, visible state."""
+    now = time.monotonic()
+    if not force and _cache["brief"] is not None and (now - _cache["at"]) < CACHE_SECONDS:
+        return _cache["brief"]
+    token = automation_token()
+    if not token:
+        result = {"ok": False, "error": f"{AUTOMATION_TOKEN_NAME} not configured"}
+        _cache.update(at=now, brief=result, error=result["error"])
+        return result
+    try:
+        data = _get("/api/v2/internal/daily-brief", token)
+        result = {
+            "ok": True,
+            "new_leads": data.get("new_leads", 0),
+            "proposals_awaiting_approval": data.get("proposals_awaiting_approval", 0),
+            "overdue_followups": data.get("overdue_followups", 0),
+            "fetched_at": now,
+        }
+        _cache.update(at=now, brief=result, error=None)
+        return result
+    except (urllib.error.URLError, urllib.error.HTTPError, OSError, ValueError, json.JSONDecodeError) as exc:
+        result = {"ok": False, "error": exc.__class__.__name__}
+        # Keep the timestamp of the last successful fetch out of this error
+        # result on purpose: `status` must say "unreachable", not stale numbers.
+        _cache.update(at=now, brief=result, error=result["error"])
+        return result
+
+
+def status_line() -> str:
+    """One line for aion status/today.  Never silently omits an outage."""
+    brief = daily_brief()
+    if not brief.get("ok"):
+        since = time.strftime("%H:%M:%S", time.gmtime())
+        return f"SEVAA: unreachable ({brief.get('error', 'unknown error')})"
+    return (f"SEVAA: {brief['new_leads']} new enquiries, "
+            f"{brief['proposals_awaiting_approval']} approvals pending, "
+            f"{brief['overdue_followups']} follow-ups overdue")
