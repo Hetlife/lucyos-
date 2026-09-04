@@ -144,7 +144,7 @@
       "success": "card appears; APPROVE changes SEVAA state; replay hits HTTP once; non-2xx keeps PENDING; token absent from logs/replies",
       "failure": "founder token in any log/reply; a forged inbound message reaches the decision path; second APPROVE re-calls SEVAA",
       "security_review_required_before_merge": true,
-      "status": "READY_AFTER_S01"
+      "status": "DONE"
     },
     {
       "id": "S09",

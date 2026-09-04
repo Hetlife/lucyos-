@@ -89,6 +89,7 @@ def validate_event(event: dict) -> list[str]:
 import json
 import time
 import urllib.error
+import urllib.parse
 import urllib.request
 
 CACHE_SECONDS = 60
@@ -104,6 +105,26 @@ def base_url() -> str:
         or "http://127.0.0.1:8000"
 
 
+_LOOPBACK_HOSTS = frozenset({"127.0.0.1", "localhost", "::1"})
+
+
+def _require_safe_transport(url: str) -> None:
+    """Refuse to send a bearer token over plain HTTP to anything but loopback.
+
+    Every call in this module that carries a token goes through this first.
+    Loopback stays plain HTTP for local development; anything else must be
+    HTTPS, because SEVAA_BASE_URL is exactly the kind of setting a founder
+    could point at a real deployment without noticing the scheme.
+    """
+    parsed = urllib.parse.urlsplit(url)
+    if parsed.hostname in _LOOPBACK_HOSTS:
+        return
+    if parsed.scheme != "https":
+        raise SevaaError(
+            f"refusing to send a token to {parsed.scheme}://{parsed.hostname} -- "
+            f"set {BASE_URL_ENV} to an https:// URL (loopback is the only http:// exception)")
+
+
 def automation_token() -> str | None:
     return bootstrap.get_secret(AUTOMATION_TOKEN_NAME) or os.environ.get(AUTOMATION_TOKEN_NAME) or None
 
@@ -113,9 +134,11 @@ def founder_token() -> str | None:
 
 
 def _get(path: str, token: str, timeout: float = 5.0) -> dict:
+    url = base_url().rstrip("/") + path
+    _require_safe_transport(url)
     opener = urllib.request.build_opener(urllib.request.ProxyHandler({}))
     req = urllib.request.Request(
-        base_url().rstrip("/") + path,
+        url,
         headers={"Authorization": f"Bearer {token}", "X-Actor": "aion-automation"},
         method="GET",
     )
@@ -144,8 +167,8 @@ def daily_brief(*, force: bool = False) -> dict:
         }
         _cache.update(at=now, brief=result, error=None)
         return result
-    except (urllib.error.URLError, urllib.error.HTTPError, OSError, ValueError, json.JSONDecodeError) as exc:
-        result = {"ok": False, "error": exc.__class__.__name__}
+    except (SevaaError, urllib.error.URLError, urllib.error.HTTPError, OSError, ValueError, json.JSONDecodeError) as exc:
+        result = {"ok": False, "error": str(exc) if isinstance(exc, SevaaError) else exc.__class__.__name__}
         # Keep the timestamp of the last successful fetch out of this error
         # result on purpose: `status` must say "unreachable", not stale numbers.
         _cache.update(at=now, brief=result, error=result["error"])
@@ -219,3 +242,45 @@ def reconcile_payments() -> dict:
         )
         recorded.append({"link_id": link_id, "amount_inr": amount})
     return {"ok": True, "recorded": recorded}
+
+
+# --- S02: founder approvals from WhatsApp --------------------------------
+#
+# Two distinct tokens, two distinct powers. list_pending_approvals() reads
+# with the automation token (read-only). decide_approval() is the ONLY place
+# in AION that reads the founder token, and it is read fresh on every call --
+# never cached, never logged, never placed in a return value that could reach
+# a report. The founder token grants the one truly consequential action in
+# this whole integration (approve/reject real money), so it gets the
+# narrowest possible surface: one function, one call, token read and used in
+# the same expression.
+
+EXTERNAL_REF_PREFIX = "sevaa:approval:"
+
+
+def list_pending_approvals() -> list[dict]:
+    token = automation_token()
+    if not token:
+        raise SevaaError(f"{AUTOMATION_TOKEN_NAME} not configured")
+    return _get("/api/v2/approvals?status=pending", token)
+
+
+def decide_approval(sevaa_approval_id: int, decision: str, note: str = "") -> dict:
+    """decision must be 'approved' or 'rejected' -- SEVAA's own literal values."""
+    if decision not in ("approved", "rejected"):
+        raise SevaaError(f"invalid decision {decision!r}; must be 'approved' or 'rejected'")
+    token = founder_token()
+    if not token:
+        raise SevaaError(f"{FOUNDER_TOKEN_NAME} not configured")
+    url = base_url().rstrip("/") + f"/api/v2/approvals/{sevaa_approval_id}/decision"
+    _require_safe_transport(url)
+    body = json.dumps({"decision": decision, "note": note[:1000] if note else None}).encode()
+    opener = urllib.request.build_opener(urllib.request.ProxyHandler({}))
+    req = urllib.request.Request(
+        url,
+        data=body, method="POST",
+        headers={"Authorization": f"Bearer {token}", "X-Actor": "founder-via-whatsapp",
+                 "Content-Type": "application/json"},
+    )
+    with opener.open(req, timeout=10) as r:
+        return json.loads(r.read().decode("utf-8"))

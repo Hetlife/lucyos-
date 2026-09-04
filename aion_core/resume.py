@@ -155,6 +155,10 @@ def boot() -> dict:
         steps.append({"step": "sevaa_reconcile",
                       "detail": (f"{len(recon['recorded'])} payment(s) recorded" if recon["ok"]
                                 else f"unreachable: {recon['error']}")})
+        synced = _sync_sevaa_approvals()
+        steps.append({"step": "sevaa_approvals",
+                      "detail": (f"{synced['created']} new card(s)" if synced["ok"]
+                                else f"unreachable: {synced['error']}")})
 
     prev = load()
     nxt = tasks.next_task()
@@ -167,6 +171,43 @@ def boot() -> dict:
     )
     return {"steps": steps, "resume": state, "health": health,
             "previous_next_action": prev.get("next_action")}
+
+
+def _sync_sevaa_approvals() -> dict:
+    """A pending SEVAA proposal approval becomes a WhatsApp card exactly once.
+
+    Only scope_summary and the amount cross into the card text; lead_name and
+    lead_company (present in the SEVAA response) are read here and discarded --
+    they never reach `approvals.create`.
+    """
+    import json as _json
+    import urllib.error as _urlerr
+    try:
+        rows = sevaa.list_pending_approvals()
+    except sevaa.SevaaError as exc:
+        return {"ok": False, "error": str(exc), "created": 0}
+    except (_urlerr.URLError, _urlerr.HTTPError, OSError, ValueError, _json.JSONDecodeError) as exc:
+        return {"ok": False, "error": exc.__class__.__name__, "created": 0}
+    created = 0
+    for row in rows:
+        ref = f"{sevaa.EXTERNAL_REF_PREFIX}{row['id']}"
+        if approvals.get_by_external_ref(ref) is not None:
+            continue
+        scope = (row.get("scope_summary") or "proposal")[:200]
+        amount = row.get("amount")
+        approvals.create(
+            f"Approve SEVAA proposal — {scope}",
+            why="a founder-gated proposal is awaiting a decision in SEVAA",
+            cost=f"₹{amount}" if amount is not None else "see SEVAA console",
+            max_downside="proposal terms as drafted in SEVAA; no payment is taken by approving",
+            reversibility="the SEVAA decision can be revisited in the founder console",
+            prepared="the proposal is already drafted and ready in SEVAA",
+            resumes="the buyer-facing proposal moves forward in SEVAA",
+            recommendation="REVIEW",
+            external_ref=ref,
+        )
+        created += 1
+    return {"ok": True, "created": created}
 
 
 def identify_bottleneck(health, pending_approvals, open_errs, next_ready) -> str:

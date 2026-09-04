@@ -51,3 +51,55 @@ S09: recorded here so the founder's own gate — never put test keys in a
 production deployment once `/quote` is public — is the control, and so a
 future SEVAA-side task can surface the key mode explicitly rather than relying
 on operational discipline alone.
+
+## S02 security review — Class A, recorded before merge
+
+Reviewed: `aion_core/sevaa.py` (decide_approval, list_pending_approvals,
+_require_safe_transport), `aion_core/approvals.py` (decide()'s external_ref
+branch), `aion_core/resume.py` (_sync_sevaa_approvals), `aion_core/router.py`
+(the PENDING-with-error reply path).
+
+**Finding, fixed:** nothing stopped `SEVAA_BASE_URL` from being plain HTTP.
+Since the founder token is the one credential in this whole integration that
+can move a real proposal to approved, sending it in cleartext to a
+non-loopback host would be the worst possible place for a gap. Added
+`_require_safe_transport`: loopback keeps working over HTTP for local
+development, anything else must be `https://` or the call refuses before a
+socket opens. Applied to every call that carries a token (`_get`,
+`decide_approval`). Tests: loopback HTTP allowed, non-loopback HTTP refused,
+non-loopback HTTPS allowed, `daily_brief` surfaces the refusal as an
+unreachable state rather than crashing.
+
+**Checked, no change needed:**
+- The founder token is read fresh inside `decide_approval` on every call —
+  never cached, never logged, never placed in a value that reaches a report
+  or the event log. Verified by a test that greps the entire event table
+  after an approve/deny round trip.
+- A second `APPROVE` on an already-decided card never reaches the network:
+  `decide()` returns early on non-PENDING status before the external_ref
+  branch runs. Verified by a 3x-replay test asserting exactly one HTTP call.
+- A non-2xx or unreachable response leaves the card `PENDING`, never
+  `APPROVED`— local state changes only after the remote call returns
+  successfully. Verified with a mocked 409 and a mocked connection refusal;
+  the second test also confirms a later retry can still succeed.
+- SEVAA's own endpoint (`backend/phase2.py::decide_approval`) already
+  rejects a decision on a non-pending approval with 409, so a race between
+  two deciders is a server-side guard, not something AION needs to
+  duplicate.
+- `_sync_sevaa_approvals` reads `lead_name`/`lead_company` off the SEVAA
+  response (present because `list_approvals`'s join includes them, a
+  pre-existing SEVAA characteristic) and discards both — only
+  `scope_summary` and `amount` reach the card. Verified against the card's
+  actual `action`/`why` text with a deliberately identifying lead name in
+  the mocked response.
+- The sender-identity boundary for every WhatsApp command, S02's approve/deny
+  included, is the `WHATSAPP_BRIDGE_TOKEN` checked once at the transport
+  layer in `bridges/whatsapp_bridge.py`; there is no secondary per-message
+  sender-number allowlist. This is existing architecture, not something S02
+  introduces or weakens — pause, resume, safe mode and every other
+  consequential command rely on the same boundary. Noted here rather than
+  silently accepted: if the founder wants a second factor (e.g. only a
+  specific WhatsApp number may approve), that is a new task, not a defect
+  in this one.
+
+**Verdict:** safe to merge. 184 tests pass; `aion scan .` clean.

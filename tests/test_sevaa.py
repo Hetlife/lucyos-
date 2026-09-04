@@ -255,3 +255,24 @@ class TestPaymentReconciliation(AionTest):
             urllib.request.build_opener = original
         step = next(s for s in out["steps"] if s["step"] == "sevaa_reconcile")
         self.assertIn("1 payment(s) recorded", step["detail"])
+
+
+class TestTransportSafety(AionTest):
+    def test_loopback_http_is_allowed(self):
+        sevaa._require_safe_transport("http://127.0.0.1:8000/api/v2/revenue")
+        sevaa._require_safe_transport("http://localhost:8000/x")
+
+    def test_non_loopback_http_is_refused(self):
+        with self.assertRaises(sevaa.SevaaError):
+            sevaa._require_safe_transport("http://sevaa.example.com/api/v2/revenue")
+
+    def test_non_loopback_https_is_allowed(self):
+        sevaa._require_safe_transport("https://sevaa.example.com/api/v2/revenue")
+
+    def test_daily_brief_refuses_plain_http_production_url(self):
+        bootstrap.set_secret(sevaa.AUTOMATION_TOKEN_NAME, TOKEN)
+        bootstrap.set_secret(sevaa.BASE_URL_ENV, "http://sevaa-prod.example.com")
+        sevaa._cache.update(at=0.0, brief=None, error=None)
+        brief = sevaa.daily_brief(force=True)
+        self.assertFalse(brief["ok"])
+        self.assertIn("refusing", brief["error"].lower() if isinstance(brief["error"], str) else "")

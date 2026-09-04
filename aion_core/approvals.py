@@ -3,15 +3,21 @@
 A pending approval holds exactly one action.  Every other task keeps running:
 `create()` marks only the linked task NEEDS_APPROVAL and never touches the
 rest of the queue.
+
+S02: an approval may carry `external_ref` pointing at a decision in an
+external system (currently only SEVAA proposal approvals, `sevaa:approval:<id>`).
+For those, `decide()` calls out to that system BEFORE changing local state, so
+a failed remote call never leaves AION claiming an approval succeeded when it
+did not.
 """
 from __future__ import annotations
 
-from . import db, security, tasks, util
+from . import db, security, sevaa, tasks, util
 
 PENDING, APPROVED, DENIED, EXPIRED = "PENDING", "APPROVED", "DENIED", "EXPIRED"
 
 FIELDS = ("project action why owner_action cost max_downside expected_benefit "
-          "reversibility prepared resumes recommendation task_id").split()
+          "reversibility prepared resumes recommendation task_id external_ref").split()
 
 
 class ApprovalError(Exception):
@@ -56,6 +62,11 @@ def pending() -> list:
         "SELECT * FROM approvals WHERE status=? ORDER BY created_at", (PENDING,)).fetchall()
 
 
+def get_by_external_ref(ref: str):
+    return db.connect().execute(
+        "SELECT * FROM approvals WHERE external_ref=?", (ref,)).fetchone()
+
+
 def decide(approval_id: str, decision: str, by: str = "owner") -> dict:
     """Apply an owner decision.  Idempotent: a repeat reply is not re-applied."""
     approval_id = approval_id.upper()
@@ -68,6 +79,25 @@ def decide(approval_id: str, decision: str, by: str = "owner") -> dict:
     if row["status"] != PENDING:
         return {"approval_id": approval_id, "status": row["status"], "changed": False,
                 "task_id": row["task_id"]}
+
+    external_ref = row["external_ref"] if "external_ref" in row.keys() else None
+    if external_ref and external_ref.startswith(sevaa.EXTERNAL_REF_PREFIX):
+        try:
+            sevaa_id = int(external_ref[len(sevaa.EXTERNAL_REF_PREFIX):])
+            remote_decision = "approved" if decision == APPROVED else "rejected"
+            response = sevaa.decide_approval(sevaa_id, remote_decision,
+                                             note=f"decided via WhatsApp by {by}")
+        except (sevaa.SevaaError, ValueError, OSError) as exc:
+            # The remote call is the only thing that makes this decision real.
+            # If it failed, local state must not move -- the card stays PENDING
+            # and the owner sees the error, not a false "approved".
+            db.log_event(by, "approval.remote_failed", approval_id, str(exc)[:200])
+            return {"approval_id": approval_id, "status": PENDING, "changed": False,
+                    "task_id": row["task_id"], "error": str(exc)}
+        db.log_event(by, "approval.remote_confirmed", approval_id,
+                     f"sevaa approval #{sevaa_id} -> {remote_decision}; "
+                     f"response status={response.get('status', 'unknown')}")
+
     conn = db.connect()
     conn.execute("UPDATE approvals SET status=?, decided_at=?, decided_by=? WHERE approval_id=?",
                  (decision, util.now(), by, approval_id))

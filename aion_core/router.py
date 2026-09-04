@@ -129,6 +129,10 @@ def _decide(approval_id: str, decision: str, sender: str) -> str:
                 f"{', '.join(r['approval_id'] for r in pend) or 'nothing'}.")
     verb = "approved" if decision == "APPROVED" else "denied"
     if not result["changed"]:
+        if result.get("error"):
+            return (f"{result['approval_id']} is still PENDING — the remote system did not "
+                    f"confirm the decision ({result['error']}). Nothing changed locally; "
+                    f"try again once the connection is back.")
         return (f"{result['approval_id']} was already {result['status'].lower()} — "
                 f"nothing re-applied (duplicate reply is safe).")
     row = approvals.get(result["approval_id"])

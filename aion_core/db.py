@@ -303,6 +303,11 @@ _ADDED_COLUMNS = {
         ("validation_command", "TEXT NOT NULL DEFAULT ''"),
         ("plan_id", "TEXT"),
     ],
+    "approvals": [
+        # S02: links an AION card to a pending decision in an external system
+        # (SEVAA proposal approvals). NULL for every ordinary AION-native approval.
+        ("external_ref", "TEXT"),
+    ],
 }
 
 
