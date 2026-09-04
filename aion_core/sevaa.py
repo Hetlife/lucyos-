@@ -17,7 +17,7 @@ import hashlib
 import hmac
 import os
 
-from . import bootstrap
+from . import bootstrap, db
 
 # --- wire contract ---------------------------------------------------------
 SIGNATURE_HEADER = "X-Sevaa-Signature"          # value: "sha256=<hex hmac>"
@@ -91,8 +91,6 @@ import time
 import urllib.error
 import urllib.request
 
-from . import bootstrap
-
 CACHE_SECONDS = 60
 _cache: dict = {"at": 0.0, "brief": None, "error": None}
 
@@ -163,3 +161,61 @@ def status_line() -> str:
     return (f"SEVAA: {brief['new_leads']} new enquiries, "
             f"{brief['proposals_awaiting_approval']} approvals pending, "
             f"{brief['overdue_followups']} follow-ups overdue")
+
+
+# --- S09: verified SEVAA payments -> AION M0 -----------------------------
+#
+# Reads GET /api/v2/payment-links with the automation token. That response
+# includes lead_name/lead_company (a pre-existing SEVAA characteristic, not
+# introduced here); this function reads only id, provider, provider_payment_id,
+# provider_payment_link_id, paid_amount and status, and never forwards the
+# lead fields into AION state -- record_money's description/evidence carry
+# only the payment reference, never a name or company.
+#
+# KNOWN GAP (recorded, not hidden): SEVAA's payment-links API does not
+# currently expose whether the configured Razorpay credentials are test or
+# live. This function marks a link ACTUAL revenue on status=='paid' alone,
+# because that is the only verified signal SEVAA exposes today -- 'paid' is
+# already provider-reconciled inside SEVAA's own webhook/refresh path
+# (backend/revenue.py::_mark_paid), not a client-side claim. If the founder
+# ever runs a Razorpay TEST key against a production-reachable deployment, a
+# test payment would flip to 'paid' and be indistinguishable here from a real
+# one. See AION_ADVERSARIAL_REVIEW.md finding F8.
+
+def list_payment_links() -> list[dict]:
+    token = automation_token()
+    if not token:
+        raise SevaaError(f"{AUTOMATION_TOKEN_NAME} not configured")
+    return _get("/api/v2/payment-links", token)
+
+
+def reconcile_payments() -> dict:
+    """Record newly verified-paid links as ACTUAL revenue.  Idempotent per link."""
+    from . import metrics  # local import: avoids a cycle at module load time
+
+    try:
+        links = list_payment_links()
+    except (SevaaError, urllib.error.URLError, urllib.error.HTTPError, OSError,
+            ValueError, json.JSONDecodeError) as exc:
+        return {"ok": False, "error": exc.__class__.__name__, "recorded": []}
+
+    recorded = []
+    for link in links:
+        if link.get("status") != "paid":
+            continue
+        amount = int(link.get("paid_amount") or 0)
+        if amount <= 0:
+            continue
+        link_id = link.get("id")
+        key = f"sevaa:payment_link:{link_id}"
+        if db.seen(key, "sevaa_payment"):
+            continue
+        provider = link.get("provider", "unknown")
+        provider_payment_id = link.get("provider_payment_id") or link.get("provider_payment_link_id") or "n/a"
+        metrics.record_money(
+            "revenue", amount, stage="ACTUAL", project="sevaa-sales-os",
+            description=f"SEVAA payment link #{link_id} ({provider})",
+            evidence=f"sevaa:payment_link:{link_id}:{provider}:{provider_payment_id}",
+        )
+        recorded.append({"link_id": link_id, "amount_inr": amount})
+    return {"ok": True, "recorded": recorded}

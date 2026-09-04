@@ -34,3 +34,20 @@ T102's acceptance says a real lead must be "source-attributed", but nothing show
 
 ## Overbuild traps to refuse
 Postgres (T300), multi-tenant (T202), AI provider layer (T203), paid ads, Kubernetes. All deferred by the SEVAA queue's own selection rule; the review agrees.
+
+## F8 — No test/live signal on a payment link. **HIGH (found while building S09)**
+`GET /api/v2/payment-links` returns `status`, `provider`, `provider_payment_id`
+and amounts, but nothing indicating whether the configured Razorpay
+credentials are test-mode or live-mode. `status=='paid'` is already
+provider-reconciled inside SEVAA (`backend/revenue.py::_mark_paid` only flips
+to `paid` after querying Razorpay), so S09 treats it as the verified signal —
+that part is sound. The gap is narrower than it first looks: **if the founder
+ever configures a Razorpay TEST key against a production-reachable
+deployment**, a test payment would reach `paid` and AION would record it as
+ACTUAL revenue and could flip M0. Until a real key is configured this cannot
+happen (`get_razorpay_config()` returns `None` with no credentials, and no
+paid status is reachable without a working provider config). **Not blocking**
+S09: recorded here so the founder's own gate — never put test keys in a
+production deployment once `/quote` is public — is the control, and so a
+future SEVAA-side task can surface the key mode explicitly rather than relying
+on operational discipline alone.

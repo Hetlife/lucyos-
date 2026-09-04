@@ -115,7 +115,7 @@
       ],
       "success": "status shows 'SEVAA: n enquiries today, m approvals pending, k overdue' or 'SEVAA: unreachable since <t>'",
       "failure": "token appears in any reply or log; SEVAA outage silently omits the line",
-      "status": "IMPLEMENT_NOW"
+      "status": "DONE"
     },
     {
       "id": "S02",
@@ -166,7 +166,7 @@
       ],
       "success": "aion milestones flips M0 only on a real payment; replay produces one row",
       "failure": "sandbox or test payment recorded as ACTUAL",
-      "status": "IMPLEMENT_NOW"
+      "status": "DONE"
     },
     {
       "id": "S06",

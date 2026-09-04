@@ -6,7 +6,7 @@ context or a model switch never loses the thread.
 from __future__ import annotations
 
 from . import (approvals, config, db, errors, governor, metrics, notebook, packets,
-               sessions, tasks, util)
+               sessions, sevaa, tasks, util)
 
 KEYS = ["objective", "current_state", "current_task", "last_verified_success",
         "last_failure", "bottleneck", "next_action", "files_to_read"]
@@ -149,6 +149,12 @@ def boot() -> dict:
     shift = governor.enforce()
     steps.append({"step": "budget", "detail": budget["governor"]
                   + (f" — {shift['message']}" if shift["changed"] else "")})
+
+    if sevaa.automation_token():
+        recon = sevaa.reconcile_payments()
+        steps.append({"step": "sevaa_reconcile",
+                      "detail": (f"{len(recon['recorded'])} payment(s) recorded" if recon["ok"]
+                                else f"unreachable: {recon['error']}")})
 
     prev = load()
     nxt = tasks.next_task()
