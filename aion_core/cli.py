@@ -50,6 +50,7 @@ def _main(argv=None) -> int:
     sub.add_parser("fable-ready", help="run the Fable readiness test")
     fp = sub.add_parser("fable-phase", help="show or set the funding phase")
     fp.add_argument("phase", nargs="?", choices=["1", "2"])
+    fp.add_argument("--cap", type=float, help="lower this phase's ceiling (INR)")
     sub.add_parser("seed", help="seed the opening objective, decisions and task queue")
     bk = sub.add_parser("backup", help="create a backup and restore-test it")
     bk.add_argument("--verify-only", action="store_true")
@@ -251,6 +252,8 @@ def _main(argv=None) -> int:
     elif cmd == "fable-ready":
         _print(fable.readiness_report())
     elif cmd == "fable-phase":
+        if args.phase and args.cap is not None:
+            fable.set_phase_cap(args.phase, args.cap)
         _print(fable.set_phase(args.phase) if args.phase else fable.budget())
     elif cmd == "seed":
         result = seed.apply()

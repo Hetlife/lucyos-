@@ -21,6 +21,7 @@ python3 bridges/whatsapp_bridge.py stdin     # type `status`, `tasks`, `help`
 ```
 
 Full setup, services, backups and recovery: `docs/OPERATIONS.md`.
+Running it on a public cloud host instead of hardware: `docs/SERVER_DEPLOYMENT.md`.
 
 ## What it does
 
@@ -48,12 +49,13 @@ Full setup, services, backups and recovery: `docs/OPERATIONS.md`.
 |---|---|
 | `aion` | The CLI entry point |
 | `aion_core/` | The control layer — see its README for a module map |
-| `bridges/` | Transport adapters (stdin, file, webhook) |
+| `bridges/` | Transport adapters (stdin, file, webhook) + the phone interface at `bridges/web/phone.html` |
 | `directives/` | The owner's prompt bundle: the authority layer |
 | `docs/` | Architecture, WhatsApp commands, operations |
 | `scripts/` | Install, services, nightly maintenance, pre-commit |
 | `systemd/` | User unit templates for the bridge and the nightly timer |
-| `tests/` | 86 tests covering every rule above |
+| `tests/` | 146 tests covering every rule above |
+| `PROJECTS/` | One folder per business. `sevaa-sales-os/` holds the plan, task packets and start prompt for the first revenue module |
 | `<AION_HOME>/` | The shared brain: state, memory, inbox, logs (created, not committed) |
 
 Default `AION_HOME` is `~/openclaw/shared_brain`. It is machine state and is

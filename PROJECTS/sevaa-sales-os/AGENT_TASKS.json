@@ -1,0 +1,223 @@
+{
+  "schema_version": 1,
+  "generated_at": "2026-09-03T21:40:00+00:00",
+  "project": "sevaa-sales-os",
+  "plan_source": "Hetlife/lucyos-:PROJECTS/sevaa-sales-os/AION_TASK_QUEUE.md",
+  "claims_authority": "het-life/sevaaconnect-realestate:sevaa-sales-os/state/ACTIVE_WORK.json",
+  "branch_pattern": "agent/<agent-id>/<task-id>-<short-name>",
+  "merge_order": [
+    "S05",
+    "S01",
+    "S07",
+    "S02",
+    "S09",
+    "S06",
+    "S04"
+  ],
+  "real_spend_inr": 0,
+  "tasks": [
+    {
+      "id": "S05",
+      "priority": 1,
+      "model_class": "C",
+      "owner_role": "docs",
+      "repo": "sevaa",
+      "objective": "Thin pointer files at the SEVAA repo root so any agent finds authoritative docs in one read",
+      "why": "F7 \u2014 directive read-first files are missing",
+      "depends_on": [],
+      "allowed_files": [
+        "START_HERE_FOR_AI.md",
+        "AION_CONSTITUTION.md",
+        "AION_AGENT_ARCHITECTURE.md",
+        "AION_STATE.md",
+        "AION_TASK_QUEUE.md",
+        "AION_ADVERSARIAL_REVIEW.md",
+        "MULTI_AGENT_PROTOCOL.md",
+        "AGENT_TASKS.json",
+        "MACHINE_HANDOFF.json"
+      ],
+      "test_commands": [
+        "cd sevaa-sales-os && python scripts/agent_maintenance.py --check",
+        "cd sevaa-sales-os && python -m pytest -q"
+      ],
+      "success": "36 passed; check OK; only new root files in diff",
+      "failure": "any existing file modified or >15 lines of duplicated prose",
+      "status": "DONE"
+    },
+    {
+      "id": "S01",
+      "priority": 1,
+      "model_class": "B",
+      "owner_role": "integration",
+      "repo": "both",
+      "objective": "HMAC-signed enquiry.created webhook from SEVAA to the AION bridge, PII-free, idempotent, disabled by default",
+      "why": "F1 critical: a real enquiry is currently stored silently; F4: no PII in chat",
+      "depends_on": [
+        "S05"
+      ],
+      "allowed_files": {
+        "sevaa": [
+          "backend/public_enquiry.py",
+          "backend/notify.py",
+          "backend/runtime.py",
+          ".env.example",
+          "tests/test_notify.py",
+          "docs/spec/API_SPEC.md"
+        ],
+        "aion": [
+          "bridges/whatsapp_bridge.py",
+          "aion_core/intake.py",
+          "tests/test_bridge.py"
+        ]
+      },
+      "payload_allowed_keys": [
+        "type",
+        "lead_id",
+        "score",
+        "stage",
+        "city",
+        "source",
+        "requirement_summary",
+        "created_at"
+      ],
+      "payload_forbidden_keys": [
+        "name",
+        "phone",
+        "email",
+        "company"
+      ],
+      "test_commands": [
+        "cd sevaa-sales-os && python -m pytest -q tests/test_notify.py tests/test_public_enquiry.py",
+        "python3 -m unittest tests.test_bridge -q"
+      ],
+      "success": "local /quote submission yields one AION triage task and an owner alert; replay yields none; payload has no PII keys",
+      "failure": "PII key in payload; enquiry fails when webhook is down; more than one task per lead",
+      "status": "DONE"
+    },
+    {
+      "id": "S07",
+      "priority": 2,
+      "model_class": "B",
+      "owner_role": "integration",
+      "repo": "aion",
+      "objective": "SEVAA daily-brief figures appear in AION status/today via the automation token",
+      "why": "founder sees enquiries, approvals and follow-ups in the status they already send",
+      "depends_on": [
+        "S05"
+      ],
+      "allowed_files": [
+        "aion_core/sevaa.py",
+        "aion_core/reports.py",
+        "tests/test_sevaa.py"
+      ],
+      "test_commands": [
+        "python3 -m unittest tests.test_sevaa -q"
+      ],
+      "success": "status shows 'SEVAA: n enquiries today, m approvals pending, k overdue' or 'SEVAA: unreachable since <t>'",
+      "failure": "token appears in any reply or log; SEVAA outage silently omits the line",
+      "status": "DONE"
+    },
+    {
+      "id": "S02",
+      "priority": 2,
+      "model_class": "B",
+      "review_class": "A",
+      "owner_role": "integration",
+      "repo": "aion",
+      "objective": "Pending SEVAA proposal approvals become AION WhatsApp cards; APPROVE/DENY calls the SEVAA decision API with the founder token from the PC secret store",
+      "why": "F2 \u2014 the only human-authority action must work from a phone without weakening it",
+      "depends_on": [
+        "S01",
+        "S07"
+      ],
+      "allowed_files": [
+        "aion_core/sevaa.py",
+        "aion_core/approvals.py",
+        "aion_core/db.py",
+        "aion_core/router.py",
+        "tests/test_sevaa_approvals.py"
+      ],
+      "test_commands": [
+        "python3 -m unittest tests.test_sevaa_approvals -q",
+        "python3 -m unittest discover -s tests -t . -q"
+      ],
+      "success": "card appears; APPROVE changes SEVAA state; replay hits HTTP once; non-2xx keeps PENDING; token absent from logs/replies",
+      "failure": "founder token in any log/reply; a forged inbound message reaches the decision path; second APPROVE re-calls SEVAA",
+      "security_review_required_before_merge": true,
+      "status": "DONE"
+    },
+    {
+      "id": "S09",
+      "priority": 2,
+      "model_class": "B",
+      "owner_role": "finance",
+      "repo": "aion",
+      "objective": "Verified SEVAA payments become ACTUAL revenue rows in AION with the payment id as evidence; sandbox payments are SANDBOX, never ACTUAL",
+      "why": "F3 \u2014 M0 must be detected from a real reconciled payment",
+      "depends_on": [
+        "S07"
+      ],
+      "allowed_files": [
+        "aion_core/sevaa.py",
+        "tests/test_sevaa.py"
+      ],
+      "test_commands": [
+        "python3 -m unittest tests.test_sevaa -q"
+      ],
+      "success": "aion milestones flips M0 only on a real payment; replay produces one row",
+      "failure": "sandbox or test payment recorded as ACTUAL",
+      "status": "DONE"
+    },
+    {
+      "id": "S06",
+      "priority": 3,
+      "model_class": "B",
+      "owner_role": "sales",
+      "repo": "sevaa",
+      "objective": "/quote?src=<slug> is persisted to leads.source with a whitelist and a default",
+      "why": "F6 \u2014 T104 economics need attribution",
+      "depends_on": [
+        "S05"
+      ],
+      "allowed_files": [
+        "backend/public_enquiry.py",
+        "web/index.html",
+        "tests/test_public_enquiry.py"
+      ],
+      "test_commands": [
+        "cd sevaa-sales-os && python -m pytest -q tests/test_public_enquiry.py"
+      ],
+      "success": "src persisted; bad src -> default; missing -> default",
+      "failure": "unvalidated src stored",
+      "status": "DONE"
+    },
+    {
+      "id": "S04",
+      "priority": 4,
+      "model_class": "D",
+      "owner_role": "operations",
+      "repo": "sevaa",
+      "objective": "Verify each remote branch by tree against main; delete merged; tag deferred Postgres branches; record in CHANGELOG",
+      "why": "F5 \u2014 dangling branches invite deferred work",
+      "depends_on": [
+        "S05"
+      ],
+      "allowed_files": [
+        "sevaa-sales-os/CHANGELOG.md"
+      ],
+      "test_commands": [
+        "git branch -r"
+      ],
+      "success": "only main plus live agent branches remain; deferred content is tagged",
+      "failure": "any unmerged, non-deferred content deleted",
+      "status": "PREPARED_NOT_RUN"
+    }
+  ],
+  "founder_actions": [
+    "Authorise Railway (no-card Trial first)",
+    "Set SEVAA_FOUNDER_TOKEN, SEVAA_AUTOMATION_TOKEN, SEVAA_ALLOW_LEGACY_V1=0, SEVAA_DB_PATH=/data/sevaa.db in Railway secrets",
+    "Choose SEVAA_PUBLIC_CONTACT_EMAIL",
+    "Name the first lawful traffic source",
+    "On the PC: aion secrets set SEVAA_AUTOMATION_TOKEN / SEVAA_FOUNDER_TOKEN / SEVAA_NOTIFY_WEBHOOK_SECRET"
+  ]
+}

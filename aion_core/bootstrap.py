@@ -175,6 +175,18 @@ def set_secret(name: str, value: str) -> str:
     return name
 
 
+def get_secret(name: str) -> str | None:
+    """Read one secret.  Callers must never log or return the value."""
+    sf = config.secrets_file()
+    if not sf.exists():
+        return None
+    for line in sf.read_text(encoding="utf-8").splitlines():
+        if line.strip().startswith(f"{name}="):
+            value = line.split("=", 1)[1].strip()
+            return value or None
+    return None
+
+
 def has_secret(name: str) -> bool:
     sf = config.secrets_file()
     if not sf.exists():

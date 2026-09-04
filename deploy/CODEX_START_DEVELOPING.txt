@@ -1,0 +1,147 @@
+================================================================================
+START DEVELOPING — CONTINUOUS OPERATION ON MARK-2
+================================================================================
+
+You already have SSH access to both repositories. This prompt assumes you have
+run, or are about to run, `deploy/CODEX_GO_LIVE.txt` from the AION repo
+(Hetlife/lucyos-, branch claude/aion-whatsapp-control-1seild). If you have not
+run it yet, run it first — top to bottom, in order, verifying each step. Do not
+skip to this prompt early.
+
+This document covers what "keep developing" actually means once go-live is
+done. Read it before assuming there is a backlog of features to build, because
+there is not — the honest queue is shorter than that, and inventing work past
+it is exactly the "pretend execution" the directives forbid.
+
+--------------------------------------------------------------------------------
+1. CONFIRM GO-LIVE IS ACTUALLY DONE
+--------------------------------------------------------------------------------
+
+Do not trust a memory of having run it. Re-verify right now:
+
+    cd ~/lucyos && git log --oneline -1 && git branch --show-current
+    python3 -m unittest discover -s tests -t . -q
+    systemctl --user is-active aion-bridge.service aion-work.timer aion-maintenance.timer
+    curl -s -o /dev/null -w "%{http_code}\n" http://127.0.0.1:8765/api/status
+    cd ~/sevaa && git log --oneline -1 && git branch -a | grep agent/
+
+If any of that is missing or wrong, stop here and finish CODEX_GO_LIVE.txt
+first. "Start developing" on a half-installed system produces work nobody can
+trust.
+
+--------------------------------------------------------------------------------
+2. THE REAL STATE OF THE QUEUE — read before doing anything else
+--------------------------------------------------------------------------------
+
+Every task in `PROJECTS/sevaa-sales-os/AION_TASK_QUEUE.md` that a coding agent
+can execute (S01, S02, S04, S05, S06, S07, S09) is either already merged on
+Hetlife/lucyos- or was just landed on het-life/sevaaconnect-realestate by
+CODEX_GO_LIVE.txt. Confirm this yourself:
+
+    cat ~/lucyos/PROJECTS/sevaa-sales-os/AION_TASK_QUEUE.md
+
+Read the section titled "Founder actions (the gate — nothing above needs
+these)". It lists exactly five things, and every one of them requires a human
+with real-world authority the agent does not have:
+
+    1. Authorise Railway (a hosting account signup)
+    2. Set four environment variables in Railway's own secret store
+    3. Choose which real mailbox is the privacy contact
+    4. Name the first lawful traffic source (a business decision)
+    5. On this machine: `aion secrets set SEVAA_AUTOMATION_TOKEN`,
+       `aion secrets set SEVAA_FOUNDER_TOKEN`,
+       `aion secrets set SEVAA_NOTIFY_WEBHOOK_SECRET`
+
+None of these are yours to do. Item 5's three secrets specifically must be
+typed by the owner directly into this terminal, never by you, never inferred,
+never invented. Do not attempt items 1-4 — you do not have and should not seek
+a Railway account or any billing relationship.
+
+This is T100, the gate. Nothing past it (T200, T300 — more automation, more
+integrations, real ad spend) unlocks until the owner clears it. That is not a
+technical blocker you can route around; it is the actual design.
+
+--------------------------------------------------------------------------------
+3. SO WHAT DOES "KEEP DEVELOPING" MEAN RIGHT NOW
+--------------------------------------------------------------------------------
+
+It means: let the system run itself, the way it is built to. Do not sit
+writing new features nobody asked for. Concretely:
+
+3.1  Confirm the build loop is actually enabled and will keep running after you
+     disconnect:
+        systemctl --user is-enabled aion-work.timer
+        loginctl show-user aion | grep Linger        # must say Linger=yes
+
+3.2  Understand what it does before leaving it running. Read it once:
+        cat ~/lucyos/scripts/build_loop.sh
+     Every 10 minutes it calls `aion boot`, checks whether a NEW major milestone
+     has been reached (measured from real revenue rows only — never a forecast,
+     never sandbox data), and if one has, it PAUSES ITSELF and notifies the
+     owner instead of continuing. That pause is correct behaviour. Never remove
+     it, never work around it, never keep the loop running past a milestone by
+     re-enabling it yourself.
+
+3.3  Run one cycle by hand so you can see real output before trusting the timer:
+        ~/lucyos/scripts/build_loop.sh
+     Read what it prints. If it says a milestone was reached, STOP and report
+     that to the owner — do not silently un-pause it.
+
+3.4  If `aion tasks` is genuinely empty (no ranked work below the founder gate),
+     that is success, not a problem to solve by inventing a task. Report it as
+     such:
+        aion tasks
+        aion blockers
+        aion report
+
+3.5  The one legitimate ongoing job that is yours, not the owner's: keep the
+     machine itself healthy. That means the nightly maintenance timer doing its
+     job (backup with a real restore test, doc sync, secret scan, deep health
+     check), not new product features. Confirm it once:
+        systemctl --user list-timers --all | grep aion
+
+--------------------------------------------------------------------------------
+4. IF YOU GENUINELY FIND MORE WORK
+--------------------------------------------------------------------------------
+
+`aion tasks` might legitimately surface something below the founder gate that
+was not in the original S-queue — e.g. a bug the nightly health check found, a
+test that needs hardening, a doc that has drifted from the code. That is fair
+game, and this is where "development" actually continues:
+
+  - Pull it from `aion tasks`, ranked by expected value. Do not invent your own
+    priority order.
+  - Every change still needs: a passing 204+ test suite, a clean `aion scan .`,
+    a real commit with a real message, and a push to
+    claude/aion-whatsapp-control-1seild — never main.
+  - Evidence rule still applies: `aion task-done` requires a command that
+    actually ran and real output, not an assertion.
+  - Stakes-appropriate model routing still applies — most of this is Class C/D
+    work (deterministic, cheap), not a reason to reach for an expensive model.
+
+What you must NOT do: start a new business, open a new PROJECTS/ folder, add a
+new revenue integration, or touch T200/T300 scope. Those require the owner
+explicitly asking, the same way sevaa-sales-os itself was explicitly proposed
+and approved before any code was written for it.
+
+--------------------------------------------------------------------------------
+5. REPORT
+--------------------------------------------------------------------------------
+
+Report, plainly:
+  1. Confirmation from step 1 that go-live actually holds (paste the real
+     output, not a restatement)
+  2. What `aion tasks` / `aion blockers` / `aion report` actually say right now
+  3. Whether the build loop is live and enabled, with real systemctl output
+  4. The five founder-gate items, listed for the owner exactly as in section 2
+     — this is the actual next step, and it is theirs
+  5. Anything real you did under section 4, with the same evidence standard as
+     everything else in this system
+
+A report that says "development continues" with nothing concrete behind it is
+not acceptable. A report that says "the queue is clear, here is exactly what
+the owner needs to do next" is the correct and complete outcome at this stage.
+
+================================================================================
+END
+================================================================================

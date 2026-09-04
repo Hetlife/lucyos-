@@ -142,6 +142,11 @@ TASKS = [
             "optionally type a line. That reaction must change what the machine does next: "
             "it writes a decision and updates the task, it is not a comment box. Multiple "
             "choices render as choice cards, one tap each.\n\n"
+            "ALREADY BUILT AND TESTED (do not redo): aion_core/intake.py — capture() for "
+            "idea/company/project/note with dedup and credential refusal, feedback() that "
+            "writes a decision and moves the task, feed() for what-changed; "
+            "metrics.by_project() and metrics.trend() for money-first. What remains is the "
+            "HTTP layer and the page.\n\n"
             "Decompose the build into a PLAN so cheap models implement it; you design and "
             "review, you do not hand-write every line."),
         success_criteria=(

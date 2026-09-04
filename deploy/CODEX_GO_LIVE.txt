@@ -1,0 +1,263 @@
+================================================================================
+GO LIVE — CODEX EXECUTION PLAN FOR MARK-2
+================================================================================
+
+You are an autonomous coding agent on Mark-2, an Ubuntu 24.04 server. You run as
+user `aion` with passwordless sudo, and this machine has SSH access to both
+GitHub repositories named below.
+
+Your job has two phases:
+  PHASE 1  Get AION installed and permanently running on this machine.
+  PHASE 2  Land three prepared changes on the SEVAA repository that have been
+           blocked for days purely for lack of push access — which this machine
+           now has.
+
+Work in order. Verify every step with real output. Do not skip verification and
+do not report success you have not observed.
+
+--------------------------------------------------------------------------------
+GROUND RULES — read before you run anything
+--------------------------------------------------------------------------------
+
+EVIDENCE
+  Never call anything done without evidence: the command you ran and its real
+  output. If a test fails, paste the failure. Do not skip, disable or "fix" a
+  failing test to make it pass. No pretend execution.
+
+SECRETS
+  Never write a credential into git, a log, a Markdown file, a systemd unit, or
+  your final report. Secrets go only into the AION secret store via
+  `aion secrets set NAME` (prompts hidden, file is 0600). Run `aion scan .`
+  before every commit; if it flags something, fix the cause, never weaken the
+  scanner.
+
+MONEY
+  Real spend this session: INR 0. No paid APIs, no ads, no live payments.
+  Do not set MODEL_API_KEY_CHEAP.
+
+SAFETY
+  Never send an outbound message to a real person. Never put PII (name, phone,
+  email, company) into a webhook payload or a report. Only the literal form
+  `APPROVE <ID>` from the owner authorises a Tier-3 action.
+
+GIT
+  Never push to `main` on either repository. Never force-push, never rewrite
+  history. Commit in coherent units with real messages.
+
+If anything in this document conflicts with `directives/` in the AION repo, the
+directives win — say so rather than silently picking one.
+
+================================================================================
+PHASE 1 — AION ONLINE ON MARK-2
+================================================================================
+
+1.1  Verify GitHub SSH works before anything else:
+        ssh -T git@github.com
+     Expect: "Hi Hetlife! You've successfully authenticated..."
+     That message is success. If it fails, stop and report.
+
+1.2  Clone the LIVE branch. `main` is behind — do not use it:
+        cd ~
+        git clone -b claude/aion-whatsapp-control-1seild git@github.com:Hetlife/lucyos-.git lucyos
+        cd ~/lucyos
+        git log --oneline -3
+     VERIFY the newest commit mentions deployment docs / a "Checkpoint:" commit,
+     and that `git branch --show-current` is claude/aion-whatsapp-control-1seild.
+
+1.3  Read the authority layer and the architecture. Do not skim:
+        cat directives/00_READ_ME_FIRST.txt
+        cat directives/02_MASTER_AUTONOMOUS_OS_DIRECTIVE.txt
+        cat directives/03_AGENT_UNLAZY_EXECUTION_STANDARD.txt
+        cat docs/ARCHITECTURE.md
+        cat docs/OPERATIONS.md
+        cat docs/SERVER_DEPLOYMENT.md
+     Then state back, in your own words: what the autonomy tiers are, what
+     counts as an approval, and what counts as evidence. If you cannot, re-read.
+
+1.4  Install. Idempotent, needs no credential:
+        scripts/install.sh
+     It symlinks ~/.local/bin/aion, creates the shared brain at
+     ~/openclaw/shared_brain, seeds it, initialises the secret store, takes a
+     first backup, runs a health check.
+     If `aion` is not on PATH:
+        echo 'export PATH="$HOME/.local/bin:$PATH"' >> ~/.bashrc && source ~/.bashrc
+
+1.5  Install the pre-commit hooks (secret scan + tests on every commit):
+        scripts/install_hooks.sh
+
+1.6  THE GATE. Run the full suite:
+        cd ~/lucyos && python3 -m unittest discover -s tests -t . -q
+     VERIFY: "Ran 204 tests ... OK". If ANY test fails, STOP HERE and report the
+     exact failure. Do not install services on top of a broken tree.
+
+1.7  Confirm a clean tree:
+        aion scan .
+
+1.8  Generate and set the two tokens. Generate them ON THIS MACHINE:
+        python3 -c "import secrets;print(secrets.token_urlsafe(32))"
+     then:
+        aion secrets set PHONE_API_TOKEN
+        aion secrets set WHATSAPP_BRIDGE_TOKEN
+     Print each generated value to the terminal ONCE so the owner can save it in
+     their password manager, then never log it again. Do not put either value in
+     your final report.
+     VERIFY names only, never values:
+        aion secrets list
+        ls -l ~/openclaw/shared_brain/private_state/secrets.env    # expect -rw-------
+     LEAVE MODEL_API_KEY_CHEAP UNSET.
+
+1.9  Install the services:
+        scripts/install_services.sh
+     This enables:
+        aion-bridge.service      webhook + phone API on 127.0.0.1:8765
+        aion-work.timer          build loop every 10 min, pauses on a milestone
+        aion-maintenance.timer   nightly 03:15 backup+restore test, scan, health
+
+1.10 Confirm it survives logout:
+        loginctl show-user aion | grep Linger      # expect Linger=yes
+        sudo loginctl enable-linger aion           # if it is not
+
+1.11 Start the bridge:
+        systemctl --user enable --now aion-bridge.service
+        systemctl --user status aion-bridge.service --no-pager
+
+1.12 PROVE IT WORKS. "active" only proves a process started. Actually call it:
+        curl -s http://127.0.0.1:8765/ | head
+        curl -s -o /dev/null -w "%{http_code}\n" http://127.0.0.1:8765/api/status
+        read -rs TOKEN        # paste the phone token; it will not echo or hit history
+        curl -s -H "Authorization: Bearer $TOKEN" \
+             http://127.0.0.1:8765/api/status | head -c 400
+        unset TOKEN
+     REQUIRED RESULTS:
+        - the second command prints 401  (an unauthenticated call is refused)
+        - the third returns JSON containing "money", "feed" and "needs_you"
+     If the unauthenticated call does NOT return 401, stop the bridge and report
+     — the token check is not working and it must not run in that state.
+
+1.13 Run the boot loop and note what it says the bottleneck is:
+        aion boot
+        aion health
+        aion report
+
+DO NOT open port 8765 in the firewall. Do not rebind the bridge to 0.0.0.0. The
+owner reaches it by SSH tunnel:
+        ssh -L 8765:127.0.0.1:8765 aion@<this host>   ->  http://localhost:8765/app
+
+================================================================================
+PHASE 2 — LAND THE BLOCKED SEVAA WORK
+================================================================================
+
+Context, so you understand what you are doing and why it matters:
+
+Three changes for `het-life/sevaaconnect-realestate` were written and fully
+tested days ago but never pushed, because no agent had credentials for that
+account. They exist as git bundles inside the AION repo at
+`PROJECTS/sevaa-sales-os/bundles/`. Each is one branch built on SEVAA `main` at
+commit `a85a8cc`, with its own tests already green:
+
+    S05-pointer-files.bundle      -> agent/coordinator/S05-pointer-files   36 tests
+    S01-enquiry-notify.bundle     -> agent/sales/S01-enquiry-notify        45 tests
+    S06-source-attribution.bundle -> agent/sales/S06-source-attribution    40 tests
+
+Do this only if `ssh -T git@github.com` and a clone of that repo actually
+succeed. If access is not really there, say so and stop — do not improvise.
+
+2.1  Clone the SEVAA repo alongside AION:
+        cd ~
+        git clone git@github.com:het-life/sevaaconnect-realestate.git sevaa
+        cd ~/sevaa
+        git log --oneline -1
+     VERIFY main is at a85a8cc. If main has MOVED since then, STOP and report —
+     the bundles were built on that commit and may no longer apply cleanly. Do
+     not force them.
+
+2.2  Confirm the baseline is healthy BEFORE you change anything:
+        cd ~/sevaa/sevaa-sales-os && python -m pytest -q
+     VERIFY 36 passed. Also:
+        python scripts/agent_maintenance.py --check
+     If the baseline is already broken, stop — do not build on a broken main.
+
+2.3  Read that repo's own conventions. It has its own agent protocol and you
+     must follow it, not invent your own:
+        cat ~/sevaa/sevaa-sales-os/docs/agent/BOOT.txt
+        cat ~/sevaa/sevaa-sales-os/docs/agent/PROTOCOL.md
+     Use its own `scripts/agent_maintenance.py --write` for its state files
+     (state/ACTIVE_WORK.json, state/AGENT_EVENTS.jsonl). Do not hand-edit those.
+
+2.4  Fetch the three branches from the bundles:
+        cd ~/sevaa
+        B=~/lucyos/PROJECTS/sevaa-sales-os/bundles
+        git fetch $B/S05-pointer-files.bundle      'refs/heads/*:refs/heads/*'
+        git fetch $B/S01-enquiry-notify.bundle     'refs/heads/*:refs/heads/*'
+        git fetch $B/S06-source-attribution.bundle 'refs/heads/*:refs/heads/*'
+        git branch -a
+
+2.5  Verify each branch independently before pushing anything. For each of the
+     three branches: check it out, run that repo's test suite, record the count.
+        git checkout agent/coordinator/S05-pointer-files
+        cd sevaa-sales-os && python -m pytest -q && cd ..
+        # expect 36 passed
+        git checkout agent/sales/S01-enquiry-notify
+        cd sevaa-sales-os && python -m pytest -q && cd ..
+        # expect 45 passed
+        git checkout agent/sales/S06-source-attribution
+        cd sevaa-sales-os && python -m pytest -q && cd ..
+        # expect 40 passed
+     If a count differs from the expected number, STOP and report the actual
+     output. Do not adjust the tests to match.
+
+2.6  Push all three branches:
+        git push -u origin agent/coordinator/S05-pointer-files
+        git push -u origin agent/sales/S01-enquiry-notify
+        git push -u origin agent/sales/S06-source-attribution
+
+2.7  Open a pull request for each, against `main`. In each PR body state: what
+     the change does, the test count before and after, and that it was prepared
+     and validated in the AION repository. Merge order is in
+     `~/lucyos/PROJECTS/sevaa-sales-os/AION_TASK_QUEUE.md` — follow it.
+
+     Note: S01 has two halves. Its SEVAA branch pairs with AION commit 0dc7888
+     already on `Hetlife/lucyos-`. They are one contract; mention that in the PR.
+
+2.8  DO NOT run `bundles/S04-branch-hygiene.sh` yet. It deletes remote branches
+     and pushes directly to main. It runs only after S05/S01/S06 are merged AND
+     the owner explicitly says to run it. Read it, report what it would do, and
+     wait.
+
+================================================================================
+PHASE 3 — RECORD AND REPORT
+================================================================================
+
+3.1  Update `~/lucyos/PROJECTS/sevaa-sales-os/MACHINE_HANDOFF.json` with the real
+     new state: this host now runs AION, what is installed and active, and the
+     true status of S05/S01/S06 (pushed? PRs open? merged?). Replace the entries
+     saying the SEVAA work is blocked — but only if you actually pushed it.
+
+3.2  In the AION repo:
+        cd ~/lucyos
+        aion scan .
+        python3 -m unittest discover -s tests -t . -q
+        git add -A && git commit   # real message describing what changed
+        git push origin claude/aion-whatsapp-control-1seild
+
+3.3  Final report. Include, literally:
+      1.  `git log --oneline -1` for both repos, and the branch you are on
+      2.  The literal "Ran 204 tests ... OK" line from AION
+      3.  The three SEVAA test counts you actually observed (36 / 45 / 40)
+      4.  `systemctl --user is-active` for bridge, work timer, maintenance timer
+      5.  The 401 result and the authenticated JSON snippet from step 1.12
+      6.  `loginctl show-user aion | grep Linger`
+      7.  Secret names that are SET (names only) and that MODEL_API_KEY_CHEAP is
+          deliberately unset
+      8.  `aion boot` output including the bottleneck it names
+      9.  PR URLs for S05, S01, S06
+     10.  Anything you could NOT do, and the exact error — not a guess
+
+A report that claims success without the evidence above is a failed report, even
+if the underlying work was fine. If a phase failed, say which step, what the
+error was, and what you tried. Stopping honestly at step 2.1 is a better outcome
+than a confident false claim at step 3.3.
+
+================================================================================
+END
+================================================================================

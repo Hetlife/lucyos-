@@ -1,0 +1,8 @@
+[Unit]
+Description=AION Codex worker loop (claims one ranked task per run)
+
+[Service]
+Type=oneshot
+Environment=AION_HOME=@AION_HOME@
+WorkingDirectory=@REPO@
+ExecStart=@REPO@/scripts/codex_loop.sh

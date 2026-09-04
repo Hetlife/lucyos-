@@ -22,6 +22,17 @@ knows about a network lives here and nowhere else.
 - A crash inside the router becomes a logged error and a plain reply, so a bug
   never takes the owner's control channel down.
 
+## Phone interface
+
+`web/phone.html` is a self-contained mobile page (no external fonts, scripts
+or CDNs) served at `/app` by the `webhook` adapter. It talks to the same
+`Handler` class over a set of `/api/*` JSON routes gated by a *separate*
+bearer token (`PHONE_API_TOKEN`, not the WhatsApp bridge token) so revoking
+one never touches the other. `POST /api/command` routes through
+`router.handle` — the exact function WhatsApp uses — so the two surfaces can
+never drift into answering the same command differently. See
+`docs/PHONE_INTERFACE.md`.
+
 ## Adding a provider
 
 Write a function that gets text and calls `reply_to(message, sender=...)`. That

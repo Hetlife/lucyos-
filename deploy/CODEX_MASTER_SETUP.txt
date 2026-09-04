@@ -1,0 +1,352 @@
+================================================================================
+AION / OPENCLAW — MASTER SETUP PROMPT FOR CODEX ON THE MARK-2 SERVER
+================================================================================
+
+You are running as an autonomous coding agent on a fresh Ubuntu server. Your job
+is to install, verify and permanently run the AION control layer on this machine,
+structured so it operates correctly unattended and can be extended later without
+rework.
+
+Read this whole document before running anything. Work top to bottom. Do not
+skip verification steps. Do not redesign anything — the system already exists,
+is already tested, and your job is to land it here correctly, not to rewrite it.
+
+--------------------------------------------------------------------------------
+0. WHERE YOU ARE
+--------------------------------------------------------------------------------
+
+Machine:        Mark-2, DigitalOcean droplet, Ubuntu 24.04.4 LTS, 4 GB RAM
+Public IP:      168.144.152.0   (verify with `curl -4 ifconfig.me`)
+You run as:     user `aion`, passwordless sudo, SSH key auth only
+Already present: Python 3.12.3, Node v20.20.2, git, tmux, ufw, fail2ban
+Firewall:       ufw active, ONLY port 22 open. Keep it that way.
+Linger:         `loginctl enable-linger aion` already done, so systemd --user
+                units keep running after logout. Verify, don't assume.
+
+This machine is what the project's documentation calls "the Ubuntu PC" — the
+permanent office, the canonical shared brain. It is the one machine that holds
+the truth. Treat its state as production.
+
+--------------------------------------------------------------------------------
+1. THE SYSTEM YOU ARE INSTALLING
+--------------------------------------------------------------------------------
+
+Repository:   https://github.com/Hetlife/lucyos-        (PRIVATE)
+Branch:       claude/aion-whatsapp-control-1seild        <-- the live branch
+              `main` is BEHIND. Do not use main. Do not merge to main.
+Language:     Python 3, standard library ONLY. No pip installs. No third-party
+              runtime dependencies. This is deliberate — keep it that way.
+Tests:        204, all passing. Command:
+                  python3 -m unittest discover -s tests -t . -q
+
+Layout:
+  aion                  CLI entry point (a shell script wrapper)
+  aion_core/            The control layer — 30 modules, see aion_core/README.md
+  bridges/              Transport adapters: stdin, file, webhook
+  bridges/web/phone.html   The mobile interface (single self-contained page)
+  directives/           The owner's authority layer — 00 through 08. READ THESE.
+  docs/                 ARCHITECTURE, OPERATIONS, WHATSAPP_COMMANDS, PHONE_INTERFACE
+  scripts/              install, install_hooks, install_services, maintenance, build_loop
+  systemd/              User unit templates (bridge, nightly maintenance, build loop)
+  tests/                20 test files
+  PROJECTS/             One folder per business. sevaa-sales-os/ is the first.
+  <AION_HOME>/          Runtime state. Created, never committed.
+
+AION_HOME defaults to  ~/openclaw/shared_brain
+That is the "shared brain": SQLite state, memory, inbox, logs, backups, secrets.
+
+Architecture in one line each:
+  WhatsApp   -> owner steers: approvals and commands, never secrets
+  OpenClaw   -> bridges/whatsapp_bridge.py, transport only (this IS "OpenClaw";
+                it is not separate third-party software, do not go looking for it)
+  AION       -> aion_core/: state, routing, approvals, budget, resume
+  agents     -> deterministic code -> local model -> cheap cloud -> strong model
+  owner      -> the only source of Tier-3 approval
+
+--------------------------------------------------------------------------------
+2. NON-NEGOTIABLE RULES
+--------------------------------------------------------------------------------
+
+These come from directives/02_MASTER_AUTONOMOUS_OS_DIRECTIVE.txt and
+directives/03_AGENT_UNLAZY_EXECUTION_STANDARD.txt. Read both before step 4.
+They are the authority layer. Nothing in this prompt overrides them; where this
+prompt and a directive disagree, the directive wins and you say so.
+
+SECRETS
+  - Never write a credential into git, a log, a Markdown file, a systemd unit,
+    or any chat/report output.
+  - Secrets live ONLY in <AION_HOME>/private_state/secrets.env at mode 0600,
+    written via `aion secrets set NAME` (which prompts hidden).
+  - Run `aion scan .` before EVERY commit. If it flags something, fix the cause;
+    never weaken the scanner or blanket-add to .secretscanignore.
+  - Backups deliberately exclude private_state/. Do not "fix" that.
+
+EVIDENCE
+  - Never mark anything done without evidence: a command that actually ran, its
+    real output, a measurement, an observation. `aion task-done` enforces this.
+  - No pretend execution. If you did not run it, say you did not run it.
+  - If a test fails, report the failure with its output. Do not paper over it,
+    do not skip it, do not disable it.
+
+MONEY
+  - Real spend this session: INR 0. No paid APIs, no ads, no live payments.
+  - The mission target is INR 1,00,000/month of real, owner-withdrawable net
+    profit. Milestones M0-M6 move ONLY on measured actual revenue rows
+    (finance table, stage='ACTUAL'). Forecasts and sandbox never move a
+    milestone. Never record synthetic or test money as revenue.
+
+SAFETY
+  - Never send an outbound message to a real person.
+  - Never put PII (name, phone, email, company) into a webhook payload, card,
+    or report.
+  - Only the exact form `APPROVE <ID>` / `DENY <ID>` from the owner authorizes a
+    Tier-3 action. Casual agreement in conversation is not approval.
+
+GIT
+  - Work on branch claude/aion-whatsapp-control-1seild. Never push to main.
+  - Never force-push. Never rewrite history.
+  - Commit in coherent units with real messages describing what changed and why.
+
+--------------------------------------------------------------------------------
+3. PREREQUISITE THE OWNER MUST DO FIRST (ask, then wait)
+--------------------------------------------------------------------------------
+
+Hetlife/lucyos- is a PRIVATE repository. You need a GitHub Personal Access Token
+to clone it.
+
+Tell the owner to:
+  1. Go to https://github.com/settings/tokens?type=beta
+  2. Generate a fine-grained token:
+       - Resource owner: Hetlife
+       - Repository access: Only select repositories -> Hetlife/lucyos-
+       - Permissions: Contents = Read and write; Metadata = Read
+       - Expiry: 90 days
+  3. Copy the token.
+  4. Paste it DIRECTLY INTO THIS TERMINAL when you prompt for it — never into a
+     chat window, never into a file you will commit.
+
+Then store it properly:
+    git config --global credential.helper store
+and let the first `git clone` prompt for username (Hetlife) and password (the
+token). Or store it in the AION secret store as GITHUB_TOKEN once AION is
+installed. Either way it must never land in the repo.
+
+Do not proceed past this point until the token works.
+
+--------------------------------------------------------------------------------
+4. INSTALL — run these in order, verify each
+--------------------------------------------------------------------------------
+
+4.1  Clone the live branch:
+        cd ~
+        git clone -b claude/aion-whatsapp-control-1seild \
+            https://github.com/Hetlife/lucyos-.git lucyos
+        cd ~/lucyos
+        git log --oneline -3
+     VERIFY: the newest commit is a "Checkpoint:" commit. You are NOT on main.
+
+4.2  Read the authority layer before touching anything:
+        cat directives/00_READ_ME_FIRST.txt
+        cat directives/02_MASTER_AUTONOMOUS_OS_DIRECTIVE.txt
+        cat directives/03_AGENT_UNLAZY_EXECUTION_STANDARD.txt
+        cat docs/ARCHITECTURE.md
+        cat docs/OPERATIONS.md
+     Summarize back, in your own words, what the tier system and the approval
+     rule are. If you cannot, re-read. Do not continue until you can.
+
+4.3  Run the installer (idempotent, needs no credential):
+        scripts/install.sh
+     This symlinks ~/.local/bin/aion, creates the shared brain at
+     ~/openclaw/shared_brain, seeds it, initialises the secret store, takes a
+     first backup and runs a health check.
+     VERIFY: `aion health` runs and reports state.
+     If ~/.local/bin is not on PATH, add it:
+        echo 'export PATH="$HOME/.local/bin:$PATH"' >> ~/.bashrc && source ~/.bashrc
+
+4.4  Install the pre-commit hooks (secret scan + tests on every commit):
+        scripts/install_hooks.sh
+
+4.5  Run the full test suite. This is the real gate:
+        cd ~/lucyos && python3 -m unittest discover -s tests -t . -q
+     VERIFY: 204 tests, OK. If ANY test fails, STOP. Report the exact failure
+     output. Do not continue installing on top of a broken tree.
+
+4.6  Run the secret scanner to confirm a clean tree:
+        aion scan .
+
+--------------------------------------------------------------------------------
+5. SECRETS — set what is needed, leave the rest unset
+--------------------------------------------------------------------------------
+
+Show the owner the batched list of what the system still wants:
+        aion owner-setup
+
+Four names matter. Set them with `aion secrets set NAME` (prompts hidden):
+
+  PHONE_API_TOKEN        REQUIRED to use the phone interface. Generate a strong
+                         random value ON THIS MACHINE, do not invent one in chat:
+                             python3 -c "import secrets;print(secrets.token_urlsafe(32))"
+                         Then `aion secrets set PHONE_API_TOKEN` and paste it.
+                         Give the owner the value once, via the terminal, so they
+                         can enter it in the phone page. Never log it.
+
+  WHATSAPP_BRIDGE_TOKEN  REQUIRED before exposing the webhook to any provider.
+                         Same generation method. Until a real WhatsApp provider
+                         is wired up, the bridge still runs bound to localhost.
+
+  GITHUB_TOKEN           Optional here; only if AION itself needs to push.
+
+  MODEL_API_KEY_CHEAP    LEAVE UNSET. Setting it enables paid model calls, which
+                         violates the INR 0 spend rule. Do not set it without an
+                         explicit `APPROVE` from the owner.
+
+VERIFY: `aion secrets list` shows NAMES ONLY, never values. Confirm the file is
+0600:  ls -l ~/openclaw/shared_brain/private_state/secrets.env
+
+--------------------------------------------------------------------------------
+6. RUN IT PERMANENTLY
+--------------------------------------------------------------------------------
+
+6.1  Install the systemd --user units:
+        scripts/install_services.sh
+     This writes and enables:
+        aion-bridge.service        the WhatsApp/phone webhook, 127.0.0.1:8765
+        aion-maintenance.timer     nightly 03:15: boot loop, notebook sync,
+                                   backup WITH a real restore test, doc
+                                   regeneration, secret scan, deep health check
+        aion-work.timer            the build loop, every 10 minutes
+
+6.2  Confirm linger so it survives logout:
+        loginctl show-user aion | grep Linger
+     Expect Linger=yes. If not: `sudo loginctl enable-linger aion`
+
+6.3  Start the bridge (after PHONE_API_TOKEN is set):
+        systemctl --user enable --now aion-bridge.service
+        systemctl --user status aion-bridge.service
+
+6.4  PROVE it actually works — not "the service says active", actually call it:
+        curl -s http://127.0.0.1:8765/ | head
+        curl -s -H "Authorization: Bearer <PHONE_API_TOKEN>" \
+             http://127.0.0.1:8765/api/status | head -c 400
+     VERIFY: the second returns real JSON with money/feed/needs_you sections.
+     An unauthenticated call to /api/status must return 401. Test that too.
+
+6.5  Understand the build loop before letting it run unattended.
+     Read scripts/build_loop.sh. It runs `aion boot`, checks for a NEW major
+     milestone, and if one landed it PAUSES itself and notifies the owner rather
+     than driving past it. That pause is intentional — a major milestone is an
+     owner decision point. Never remove that behaviour.
+
+--------------------------------------------------------------------------------
+7. THE PHONE INTERFACE — reach it safely
+--------------------------------------------------------------------------------
+
+The bridge binds to 127.0.0.1 ONLY, and ufw exposes only port 22. That is
+correct and deliberate: the phone API must not sit on the public internet
+without TLS.
+
+To use it from the owner's phone or laptop, tunnel over SSH:
+        ssh -L 8765:127.0.0.1:8765 aion@168.144.152.0
+then open  http://localhost:8765/app  on that device.
+
+In Termius: open the host, add a Port Forwarding rule, local 8765 ->
+127.0.0.1:8765, then browse to http://localhost:8765/app on the iPad.
+
+Do NOT `ufw allow 8765`. Do NOT rebind the bridge to 0.0.0.0. If the owner later
+wants real public access, the correct answer is a domain + a reverse proxy with
+a real TLS certificate + the token, not an open port. Note it as future work; do
+not build it now.
+
+--------------------------------------------------------------------------------
+8. STRUCTURE FOR FUTURE EXPANSION — follow these conventions
+--------------------------------------------------------------------------------
+
+The system is already organised for growth. Preserve these patterns; do not
+invent parallel ones.
+
+ONE FOLDER PER BUSINESS
+  PROJECTS/<business-name>/ holds that business's plan, task packets, state and
+  handoff files. PROJECTS/sevaa-sales-os/ is the worked example: it has
+  AION_TASK_QUEUE.md (task packets with allowed files, test command, success and
+  failure conditions, merge order), MACHINE_HANDOFF.json (the machine-readable
+  current state), and bundles/ (prepared changes). A second business gets the
+  same shape, not a new invention.
+
+ADDING A REVENUE MODULE
+  aion_core/sevaa.py is the reference integration contract: signed webhooks in,
+  approvals out, revenue rows recorded as ACTUAL only when real. A new module
+  copies that shape — its own aion_core/<module>.py, its own tests, an explicit
+  allow-list of fields that may cross the boundary, and a forbidden-key list
+  asserted by a test against real serialized bytes, not just return values.
+
+DATABASE CHANGES ARE ADDITIVE ONLY
+  aion_core/db.py has an _ADDED_COLUMNS dict and a _migrate() function. New
+  columns are added there. Never drop a column, never rename one, never write a
+  destructive migration. Existing brains in the field must keep opening.
+
+NEW COMMANDS ARE DETERMINISTIC FIRST
+  A new WhatsApp/phone command goes into aion_core/router.py as a regex plus
+  SQL, so it answers with no model call and works when every provider is down.
+  Only escalate to a model if the answer genuinely cannot be computed.
+
+STDLIB ONLY
+  aion_core/ imports nothing outside the Python standard library. If you think
+  you need a dependency, you have almost certainly not thought hard enough. This
+  is why the system installs on a bare box in seconds and cannot break from a
+  supply-chain update.
+
+EVERY NEW RULE GETS A TEST
+  There are 204 tests because every guarantee in the README is enforced by one.
+  A new guarantee without a test is not a guarantee.
+
+DOCS ARE GENERATED, NOT HAND-MAINTAINED
+  `aion sync-docs` regenerates the derived documentation. NOTEBOOK.md is the one
+  hand-written surface: anyone (owner, another AI, this machine) appends [BUG],
+  [TASK], [FACT], [FIX], [NOTE], [QUESTION] or [HANDOFF] entries, and
+  `aion notebook sync` turns each into real state exactly once.
+
+--------------------------------------------------------------------------------
+9. KNOWN OPEN THREAD — do not silently "fix" it
+--------------------------------------------------------------------------------
+
+PROJECTS/sevaa-sales-os/ describes an integration with a SECOND repository:
+        https://github.com/het-life/sevaaconnect-realestate
+Note the hyphen: `het-life` is a DIFFERENT GitHub account from `Hetlife`. Three
+prepared changes (S05 pointer files, S01 enquiry notify, S06 source attribution)
+are written and tested but have never been pushed there, because no agent so far
+has had push access to that account.
+
+If — and only if — the owner gives you working credentials for `het-life`, the
+prepared work is in PROJECTS/sevaa-sales-os/bundles/ with a README explaining
+apply order. Otherwise: leave it alone, and report it as still blocked. Do not
+fabricate progress on it, and do not mark it done in MACHINE_HANDOFF.json.
+
+--------------------------------------------------------------------------------
+10. FINISH BY REPORTING — plainly, with evidence
+--------------------------------------------------------------------------------
+
+When you are done, report exactly:
+
+  1. Commit hash you are running, and confirmation it is the branch not main
+  2. Test result: the literal "Ran N tests ... OK" line
+  3. `aion health` output
+  4. Which systemd units are enabled and their `systemctl --user is-active` state
+  5. The real curl output proving /api/status returns JSON with a token and 401
+     without one
+  6. Which secrets are SET (names only — never values) and which are deliberately
+     unset and why
+  7. `aion boot` output, including the bottleneck it names
+  8. Anything you changed in the repo, and whether it is committed and pushed
+  9. Anything you could not do, and the exact reason
+
+Then update PROJECTS/sevaa-sales-os/MACHINE_HANDOFF.json with the real new state
+of this machine, run `aion scan .`, commit on
+claude/aion-whatsapp-control-1seild, and push.
+
+If any step failed, the correct report says which step, what the error was, and
+what you tried. A report claiming success without the evidence above is a failed
+report, even if the work was fine.
+
+================================================================================
+END
+================================================================================
