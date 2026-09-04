@@ -21,6 +21,7 @@ python3 bridges/whatsapp_bridge.py stdin     # type `status`, `tasks`, `help`
 ```
 
 Full setup, services, backups and recovery: `docs/OPERATIONS.md`.
+Running it on a public cloud host instead of hardware: `docs/SERVER_DEPLOYMENT.md`.
 
 ## What it does
 

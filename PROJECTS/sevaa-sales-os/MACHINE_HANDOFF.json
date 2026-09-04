@@ -1,8 +1,17 @@
 {
   "schema_version": 1,
-  "at": "2026-09-04T08:45:00+00:00",
+  "at": "2026-09-04T14:25:00+00:00",
   "from": "autonomous coding agent (session_0172DxResuU6AsyjgDDQpw9H)",
   "to": "autonomous coding agents (Sonnet primary, Haiku/deterministic for C/D)",
+  "host": {
+    "name": "Mark-2",
+    "provider": "DigitalOcean droplet, Ubuntu 24.04.4 LTS, 4GB RAM",
+    "user": "aion (passwordless sudo, key-only SSH, linger enabled)",
+    "installed": "Python 3.12.3, Node v20.20.2, Claude Code 2.1.197, Codex CLI",
+    "status": "provisioned and hardened (ufw 22 only, fail2ban, password auth off); AION not yet installed on it",
+    "next": "owner runs deploy/CODEX_MASTER_SETUP.txt through Codex on that machine",
+    "note": "Claude Code is installed there but its browser OAuth login kept failing (invalid OAuth request / 400), so Codex is the working agent on that host. This AION session cannot reach the droplet at all: its sandbox blocks outbound port 22 and force-proxies 80/443 through a host allowlist that excludes the droplet IP."
+  },
   "repos": {
     "aion": {
       "url": "https://github.com/Hetlife/lucyos-",
