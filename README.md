@@ -22,6 +22,8 @@ python3 bridges/http_server.py               # private phone UI on 127.0.0.1:878
 ```
 
 Full setup, services, backups and recovery: `docs/OPERATIONS.md`.
+Master-agent continuation guide: `docs/MASTER_AI_HANDOFF.md`; its short
+copy-paste prompt is `docs/MASTER_AI_PROMPT.txt`.
 
 ## What it does
 
