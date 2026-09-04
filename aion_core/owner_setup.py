@@ -15,6 +15,19 @@ REQUIREMENTS = [
                   "in private_state/secrets.env and never enters git, logs or chat.",
          revoke="Rotate/revoke in the bridge provider console, then re-run the same command.",
          resumes="WhatsApp becomes the live command surface; `aion serve` starts answering."),
+    dict(tier="REQUIRED SOON", service="Phone interface token",
+         secret="PHONE_API_TOKEN",
+         purpose="Auth for the mobile page (bridges/web/phone.html) at /app — money-first "
+                "status, approve from a tap, capture an idea offline",
+         permission="Read/write to this machine's own AION state only, nothing external",
+         action="On the Ubuntu PC run `aion secrets set PHONE_API_TOKEN` with a long random "
+                "value, then open the page over your tunnel and paste the same value in "
+                "once. Never send this token over WhatsApp.",
+         security="Bearer token compared with hmac.compare_digest; bound to 127.0.0.1 by "
+                  "default, so it only matters once you tunnel it out (Tailscale/ssh -L).",
+         revoke="`aion secrets set PHONE_API_TOKEN` again with a new value, then re-enter it "
+                "on the phone; the old value stops working immediately.",
+         resumes="The phone page authenticates and shows live data."),
     dict(tier="REQUIRED NOW", service="GitHub (repo scope)",
          secret="GITHUB_TOKEN",
          purpose="Version control and safe collaboration for code and prompts",

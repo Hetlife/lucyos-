@@ -48,7 +48,7 @@ Full setup, services, backups and recovery: `docs/OPERATIONS.md`.
 |---|---|
 | `aion` | The CLI entry point |
 | `aion_core/` | The control layer — see its README for a module map |
-| `bridges/` | Transport adapters (stdin, file, webhook) |
+| `bridges/` | Transport adapters (stdin, file, webhook) + the phone interface at `bridges/web/phone.html` |
 | `directives/` | The owner's prompt bundle: the authority layer |
 | `docs/` | Architecture, WhatsApp commands, operations |
 | `scripts/` | Install, services, nightly maintenance, pre-commit |
