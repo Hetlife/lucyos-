@@ -81,6 +81,12 @@ def today() -> str:
 
 
 def money() -> str:
+    # Money is the canonical owner surface for financial progress.  Checking
+    # here makes M0 (and later measured milestones) an automatic consequence
+    # of recording evidenced ACTUAL revenue, rather than a separate claim.
+    from . import milestones
+    milestones.newly_reached()
+    m0 = milestones.check()["M0"]
     m = metrics.money()
     b = metrics.budget_status()
     target = 100000.0
@@ -91,6 +97,7 @@ def money() -> str:
         f"Real revenue: ₹{m['real_revenue_inr']}",
         f"Real cost: ₹{m['real_cost_inr']} (incl. ₹{m['model_spend_month_inr']} model spend this month)",
         f"Real net: ₹{m['real_net_inr']}",
+        f"M0 first real rupee: {'reached' if m0['reached'] else 'not reached'} — {m0['evidence']}",
         f"Reserve: ₹{m['reserve_inr']}",
         "",
         f"Model budget: ₹{b['day_spend_inr']}/{b['day_cap_inr']} today, "

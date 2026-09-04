@@ -72,11 +72,16 @@ class TestMission(AionTest):
             self.assertTrue(memory.search(f"milestone {code}"), f"{code} missing")
 
     def test_money_report_shows_progress_against_the_mission(self):
-        from aion_core import metrics, reports
+        from aion_core import metrics, milestones, reports
         seed.apply()
-        self.assertIn("Mission: INR 1,00,000/month", reports.money())
+        before = reports.money()
+        self.assertIn("Mission: INR 1,00,000/month", before)
+        self.assertIn("M0 first real rupee: not reached", before)
         metrics.record_money("revenue", 1000, stage="ACTUAL", evidence="pay_TEST1")
-        self.assertIn("1.0% of it", reports.money())
+        after = reports.money()
+        self.assertIn("1.0% of it", after)
+        self.assertIn("M0 first real rupee: reached", after)
+        self.assertIn("M0", milestones.reached())
 
     def test_a_projection_does_not_move_mission_progress(self):
         from aion_core import metrics, reports
