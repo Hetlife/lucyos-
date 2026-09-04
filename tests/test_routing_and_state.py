@@ -1,4 +1,5 @@
 import unittest
+from unittest import mock
 
 from tests.base import AionTest
 from aion_core import agents, errors, memory, metrics, resume, tasks
@@ -132,7 +133,11 @@ class TestResume(AionTest):
         backup.create()
         t = tasks.create("only task")
         approvals.create("spend money", task_id=t)
-        out = resume.boot()
+        # Host network availability is outside this recovery-path test.  Keep
+        # health deterministic so the pending approval is the real bottleneck.
+        with mock.patch("aion_core.health.run_all",
+                        return_value={"healthy": True, "failing": []}):
+            out = resume.boot()
         self.assertIn("approval", out["resume"]["bottleneck"].lower())
 
 
