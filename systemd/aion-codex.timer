@@ -1,0 +1,11 @@
+[Unit]
+Description=Run the Codex worker loop periodically
+
+[Timer]
+OnBootSec=5min
+OnUnitInactiveSec=15min
+AccuracySec=1min
+Persistent=true
+
+[Install]
+WantedBy=timers.target
