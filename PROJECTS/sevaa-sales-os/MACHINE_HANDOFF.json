@@ -1,6 +1,6 @@
 {
   "schema_version": 1,
-  "at": "2026-09-04T03:50:00+00:00",
+  "at": "2026-09-04T04:30:00+00:00",
   "from": "autonomous coding agent (session_0172DxResuU6AsyjgDDQpw9H)",
   "to": "autonomous coding agents (Sonnet primary, Haiku/deterministic for C/D)",
   "repos": {
@@ -18,15 +18,11 @@
       "last_verified": "36 passed; agent_maintenance --check OK"
     }
   },
-  "current_reality": "S05 and S01 are done and validated on both sides (SEVAA branches bundled, not pushable from this session). A real /quote enquiry now produces a signed, PII-free event; the AION bridge turns it into a triage task and an owner alert. Nothing else in the queue is started.",
-  "top_bottleneck": "S07 (SEVAA figures in AION status/today) is next, AION-only, no SEVAA changes needed.",
-  "first_action": "Implement S07 in aion_core/sevaa.py + reports.py, then S09, then S06 (SEVAA-side, needs a new branch), then S02 last (needs S01+S07 and a Class A security review before merge).",
+  "current_reality": "All planned integration work is done: S05, S01, S07, S02, S09 and S06 are complete, tested, and either pushed to Hetlife/lucyos- (AION-side commits) or bundled in PROJECTS/sevaa-sales-os/bundles/ (SEVAA-side, this session has no push access there). S02 (WhatsApp founder approvals) carries its required Class A security review, which found and fixed one real gap (HTTP transport to a non-loopback host). S04 (branch hygiene) is prepared as a self-verifying script but not executed -- it needs push access to the SEVAA repo. A real /quote enquiry now reaches the founder as a WhatsApp alert; a real Razorpay payment now reaches AION's M0 detector; a pending SEVAA proposal approval can be decided from WhatsApp.",
+  "top_bottleneck": "Only T100 (founder-authorised public deployment) -- unchanged, still external.",
+  "first_action": "Apply the bundled SEVAA-side branches (see bundles/README.md), merge all in the queue's order, then run bundles/S04-branch-hygiene.sh from a machine with push access. After that, everything in this queue is done; the next real milestone needs the founder's five actions listed below.",
   "stop_conditions": [
-    "a task needs real spend",
-    "a task needs a credential that is not in the AION secret store",
-    "two materially different failures on one task",
-    "S02 built and awaiting its Class A security review",
-    "founder gate T100 opens (then follow sevaa-sales-os/docs/spec/DEPLOYMENT.md)"
+    "queue is done (this handoff) -- remaining work is founder actions or requires push access this session lacks"
   ],
   "do_not": [
     "send any outbound message to a real person",
@@ -39,11 +35,34 @@
   "done": {
     "S05": {
       "status": "success",
-      "evidence": "AION repo commit ad67e2c (local, bundled); pytest 36 passed; agent_maintenance --check OK"
+      "evidence": "AION commit ad67e2c (bundled); 36 SEVAA tests"
     },
     "S01": {
       "status": "success",
-      "evidence": "AION repo commit 0dc7888 (pushed); SEVAA repo commit 33a6b7a (local, bundled); AION 157 tests passed; SEVAA 45 tests passed; 13 new tests assert PII absence in the raw wire bytes"
+      "evidence": "AION commit 0dc7888 (pushed) + SEVAA commit 33a6b7a (bundled); 157 AION + 45 SEVAA tests"
+    },
+    "S07": {
+      "status": "success",
+      "evidence": "AION commit 9b03a7c (pushed); 164 AION tests"
+    },
+    "S09": {
+      "status": "success",
+      "evidence": "AION commit dcb7e96 (pushed); 170 AION tests; F8 finding recorded, non-blocking"
+    },
+    "S02": {
+      "status": "success",
+      "evidence": "AION commit 143140e (pushed); 184 AION tests; Class A security review recorded, one real HTTPS-transport gap found and fixed"
+    },
+    "S06": {
+      "status": "success",
+      "evidence": "SEVAA commit on agent/sales/S06-source-attribution (bundled); 40 SEVAA tests; real max_length bug found and fixed"
+    }
+  },
+  "open": {
+    "S04": {
+      "status": "prepared_not_run",
+      "why": "no push access to het-life/sevaaconnect-realestate from this session",
+      "evidence": "bundles/S04-branch-hygiene.sh -- self-verifying, refuses if main has moved"
     }
   }
 }

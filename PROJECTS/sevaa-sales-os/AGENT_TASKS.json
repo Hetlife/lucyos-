@@ -189,7 +189,7 @@
       ],
       "success": "src persisted; bad src -> default; missing -> default",
       "failure": "unvalidated src stored",
-      "status": "IMPLEMENT_NOW"
+      "status": "DONE"
     },
     {
       "id": "S04",
@@ -210,7 +210,7 @@
       ],
       "success": "only main plus live agent branches remain; deferred content is tagged",
       "failure": "any unmerged, non-deferred content deleted",
-      "status": "IMPLEMENT_NOW"
+      "status": "PREPARED_NOT_RUN"
     }
   ],
   "founder_actions": [
