@@ -45,3 +45,39 @@ phase 2 is not a spending target; the governor thresholds (25/50/70/85/95%)
 already enforce the downshift.
 
 Recorded here so it is not reopened without new evidence.
+
+## Result — genuinely FABLE READY
+
+Closed the three real gaps, all deterministic, no reasoning spent:
+
+```
+aion seed              -> 8 decisions + 9 opening tasks queued
+aion secrets init      -> private_state/secrets.env created (0600)
+aion backup            -> taken and restore-verified: integrity=ok, 9 tasks, 17 memories
+```
+
+Two of the nine seeded tasks turned out to already be real work, not new work —
+marked DONE with evidence rather than left for Fable to redo:
+
+- **Milestone ladder (M0-M6)**: already implemented in `aion_core/milestones.py`,
+  computed strictly from `finance` rows with `stage=ACTUAL`. Verified by running
+  `aion milestones` — correctly reports all six not-yet-reached against real
+  (zero) revenue.
+- **Phone interface**: already built and pushed (`b59a9df`), 25 tests passing,
+  verified live with real HTTP round trips earlier this session.
+
+Re-measured after trimming:
+
+```
+FABLE READY
+Task Queue: READY · Backup: READY · Budget Governor: READY · Security: PASS
+Queued strong-model work:
+  TASK-1BB538FF  Design the first real revenue experiment end to end
+  TASK-94945B7C  Adversarially review the bridge's external exposure
+RECOMMENDED INITIAL CREDIT: INR 700
+MAXIMUM CUMULATIVE AUTHORIZATION: INR 2000
+```
+
+This is the real bottleneck now: not infrastructure, a validated revenue
+experiment. That is exactly the two-item queue a strong-reasoning session
+should spend its first credit on.
