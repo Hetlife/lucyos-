@@ -22,6 +22,8 @@ python3 bridges/whatsapp_bridge.py stdin     # type `status`, `tasks`, `help`
 
 Full setup, services, backups and recovery: `docs/OPERATIONS.md`.
 Running it on a public cloud host instead of hardware: `docs/SERVER_DEPLOYMENT.md`.
+The full structure, real gaps and the money path in one document: `docs/MASTER_BRIEFING.md`.
+Every project (business/repo) LucyOS operates on: `PROJECTS/REGISTRY.md`.
 
 ## What it does
 
