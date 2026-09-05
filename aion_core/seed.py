@@ -7,7 +7,16 @@ already exists.
 """
 from __future__ import annotations
 
+import os
+from pathlib import Path
+
 from . import agents, db, memory, resume, tasks, util
+
+
+def repo_root() -> Path:
+    """Where `done_when` globs are evaluated.  Tests point this at an empty dir."""
+    env = os.environ.get("AION_SEED_ROOT")
+    return Path(env).expanduser() if env else Path(__file__).resolve().parent.parent
 
 MISSION = (
     "Run a portfolio of businesses autonomously and produce INR 1,00,000 per month "
@@ -69,7 +78,13 @@ DECISIONS = [
 ]
 
 # (title, kwargs) — the opening queue.  Class C items are the genuine
-# high-value reasoning jobs; everything else is delegated downward.
+# high-value reasoning jobs; owner-only items are class D with a validation
+# the loop can run; everything else is delegated downward.
+#
+# `done_when` is a glob relative to the repository root: if it matches at seed
+# time the work already exists (a strong session did it and committed it), so
+# the task is seeded DONE with that path as evidence instead of being queued
+# again for another expensive session.
 TASKS = [
     ("Design the first real revenue experiment end to end", dict(
         model_class="C", priority=1, impact=5, probability=0.6, unlocks=3, info_gain=3,
@@ -81,7 +96,8 @@ TASKS = [
                          "conditions, max cost, time window and the decision each outcome forces",
         validation_method="Recorded as a decision plus an experiment file, with the first "
                           "executable step queued as its own task",
-        next_action="Read FABLE_CONTEXT.md, then write the experiment")),
+        next_action="Read FABLE_CONTEXT.md, then write the experiment",
+        done_when="PROJECTS/*/experiments/*/EXPERIMENT.md")),
     ("Decompose the revenue path into executable work orders", dict(
         model_class="C", priority=1, impact=5, probability=0.7, unlocks=4, info_gain=2,
         cost=1, risk=1, time_est=2, dependencies="@0",
@@ -90,7 +106,8 @@ TASKS = [
                     "tests, expected artifacts.",
         success_criteria="Every leaf task carries a success criterion and a validation method, "
                          "and is routed to the cheapest class that can do it",
-        next_action="Run `aion context <TASK_ID>` for each leaf and save the work orders")),
+        next_action="Run `aion context <TASK_ID>` for each leaf and save the work orders",
+        done_when="incoming/plan-*.json")),
     ("Design and build the AION phone interface (backend + UI)", dict(
         model_class="C", kind="architecture", priority=1, impact=5, probability=0.75,
         unlocks=3, info_gain=2, cost=1, risk=2, time_est=3,
@@ -155,7 +172,8 @@ TASKS = [
             "known state with the PC switched off"),
         validation_method="New tests covering auth rejection, redaction of every endpoint, "
                           "and the approve round trip; plus a screenshot from the phone",
-        next_action="Write the API surface and the plan, then `aion plan apply`")),
+        next_action="Write the API surface and the plan, then `aion plan apply`",
+        done_when="bridges/web/phone.html")),
     ("Adversarially review the bridge's external exposure", dict(
         model_class="C", priority=2, impact=4, probability=0.8, unlocks=2, info_gain=2,
         cost=1, risk=1, time_est=1,
@@ -165,24 +183,34 @@ TASKS = [
         success_criteria="Each finding is either fixed with a test or recorded with a reason "
                          "for accepting it",
         validation_method="New tests in tests/test_bridge.py covering each fixed finding",
-        next_action="Read bridges/whatsapp_bridge.py and aion_core/router.py")),
+        next_action="Read bridges/whatsapp_bridge.py and aion_core/router.py",
+        done_when="docs/SECURITY_REVIEW.md")),
     ("Install Ollama and route class A work to it", dict(
-        model_class="DET", priority=2, impact=3, probability=0.9, unlocks=2, cost=1, risk=1,
+        model_class="D", kind="credential", priority=2, impact=3, probability=0.9, unlocks=2,
+        cost=1, risk=1, human_dependence=1,
+        validation_command="curl -s http://localhost:11434/api/tags",
         description="Local models make classification, extraction, summarising and log parsing "
                     "free. Until it exists, class A work falls through to paid cloud calls.",
         success_criteria="`aion health` reports installed models and a class A task completes "
                          "locally with evidence",
         next_action="curl -fsSL https://ollama.com/install.sh | sh && ollama pull llama3.1:8b")),
     ("Connect the WhatsApp bridge to the real transport", dict(
-        model_class="B", priority=1, impact=5, probability=0.7, unlocks=3, cost=1, risk=2,
-        human_dependence=2,
+        model_class="D", kind="credential", priority=1, impact=5, probability=0.7, unlocks=3,
+        cost=1, risk=2, human_dependence=2,
+        validation_command="./aion secrets list | grep -q WHATSAPP_BRIDGE_TOKEN && "
+                           "./aion secrets list | grep -q WHATSAPP_OWNER_NUMBERS",
         description="The bridge answers correctly on stdin and file adapters. It needs a real "
                     "transport and its token before the phone can drive the system.",
         success_criteria="A message sent from the owner's phone returns a status reply",
         validation_method="End-to-end message from the real phone, recorded as evidence",
-        next_action="aion secrets set WHATSAPP_BRIDGE_TOKEN, then start aion-bridge.service")),
+        next_action="aion secrets set WHATSAPP_BRIDGE_TOKEN and WHATSAPP_OWNER_NUMBERS, "
+                    "then start aion-bridge.service")),
     ("Record the true current financial position", dict(
-        model_class="DET", priority=2, impact=3, probability=0.95, cost=1, risk=1,
+        model_class="D", kind="spend", priority=2, impact=3, probability=0.95, cost=1, risk=1,
+        human_dependence=1,
+        validation_command="python3 -c \"from aion_core import db; import sys; "
+                           "sys.exit(0 if db.connect().execute(\\\"SELECT 1 FROM finance "
+                           "WHERE stage='ACTUAL' AND kind='cost' AND evidence!=''\\\").fetchone() else 1)\"",
         description="Every recurring cost and every rupee actually received, with evidence. "
                     "Without this the net number is fiction.",
         success_criteria="`aion money` shows real revenue, real cost and net, each backed by "
@@ -204,13 +232,17 @@ TASKS = [
         success_criteria=("Each milestone has a number, a proof method and the capability it "
                           "needs; M0 is detected automatically by `aion money`"),
         validation_method="A recorded decision plus queued capability tasks",
-        next_action="Read the mission and milestones in memory, then write the ladder")),
+        next_action="Read the mission and milestones in memory, then write the ladder",
+        done_when="docs/MILESTONE_LADDER.md")),
     ("Set up an encrypted off-machine backup of private_state", dict(
-        model_class="DET", priority=3, impact=4, probability=0.9, cost=1, risk=1,
+        model_class="D", kind="credential", priority=3, impact=4, probability=0.9, cost=1, risk=1,
+        human_dependence=1,
+        validation_command="bash scripts/backup_secrets.sh --verify-only",
         description="Backups deliberately exclude secrets, so the secret store has no copy. "
                     "A disk failure would currently cost every credential.",
         success_criteria="An encrypted copy exists off the machine and has been restore-tested",
-        next_action="Choose the medium, then write the script")),
+        next_action="Run scripts/backup_secrets.sh with a passphrase kept off this disk, "
+                    "then copy the .gpg file off the machine")),
 ]
 
 
@@ -236,14 +268,24 @@ def apply() -> dict:
         result["decisions"] += 1
 
     created: list[str] = []
+    already: list[str] = []
+    root = repo_root()
     for title, kw in TASKS:
         kw = dict(kw)
+        done_when = kw.pop("done_when", "")
         # "@n" means "depends on the nth seeded task", resolved once ids exist.
         deps = kw.get("dependencies", "")
         if deps.startswith("@"):
             kw["dependencies"] = created[int(deps[1:])]
-        created.append(tasks.create(title, **kw))
+        task_id = tasks.create(title, **kw)
+        created.append(task_id)
+        hit = sorted(root.glob(done_when)) if done_when else []
+        if hit:
+            rel = hit[0].relative_to(root) if hit[0].is_relative_to(root) else hit[0]
+            tasks.complete(task_id, f"already in the repository: {rel} (matched at seed time)")
+            already.append(task_id)
     result["tasks"] = created
+    result["already_done"] = already
 
     agents.seed_defaults()
     db.set_meta("seeded_at", util.now())

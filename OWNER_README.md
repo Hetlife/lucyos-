@@ -6,7 +6,7 @@ under "Steps to real money", and in the `status` reply as "Needs you: …"._
 ## Where things stand (measured 2026-09-05)
 
 - Real revenue through the system: **₹0**. Milestone M0 (first real rupee) not reached.
-- The software is built and tested (215 tests). The bottleneck is not code.
+- The software is built and tested (232 tests). The bottleneck is not code.
 - The first revenue experiment is designed and its plan is queued. It needs
   **about 4 hours of your time over two weeks** and **₹0 of spend**.
 

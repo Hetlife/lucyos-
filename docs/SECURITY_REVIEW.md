@@ -140,7 +140,7 @@ cancel the step. Tests: `TestOwnerStepsCanFinish` in `tests/test_plan_worker.py`
 
 ## Verdict
 
-Two critical, two high and one low finding fixed with tests (215 tests
+Two critical, two high and one low finding fixed with tests (232 tests
 passing); two medium findings accepted with a dated reason and queued as cheap
 work; the rest accepted with the reason recorded. Before connecting a real
 provider on the business number: set `WHATSAPP_BRIDGE_TOKEN` **and**

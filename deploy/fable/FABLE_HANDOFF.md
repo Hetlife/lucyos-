@@ -16,7 +16,7 @@ ACTIONS_TAKEN:
 FILES_CHANGED: see `git show --stat HEAD` on branch claude/fable-deploy-setup-mc5nr6
 TESTS_RUN: python3 -m unittest discover -s tests -t . -q → see FABLE_SESSION_LOG.md for the final count; `aion scan .` clean
 MEASURED_RESULTS: M0 not reached (0 evidenced rows) — correct; EXP-001 NOT_STARTED, 0/30 sent; money path 1/8 done
-FAILURES: none open; the seeded DET tasks without exec_command (Ollama install, backup, financial position) fail in the loop and escalate to WAITING — pre-existing, logged, not this session's scope
+FAILURES: none open. Two loop defects found while executing the plan were fixed with tests: one attempt per task per run, and seeding that marks already-done work DONE and gives owner-only tasks a real check
 RISKS: the working branch and `main` diverged (main has a parallel earlier phone interface); routines push to the working branch only; a cheap session must not merge main
 ASSUMPTIONS: price ₹2,499 is a hypothesis (no prior consult price known); Razorpay fee 2.36% ESTIMATE; warm-contact count UNKNOWN until the owner counts
 APPROVALS_OPENED: in a fresh brain plan 1 raises three cards (payment link + unknowns; send 30 messages; deliver and record). On Mark-2 they appear after `aion plan apply`.

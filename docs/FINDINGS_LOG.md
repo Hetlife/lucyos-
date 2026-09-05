@@ -22,6 +22,8 @@ That is the whole cost-control loop: cheap by default, strong only on demand._
 | 2026-09-05 | Fable (strong) | Auth failures log one event row each, unbounded | none yet | plan-bridge-hardening s2 (B): one row per IP per minute, with test | accepted, planned |
 | 2026-09-05 | Fable (strong) | No Host-header check (DNS rebinding) | none yet | plan-bridge-hardening s3 (B): 421 for foreign Host, with test | accepted, planned |
 | 2026-09-05 | Fable (strong) | `main` and the working branch diverged: main carries an earlier, parallel phone interface (`web/`, `bridges/http_server.py`) that the branch superseded | none — owner decision | none; a strong session or the owner should decide whether main is reset to this branch or the two are merged (only `README.md` and `scripts/install_services.sh` conflict) | needs owner |
+| 2026-09-05 | Fable (strong) | The loop retried a failing task three times inside one run (it stays the top READY row), burning every retry in seconds and blocking it before anything else ran | Worker tries each task at most once per run | none | fixed, tested |
+| 2026-09-05 | Fable (strong) | A fresh `aion seed` re-queued five class-C jobs that are already done in the repo (experiment, decomposition, phone interface, ladder, security review) and three DET tasks with no command that could only fail | Seed marks work DONE when its artifact exists in the repository (`done_when` glob); owner-only tasks are class D with a validation the loop can run | none | fixed, tested |
 
 ## Needs a strong model (weekly review reads this first; empty = exit)
 

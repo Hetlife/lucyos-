@@ -171,12 +171,18 @@ def work(max_tasks: int = 5, *, dry_run: bool = False, session_id: str | None = 
         session_id = sessions.start("openclaw", model_class="DET",
                                     objective=f"autonomous execution of up to {max_tasks} tasks")
 
+    tried: set = set()
     try:
         for _ in range(max_tasks):
-            task = tasks.next_task()
+            # One attempt per task per run.  A task that failed a moment ago is
+            # still the highest-value READY row, so without this the loop would
+            # retry it three times in a few seconds, burn every retry, and
+            # escalate or block it before anything else got a turn.
+            task = next((t for t in tasks.ready(50) if t["task_id"] not in tried), None)
             if task is None:
-                summary["stopped"] = "no ready task"
+                summary["stopped"] = "no ready task" if not tried else "every ready task has had its turn this run"
                 break
+            tried.add(task["task_id"])
 
             cls = task["model_class"] or "B"
             budget = metrics.budget_status()

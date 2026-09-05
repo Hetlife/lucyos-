@@ -12,6 +12,29 @@ class TestSeed(AionTest):
         self.assertTrue(memory.search("revenue"))
         self.assertEqual(resume.load()["objective"], seed.OBJECTIVE)
 
+    def test_work_already_in_the_repository_is_seeded_done_not_requeued(self):
+        import os
+        from pathlib import Path
+        os.environ["AION_SEED_ROOT"] = str(Path(__file__).resolve().parent.parent)
+        result = seed.apply()
+        done = {tasks.get(t)["title"] for t in result["already_done"]}
+        self.assertIn("Design the first real revenue experiment end to end", done)
+        self.assertIn("Adversarially review the bridge's external exposure", done)
+        self.assertIn("Design and build the AION phone interface (backend + UI)", done)
+        for t in result["already_done"]:
+            self.assertIn("already in the repository", tasks.get(t)["evidence"])
+        # Nothing class C is left for a strong session; the owner steps remain.
+        self.assertFalse([t for t in tasks.ready(50) if t["model_class"] == "C"])
+        self.assertTrue([t for t in tasks.ready(50) if t["model_class"] == "D"])
+
+    def test_owner_only_opening_tasks_carry_a_check_the_loop_can_run(self):
+        from aion_core import worker
+        seed.apply()
+        for t in tasks.ready(50):
+            if t["model_class"] == "D":
+                self.assertTrue(t["validation_command"], t["title"])
+                worker.check_command(t["validation_command"])  # allowlisted, raises otherwise
+
     def test_seed_is_idempotent(self):
         seed.apply()
         before = len(tasks.ready(50))

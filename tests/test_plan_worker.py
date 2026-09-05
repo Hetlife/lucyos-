@@ -292,3 +292,16 @@ class TestOwnerStepsCanFinish(AionTest):
         self.assertEqual(tasks.get(t)["status"], "CANCELLED")
         out = worker.work(max_tasks=1)
         self.assertEqual(out["done"], 0)
+
+
+class TestOneAttemptPerRun(AionTest):
+    def test_a_failing_task_is_not_retried_within_the_same_run(self):
+        bad = tasks.create("always fails", model_class="DET", exec_command="test -f /nonexistent-aion",
+                           priority=1, impact=5)
+        good = tasks.create("passes", model_class="DET", exec_command="echo ok",
+                            validation_command="echo ok", priority=3)
+        out = worker.work(max_tasks=5)
+        self.assertEqual(tasks.get(bad)["retry_count"], 1, "one failure per run, not three")
+        self.assertEqual(tasks.get(bad)["status"], "READY")
+        self.assertEqual(tasks.get(good)["status"], "DONE", "the next task still got its turn")
+        self.assertIn("had its turn", out["stopped"])
