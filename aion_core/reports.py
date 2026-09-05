@@ -6,7 +6,7 @@ can carry a credential into WhatsApp.
 from __future__ import annotations
 
 from . import (agents, approvals, config, db, errors, governor, memory, metrics,
-               packets, resume, security, sevaa, tasks, util)
+               packets, resume, security, sevaa, tasks, util, experiments, money_path)
 
 
 def _clean(text: str) -> str:
@@ -47,6 +47,12 @@ def status() -> str:
         # Only shown once SEVAA is actually configured; a plain AION install
         # never sees this line. Once configured, an outage is never hidden.
         lines.append(sevaa.status_line())
+    for s in experiments.all_status():
+        if s["state"] not in ("SUCCESS", "FAILURE"):
+            lines.append(experiments.line(s))
+    owner_step = money_path.owner_line()
+    if owner_step:
+        lines.append(owner_step)
     alert = governor.pending_alert()
     if alert:
         lines += ["", f"⚠ {alert}"]

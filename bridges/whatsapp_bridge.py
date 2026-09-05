@@ -32,6 +32,19 @@ sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 from aion_core import bootstrap, config, db, intake, phone, resume, router, security, sevaa, tasks, util  # noqa: E402
 
 MAX_MESSAGE_BYTES = 4096
+LOOPBACK_HOSTS = frozenset({"127.0.0.1", "localhost", "::1"})
+OWNER_NUMBERS_NAME = "WHATSAPP_OWNER_NUMBERS"   # comma-separated; secret store or env
+BRIDGE_TOKEN_NAME = "WHATSAPP_BRIDGE_TOKEN"
+
+
+def _same(a: str, b: str) -> bool:
+    """Constant-time compare that cannot raise on non-ASCII input."""
+    return hmac.compare_digest(a.encode("utf-8", "replace"), b.encode("utf-8", "replace"))
+
+
+def load_owner_numbers() -> frozenset:
+    raw = bootstrap.get_secret(OWNER_NUMBERS_NAME) or os.environ.get(OWNER_NUMBERS_NAME, "")
+    return frozenset(n.strip() for n in raw.split(",") if n.strip())
 
 
 def reply_to(message: str, sender: str = "owner") -> str:
@@ -91,6 +104,12 @@ def run_file(poll_seconds: float = 2.0, once: bool = False) -> int:
 class Handler(BaseHTTPRequestHandler):
     secret_token = ""
     phone_token = ""
+    # Senders allowed to drive the control channel.  Empty = every sender the
+    # transport forwards (only acceptable on a private, single-user transport).
+    owner_numbers: frozenset = frozenset()
+    # A client that connects and stalls must not hold the single-threaded
+    # server — and with it the owner's control channel — open forever.
+    timeout = 15
 
     def log_message(self, fmt, *args):  # never log message bodies
         pass
@@ -104,9 +123,19 @@ class Handler(BaseHTTPRequestHandler):
         self.wfile.write(body)
 
     def do_POST(self):  # noqa: N802
-        length = int(self.headers.get("Content-Length") or 0)
+        try:
+            length = int(self.headers.get("Content-Length") or 0)
+        except ValueError:
+            return self._send(400, {"error": "invalid content-length"})
+        if length < 0:
+            return self._send(400, {"error": "invalid content-length"})
         if length > MAX_MESSAGE_BYTES * 4:
             return self._send(413, {"error": "payload too large"})
+        # A JSON body must say so.  A browser can fire a cross-site text/plain
+        # POST at 127.0.0.1 without a preflight; application/json cannot.
+        ctype = (self.headers.get("Content-Type") or "").split(";", 1)[0].strip().lower()
+        if ctype != "application/json":
+            return self._send(415, {"error": "content-type must be application/json"})
         raw = self.rfile.read(length)
 
         path = self.path.split("?", 1)[0].rstrip("/")
@@ -117,7 +146,7 @@ class Handler(BaseHTTPRequestHandler):
 
         if self.secret_token:
             provided = self.headers.get("X-Bridge-Token", "")
-            if not hmac.compare_digest(provided, self.secret_token):
+            if not _same(provided, self.secret_token):
                 db.log_event("bridge", "whatsapp.auth_failed", self.client_address[0])
                 return self._send(401, {"error": "unauthorized"})
 
@@ -131,6 +160,14 @@ class Handler(BaseHTTPRequestHandler):
         message_id = str(payload.get("id", "")) or hashlib.sha256(raw).hexdigest()[:16]
         if not message:
             return self._send(400, {"error": "empty message"})
+        if self.owner_numbers and sender not in self.owner_numbers:
+            # The bridge token proves the *transport*; it says nothing about who
+            # typed the message.  A business number receives messages from
+            # strangers, and a stranger must never reach the router.
+            db.log_event("bridge", "whatsapp.sender_refused",
+                         hashlib.sha256(sender.encode()).hexdigest()[:12])
+            return self._send(200, {"reply": "This number is not authorised to control AION. "
+                                             "Nothing was done.", "refused": True})
         if db.seen(f"wa:{message_id}", "whatsapp_webhook"):
             return self._send(200, {"reply": "", "duplicate": True})
         self._send(200, {"reply": reply_to(message, sender=sender)})
@@ -159,7 +196,7 @@ class Handler(BaseHTTPRequestHandler):
         header = self.headers.get("Authorization", "")
         if not header.startswith("Bearer "):
             return False
-        return hmac.compare_digest(header[len("Bearer "):], self.phone_token)
+        return _same(header[len("Bearer "):], self.phone_token)
 
     def _handle_phone_post(self, path: str, raw: bytes) -> None:
         if not self._phone_authorized():
@@ -230,12 +267,25 @@ class Handler(BaseHTTPRequestHandler):
         self.wfile.write(body)
 
 
-def run_webhook(host: str, port: int) -> int:
-    Handler.secret_token = os.environ.get("WHATSAPP_BRIDGE_TOKEN", "")
+def run_webhook(host: str, port: int, *, allow_unauthenticated: bool = False) -> int:
+    Handler.secret_token = (bootstrap.get_secret(BRIDGE_TOKEN_NAME)
+                            or os.environ.get(BRIDGE_TOKEN_NAME, ""))
     if not Handler.secret_token:
-        print("WARNING: WHATSAPP_BRIDGE_TOKEN is unset — the endpoint is unauthenticated.",
+        if host not in LOOPBACK_HOSTS and not allow_unauthenticated:
+            # Fail closed: an unauthenticated control channel on a reachable
+            # address lets anyone on that network approve real actions.
+            print(f"REFUSING to start: {BRIDGE_TOKEN_NAME} is unset and --host {host} is not "
+                  f"loopback. Set the token (`aion secrets set {BRIDGE_TOKEN_NAME}`) or pass "
+                  f"--allow-unauthenticated if you really mean it.", file=sys.stderr)
+            return 2
+        print(f"WARNING: {BRIDGE_TOKEN_NAME} is unset — the endpoint is unauthenticated.",
               file=sys.stderr)
         print("Bind to localhost only and put a tunnel or reverse proxy in front.",
+              file=sys.stderr)
+    Handler.owner_numbers = load_owner_numbers()
+    if not Handler.owner_numbers:
+        print(f"NOTE: {OWNER_NUMBERS_NAME} is unset — every sender the transport forwards can "
+              f"issue commands. Set it before connecting a shared or business number.",
               file=sys.stderr)
     Handler.phone_token = bootstrap.get_secret("PHONE_API_TOKEN") or os.environ.get("PHONE_API_TOKEN", "")
     if not Handler.phone_token:
@@ -245,7 +295,8 @@ def run_webhook(host: str, port: int) -> int:
     server = HTTPServer((host, port), Handler)
     print(f"AION WhatsApp bridge listening on http://{host}:{port} "
           f"(bridge auth {'on' if Handler.secret_token else 'OFF'}, "
-          f"phone auth {'on' if Handler.phone_token else 'OFF'})")
+          f"phone auth {'on' if Handler.phone_token else 'OFF'}, "
+          f"owner allowlist {'on' if Handler.owner_numbers else 'OFF'})")
     try:
         server.serve_forever()
     except KeyboardInterrupt:
@@ -260,6 +311,8 @@ def main(argv=None) -> int:
     p.add_argument("--port", type=int, default=8765)
     p.add_argument("--poll", type=float, default=2.0)
     p.add_argument("--once", action="store_true", help="file adapter: one pass then exit")
+    p.add_argument("--allow-unauthenticated", action="store_true",
+                   help="webhook: serve without a bridge token on a non-loopback host (unsafe)")
     args = p.parse_args(argv)
 
     bootstrap.ensure()
@@ -268,7 +321,7 @@ def main(argv=None) -> int:
         return run_stdin()
     if args.adapter == "file":
         return run_file(args.poll, args.once)
-    return run_webhook(args.host, args.port)
+    return run_webhook(args.host, args.port, allow_unauthenticated=args.allow_unauthenticated)
 
 
 if __name__ == "__main__":

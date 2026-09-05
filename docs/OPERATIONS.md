@@ -16,6 +16,7 @@ Nothing above needs a credential. `install.sh` is idempotent.
 
 ```bash
 aion secrets set WHATSAPP_BRIDGE_TOKEN   # value entered here, never in chat
+aion secrets set WHATSAPP_OWNER_NUMBERS  # comma-separated owner numbers; any other sender is refused
 scripts/install_services.sh
 systemctl --user enable --now aion-bridge.service
 loginctl enable-linger "$USER"           # keep running when logged out
@@ -24,6 +25,19 @@ loginctl enable-linger "$USER"           # keep running when logged out
 The nightly timer runs `scripts/maintenance.sh` at 03:15: boot loop, notebook
 sync, backup with a real restore test, doc regeneration, secret scan and a deep
 health check, all inside one logged session.
+
+## Making money — the path and the experiments
+
+```bash
+aion path                    # per project: real steps to real money, which need YOU, live status
+aion experiments             # every experiment: sent / replied / paid (evidenced) / verdict
+aion experiment EXP-001      # one experiment in full, with the decision its state forces
+aion experiment EXP-001 --decide   # writes RESULT.md; exits 1 while no verdict exists
+```
+
+Steps live in `PROJECTS/<project>/money_path.json`; experiments in
+`PROJECTS/<project>/experiments/<ID>-<name>/` (`experiment.json` + `contacts.csv`,
+codes only, never names). Both are read live by the phone page and by `status`.
 
 ## Daily use
 

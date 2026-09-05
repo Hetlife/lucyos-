@@ -1,0 +1,122 @@
+{
+  "plan_id": "PLAN-t100-go-public",
+  "project": "sevaa-sales-os",
+  "objective": "APPLY ONLY AFTER EXP-001 IS SUCCESS. The SEVAA quote funnel is publicly reachable over HTTPS with the founder's five gate actions done, AION reads it live, and a measured inbound-funnel experiment (EXP-004) is defined.",
+  "bottleneck": "T100, the founder gate: five real-world actions only the owner can take, and nothing past them is a coding problem",
+  "success": "aion status shows a live SEVAA line (not 'unreachable'), the public /privacy page answers 200, T100_STATUS.md names the traffic source, and EXP-004 exists with numbers.",
+  "steps": [
+    {
+      "id": "s1",
+      "title": "Gate: EXP-001 must have reached SUCCESS",
+      "kind": "test_run",
+      "why": "Opening a public funnel before a single warm contact has paid means buying traffic for an offer nobody wanted. This step fails, and keeps failing, until the verdict is SUCCESS.",
+      "model_class": "DET",
+      "depends_on": [],
+      "exec_command": "python3 -c \"from aion_core import experiments; import sys; s=experiments.status('EXP-001'); print(s['state']); sys.exit(0 if s['state']=='SUCCESS' else 1)\"",
+      "validation_command": "python3 -c \"from aion_core import experiments; import sys; sys.exit(0 if experiments.status('EXP-001')['state']=='SUCCESS' else 1)\"",
+      "success_criteria": "aion experiment EXP-001 says SUCCESS",
+      "impact": 5, "cost": 1, "risk": 1,
+      "output_location": ""
+    },
+    {
+      "id": "s2",
+      "title": "OWNER: authorise the Railway trial project and set its four environment variables",
+      "kind": "account_change",
+      "why": "A hosting account is an account-ownership change and, past the trial, a spend; only the founder may create it. Values go into Railway's own secret store, never into git or chat.",
+      "model_class": "D",
+      "depends_on": ["s1"],
+      "validation_command": "grep -q 'public_url: https://' PROJECTS/sevaa-sales-os/T100_STATUS.md && grep -q 'railway_env_vars_set: yes' PROJECTS/sevaa-sales-os/T100_STATUS.md",
+      "success_criteria": "PROJECTS/sevaa-sales-os/T100_STATUS.md has 'public_url: https://...' and 'railway_env_vars_set: yes' (SEVAA_FOUNDER_TOKEN, SEVAA_AUTOMATION_TOKEN, SEVAA_ALLOW_LEGACY_V1=0, SEVAA_DB_PATH=/data/sevaa.db set in Railway, values never written here)",
+      "impact": 5, "cost": 1, "risk": 2,
+      "output_location": "PROJECTS/sevaa-sales-os/T100_STATUS.md"
+    },
+    {
+      "id": "s3",
+      "title": "OWNER: choose the monitored privacy contact mailbox",
+      "kind": "contract",
+      "why": "The public /privacy page names a contact; DPDP posture requires it to be a mailbox someone reads.",
+      "model_class": "D",
+      "depends_on": ["s1"],
+      "validation_command": "grep -q 'privacy_contact_set: yes' PROJECTS/sevaa-sales-os/T100_STATUS.md",
+      "success_criteria": "T100_STATUS.md says 'privacy_contact_set: yes' (the address itself is set as SEVAA_PUBLIC_CONTACT_EMAIL in Railway, not written in the repo)",
+      "impact": 3, "cost": 1, "risk": 1,
+      "output_location": "PROJECTS/sevaa-sales-os/T100_STATUS.md"
+    },
+    {
+      "id": "s4",
+      "title": "OWNER: enter the three SEVAA secrets and the public base URL on the PC",
+      "kind": "credential",
+      "why": "AION's status line, approval cards and payment reconciliation all read SEVAA through these; they live only in the 0600 secret store.",
+      "model_class": "D",
+      "depends_on": ["s2"],
+      "validation_command": "./aion secrets list | grep -q SEVAA_AUTOMATION_TOKEN && ./aion secrets list | grep -q SEVAA_FOUNDER_TOKEN && ./aion secrets list | grep -q SEVAA_NOTIFY_WEBHOOK_SECRET && ./aion secrets list | grep -q SEVAA_BASE_URL",
+      "success_criteria": "aion secrets list shows the four names; SEVAA_BASE_URL is the https public URL (plain http is refused by aion_core/sevaa.py off loopback)",
+      "impact": 5, "cost": 1, "risk": 1,
+      "output_location": ""
+    },
+    {
+      "id": "s5",
+      "title": "Prove AION reads the live deployment",
+      "kind": "health_check",
+      "why": "A configured integration that is unreachable would hide the first real enquiry.",
+      "model_class": "DET",
+      "depends_on": ["s4"],
+      "exec_command": "./aion boot",
+      "validation_command": "./aion status | grep -q 'SEVAA:' && ! ./aion status | grep -q 'SEVAA: unreachable'",
+      "success_criteria": "aion status prints 'SEVAA: n new enquiries, m approvals pending, k follow-ups overdue'",
+      "impact": 4, "cost": 1, "risk": 1,
+      "output_location": ""
+    },
+    {
+      "id": "s6",
+      "title": "Prove the public site answers over HTTPS",
+      "kind": "health_check",
+      "why": "'Deployed' in a dashboard is not the same as reachable from the internet.",
+      "model_class": "DET",
+      "depends_on": ["s2"],
+      "exec_command": "python3 -c \"import re,sys,urllib.request;u=re.search(r'public_url: (\\S+)',open('PROJECTS/sevaa-sales-os/T100_STATUS.md').read()).group(1).rstrip('/');r=urllib.request.urlopen(u+'/privacy',timeout=15);print(r.status);sys.exit(0 if r.status==200 else 1)\"",
+      "validation_command": "python3 -c \"import re,sys,urllib.request;u=re.search(r'public_url: (\\S+)',open('PROJECTS/sevaa-sales-os/T100_STATUS.md').read()).group(1).rstrip('/');r=urllib.request.urlopen(u+'/privacy',timeout=15);sys.exit(0 if r.status==200 else 1)\"",
+      "success_criteria": "GET <public_url>/privacy returns 200 over https",
+      "impact": 4, "cost": 1, "risk": 1,
+      "output_location": ""
+    },
+    {
+      "id": "s7",
+      "title": "OWNER: name the first lawful traffic source and its src slug",
+      "kind": "contract",
+      "why": "Without a named source, /quote?src= attribution (S06) measures nothing and EXP-004 cannot compute cost per enquiry.",
+      "model_class": "D",
+      "depends_on": ["s6"],
+      "validation_command": "grep -qE 'traffic_source: [a-z0-9_-]{1,32}' PROJECTS/sevaa-sales-os/T100_STATUS.md",
+      "success_criteria": "T100_STATUS.md has 'traffic_source: <slug>' matching [a-z0-9_-]{1,32}, e.g. instagram_bio, google_profile, referral_card",
+      "impact": 4, "cost": 1, "risk": 1,
+      "output_location": "PROJECTS/sevaa-sales-os/T100_STATUS.md"
+    },
+    {
+      "id": "s8",
+      "title": "Define EXP-004, the inbound funnel experiment, with numbers",
+      "kind": "format",
+      "why": "The public funnel is an experiment like any other: visitors, enquiries, paid consults, cost per enquiry, and a verdict the code computes.",
+      "model_class": "B",
+      "depends_on": ["s7"],
+      "prompt": "Read PROJECTS/sevaa-sales-os/T100_STATUS.md, PROJECTS/sevaa-sales-os/experiments/EXP-001-paid-design-consult/EXPERIMENT.md and its RESULT.md. Create PROJECTS/sevaa-sales-os/experiments/EXP-004-public-funnel/ with EXPERIMENT.md and experiment.json in the same structure and keys as EXP-001 (see that folder), for this experiment: the public /quote page reached from the named traffic_source slug (link /quote?src=<slug>) for 21 days, offer unchanged from EXP-001 unless RESULT.md says otherwise. Hypothesis: at least 5 enquiries via the funnel and at least 1 paid consultation from them within 21 days. Success: >=1 ACTUAL revenue row with description prefix 'EXP-004' inside the window. Failure: 0 paid. Ambiguous: >=5 enquiries but 0 paid -> extend 14 days once. min_contacts is the enquiry count target (5); the funnel_log contacts.csv is filled by the enquiry events AION receives (lead ids as codes L<id>, never names). Cost ceiling: INR 0 ads for this run; a paid-traffic follow-up is its own approval. Every unknown (traffic volume of the source, enquiry quality) must be marked UNKNOWN with the cheapest way to learn it. Also create an empty contacts.csv with the standard header. Validate: python3 -c \"import json;json.load(open('PROJECTS/sevaa-sales-os/experiments/EXP-004-public-funnel/experiment.json'))\" and ./aion experiments lists EXP-004.",
+      "validation_command": "python3 -c \"import json;json.load(open('PROJECTS/sevaa-sales-os/experiments/EXP-004-public-funnel/experiment.json'))\" && ./aion experiments | grep -q 'EXP-004'",
+      "success_criteria": "aion experiment EXP-004 prints a NOT_STARTED funnel with success at 1 paid",
+      "impact": 4, "cost": 2, "risk": 1,
+      "output_location": "PROJECTS/sevaa-sales-os/experiments/EXP-004-public-funnel/EXPERIMENT.md"
+    },
+    {
+      "id": "s9",
+      "title": "Commit T100 status and EXP-004",
+      "kind": "git",
+      "why": "The gate being open is a fact the next machine must know without asking.",
+      "model_class": "DET",
+      "depends_on": ["s5", "s8"],
+      "exec_command": "git add PROJECTS/sevaa-sales-os && git commit -q -m \"T100 open: public funnel live, EXP-004 defined\" || echo nothing-to-commit",
+      "validation_command": "git log --oneline -5 | grep -q 'T100 open'",
+      "success_criteria": "One commit on the working branch containing T100_STATUS.md and the EXP-004 folder",
+      "impact": 3, "cost": 1, "risk": 1,
+      "output_location": ""
+    }
+  ]
+}

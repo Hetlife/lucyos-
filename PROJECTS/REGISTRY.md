@@ -11,7 +11,7 @@ this file. Nothing else in the architecture needs to change.
 
 | Project | Repo | Branch | Role | Status |
 |---|---|---|---|---|
-| **SEVAA Sales OS** | `het-life/sevaaconnect-realestate` | `main` | First revenue module — B2B sales system for SevaaConnect Solutions | 6/9 task packets merged; 3 pending PR merge; T100 (founder gate) not yet cleared |
+| **SEVAA Sales OS** | `het-life/sevaaconnect-realestate` | `main` | First revenue module — B2B sales system for SevaaConnect Solutions | EXP-001 (paid ₹2,499 consultation, warm network) designed and planned — `aion path` shows the 8 steps; T100 deliberately gated behind EXP-001 SUCCESS |
 
 Folder for each project's plan, task queue and state:
 ```
@@ -20,6 +20,8 @@ PROJECTS/
   sevaa-sales-os/          <- SEVAA project folder
     AION_TASK_QUEUE.md
     MACHINE_HANDOFF.json
+    money_path.json        <- the ordered real-world steps to money (aion path)
+    experiments/           <- one folder per experiment (aion experiments)
     bundles/
 ```
 

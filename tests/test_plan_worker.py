@@ -250,3 +250,45 @@ class TestHandoffAndMilestones(AionTest):
         self.assertIn("M0", milestones.newly_reached())
         self.assertNotIn("M0", milestones.newly_reached())
         self.assertIn("M0", milestones.reached())
+
+
+class TestOwnerStepsCanFinish(AionTest):
+    """A class-D step is the owner's to do, but the loop must still close it."""
+
+    def _d_task(self, validation):
+        return tasks.create("owner does a real-world thing", model_class="D",
+                            validation_command=validation)
+
+    def test_owner_step_raises_one_card_then_completes_after_approval(self):
+        from aion_core import approvals, worker
+        marker = config.home() / "owner-did-it"
+        t = self._d_task(f"test -s {marker}")
+        first = worker.work(max_tasks=3)
+        self.assertEqual(tasks.get(t)["status"], "NEEDS_APPROVAL")
+        card = tasks.get(t)["approval_id"]
+        self.assertTrue(card)
+        # A second pass must not raise a second card.
+        worker.work(max_tasks=3)
+        self.assertEqual(tasks.get(t)["approval_id"], card)
+        # Approved, but the proof is not there yet: stays open, says why.
+        approvals.decide(card, "APPROVED", by="owner")
+        out = worker.work(max_tasks=3)
+        self.assertEqual(tasks.get(t)["status"], "READY")
+        self.assertIn("waiting for proof", out["skipped"][0]["why"])
+        # The owner really did it: the step closes with evidence naming the card.
+        marker.write_text("done", encoding="utf-8")
+        out = worker.work(max_tasks=3)
+        self.assertEqual(out["done"], 1)
+        row = tasks.get(t)
+        self.assertEqual(row["status"], "DONE")
+        self.assertIn(card, row["evidence"])
+
+    def test_denied_owner_step_is_cancelled_not_retried(self):
+        from aion_core import approvals, worker
+        t = self._d_task("true")
+        worker.work(max_tasks=1)
+        card = tasks.get(t)["approval_id"]
+        approvals.decide(card, "DENIED", by="owner")
+        self.assertEqual(tasks.get(t)["status"], "CANCELLED")
+        out = worker.work(max_tasks=1)
+        self.assertEqual(out["done"], 0)

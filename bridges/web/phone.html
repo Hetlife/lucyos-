@@ -53,6 +53,30 @@
   .proj-row:first-child { border-top: none; }
   .proj-row .name { font-weight: 600; font-size: 14px; }
   .proj-row .net { font-size: 14px; }
+  .path-card .proj { font-weight: 700; font-size: 14px; margin-bottom: 2px; }
+  .path-card .goal { font-size: 12.5px; color: var(--muted); margin-bottom: 8px; }
+  .step { display: flex; gap: 10px; padding: 8px 0; border-top: 1px solid var(--border); font-size: 13.5px; }
+  .step:first-of-type { border-top: none; }
+  .step .mark { flex: none; width: 22px; height: 22px; border-radius: 50%; text-align: center;
+    line-height: 22px; font-size: 12px; font-weight: 700; background: var(--border); color: var(--muted); }
+  .step.DONE .mark { background: var(--accent); color: var(--accent-text); }
+  .step.NEXT .mark { background: var(--warn); color: var(--warn-bg); }
+  .step .b { flex: 1; min-width: 0; }
+  .step.DONE .title { color: var(--muted); text-decoration: line-through; }
+  .step .who { font-size: 11px; text-transform: uppercase; letter-spacing: 0.04em; color: var(--muted); }
+  .step.NEXT .who.you { color: var(--warn); font-weight: 700; }
+  .step .do { margin-top: 4px; font-size: 13px; }
+  .step .how { margin-top: 3px; font-size: 12px; color: var(--muted); overflow-wrap: anywhere; }
+  .exp-card .exp-head { display: flex; justify-content: space-between; align-items: baseline; }
+  .exp-card .exp-id { font-weight: 700; font-size: 14px; }
+  .exp-card .exp-state { font-size: 12px; font-weight: 700; padding: 3px 8px; border-radius: 999px;
+    background: var(--border); color: var(--text); }
+  .exp-card .exp-state.SUCCESS { background: var(--accent); color: var(--accent-text); }
+  .exp-card .exp-state.FAILURE, .exp-card .exp-state.BLOCKED { background: var(--danger); color: var(--danger-text); }
+  .exp-funnel { display: flex; justify-content: space-between; margin-top: 10px; text-align: center; }
+  .exp-funnel .n { font-size: 20px; font-weight: 700; }
+  .exp-funnel .l { font-size: 11px; color: var(--muted); text-transform: uppercase; letter-spacing: 0.04em; }
+  .exp-sub { font-size: 12.5px; color: var(--muted); margin-top: 8px; }
   .forecast-note { font-size: 12px; color: var(--muted); margin-top: 8px; padding-top: 8px;
     border-top: 1px dashed var(--border); }
   .feed-item { display: flex; gap: 10px; padding: 9px 0; border-top: 1px solid var(--border); }
@@ -153,6 +177,12 @@
     </div>
     <div class="card" id="moneyDetail"></div>
     <div id="projectList"></div>
+    <div id="experimentList"></div>
+  </section>
+
+  <section id="pathSection" class="hidden">
+    <h2>Steps to real money</h2>
+    <div id="pathList"></div>
   </section>
 
   <section id="needsYouSection">
@@ -314,6 +344,47 @@
       }).join("") + '</div>';
     } else {
       projEl.innerHTML = "";
+    }
+
+    var expEl = document.getElementById("experimentList");
+    var exps = data.experiments || [];
+    expEl.innerHTML = exps.map(function(x) {
+      var where = x.day ? ("day " + x.day + " of " + x.window_days) : "not started";
+      return '<div class="card exp-card">' +
+        '<div class="exp-head"><span class="exp-id">' + escapeHtml(x.experiment_id) + ' · ₹' +
+        escapeHtml(x.price_inr) + ' offer</span><span class="exp-state ' + escapeAttr(x.state) + '">' +
+        escapeHtml(x.state) + '</span></div>' +
+        '<div class="exp-funnel">' +
+        '<div><div class="n">' + escapeHtml(x.sent) + '/' + escapeHtml(x.min_contacts) + '</div><div class="l">sent</div></div>' +
+        '<div><div class="n">' + escapeHtml(x.replied) + '</div><div class="l">replied</div></div>' +
+        '<div><div class="n">' + escapeHtml(x.paid) + '/' + escapeHtml(x.success_paid_min) + '</div><div class="l">paid</div></div>' +
+        '<div><div class="n">' + fmtInr(x.revenue_inr) + '</div><div class="l">evidenced</div></div>' +
+        '</div>' +
+        '<div class="exp-sub">' + escapeHtml(x.title) + ' · ' + where +
+        (x.decision ? '<br><b>Forces:</b> ' + escapeHtml(x.decision) : '') + '</div></div>';
+    }).join("");
+
+    var paths = data.money_path || [];
+    var pathSection = document.getElementById("pathSection");
+    if (paths.length) {
+      pathSection.classList.remove("hidden");
+      document.getElementById("pathList").innerHTML = paths.map(function(p) {
+        return '<div class="card path-card"><div class="proj">' + escapeHtml(p.project) + ' · ' +
+          escapeHtml(p.done) + '/' + escapeHtml(p.total) + ' done</div>' +
+          (p.goal ? '<div class="goal">' + escapeHtml(p.goal) + '</div>' : '') +
+          (p.steps || []).map(function(s) {
+            var who = s.needs_owner ? "you" : "system";
+            var mark = s.status === "DONE" ? "&#10003;" : (s.status === "NEXT" ? "&#9654;" : "");
+            return '<div class="step ' + escapeAttr(s.status) + '"><div class="mark">' + mark + '</div>' +
+              '<div class="b"><div class="who ' + who + '">' + who + (s.status === "NEXT" ? " · now" : "") + '</div>' +
+              '<div class="title">' + escapeHtml(s.title) + '</div>' +
+              (s.status !== "DONE" && s.you ? '<div class="do">' + escapeHtml(s.you) + '</div>' : '') +
+              (s.status === "NEXT" && s.how ? '<div class="how">' + escapeHtml(s.how) + '</div>' : '') +
+              '</div></div>';
+          }).join("") + '</div>';
+      }).join("");
+    } else {
+      pathSection.classList.add("hidden");
     }
 
     var needsYou = data.needs_you || { approvals: [], blocked_tasks: [], feedback_needed: [] };

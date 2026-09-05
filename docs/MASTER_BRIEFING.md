@@ -69,11 +69,12 @@ folder there, never restructuring the OS.
 - Fable readiness: **measured READY** as of this briefing (`aion fable-ready`)
 
 ### Genuine open gaps — in order of what blocks money
-1. **No validated revenue experiment exists.** This is the actual
-   bottleneck, not infrastructure. Queued as `TASK-1BB538FF`.
-2. **The bridge has never had an adversarial security pass done for real**
-   (one Class-A security review happened for S02's approval flow
-   specifically; the bridge as a whole has not). Queued as `TASK-94945B7C`.
+1. ~~No validated revenue experiment exists.~~ **Designed 2026-09-05** as
+   EXP-001 (`aion experiment EXP-001`, `aion path`); not yet *run* — that
+   needs three owner steps listed in `OWNER_README.md`.
+2. ~~The bridge has never had an adversarial security pass.~~ **Done
+   2026-09-05**: `docs/SECURITY_REVIEW.md`, five findings fixed with tests,
+   two queued in `incoming/plan-bridge-hardening.json`.
 3. **T100 — the founder gate** (§6): five real-world actions only the owner
    can do. Nothing past this point is a coding problem.
 4. **SEVAA main may have drifted** since the bundles were built on commit

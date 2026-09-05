@@ -9,8 +9,8 @@ through security.redact on every string, exactly like the WhatsApp path.
 """
 from __future__ import annotations
 
-from . import (approvals, config, db, errors, governor, health, intake, memory,
-               metrics, router, security, tasks, util)
+from . import (approvals, config, db, errors, experiments, governor, health, intake,
+               memory, metrics, money_path, router, security, tasks, util)
 
 
 def _clean(v):
@@ -57,6 +57,8 @@ def dashboard() -> dict:
             "by_project": by_proj,
             "non_actual": m["non_actual"],
         },
+        "money_path": money_path.all_status(),
+        "experiments": experiments.all_status(),
         "feed": intake.feed(20),
         "needs_you": {
             "approvals": pend,

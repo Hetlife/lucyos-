@@ -28,6 +28,13 @@ everything.
 private and cannot be fetched, so attach `START_HERE.md` to your first message
 instead. Same file, same content.
 
+## Session of 2026-09-05 — done
+
+All four artifacts exist in the repository: `PROJECTS/sevaa-sales-os/experiments/EXP-001-paid-design-consult/EXPERIMENT.md`,
+`docs/MILESTONE_LADDER.md`, `incoming/plan-*.json` (three plans, zero C steps),
+`docs/SECURITY_REVIEW.md`. Handoff: `FABLE_HANDOFF.md`; spend: `FABLE_SESSION_LOG.md`.
+What runs next without a strong model: `deploy/routines/DAILY_CHEAP_LOOP.md`.
+
 ## What comes back
 
 Three artifacts, in this priority order if the budget runs out early:

@@ -10,7 +10,7 @@ from pathlib import Path
 from . import (agents, approvals, backup, bootstrap, config, db, errors, fable, health,
                memory, metrics, notebook, owner_setup, packets, reports, resume, router,
                security, seed, sessions, tasks, util, plan, worker, governor, handoff,
-               milestones)
+               milestones, experiments, money_path)
 
 
 def _print(text):
@@ -26,6 +26,7 @@ def main(argv=None) -> int:
         return _main(argv)
     except (tasks.TaskError, approvals.ApprovalError, packets.PacketError,
             security.SecretLeak, plan.PlanError, worker.Refused, ValueError,
+            experiments.ExperimentError,
             FileNotFoundError, CliError) as exc:
         print(f"error: {exc}", file=sys.stderr)
         return 2
@@ -214,6 +215,16 @@ def _main(argv=None) -> int:
 
     ctx = sub.add_parser("context", help="build a task-specific context packet")
     ctx.add_argument("task_id")
+
+    sub.add_parser("experiments", help="every revenue experiment with its measured funnel")
+    ex = sub.add_parser("experiment", help="one experiment: funnel, verdict, forced decision")
+    ex.add_argument("experiment_id")
+    ex.add_argument("--decide", action="store_true",
+                    help="write RESULT.md; exits 1 while no verdict exists")
+    ex.add_argument("--json", action="store_true")
+    mp = sub.add_parser("path", help="the money path: real steps to real money, and which need you")
+    mp.add_argument("project", nargs="?")
+    mp.add_argument("--json", action="store_true")
 
     args = p.parse_args(argv)
     cmd = args.cmd
@@ -452,6 +463,22 @@ def _main(argv=None) -> int:
     elif cmd == "context":
         from . import context
         _print(context.build(args.task_id))
+    elif cmd == "path":
+        _print(money_path.all_status() if args.json else money_path.report(args.project))
+    elif cmd == "experiments":
+        rows = experiments.all_status()
+        _print("\n".join(experiments.line(s) for s in rows) or "no experiments registered")
+    elif cmd == "experiment":
+        if args.decide:
+            try:
+                _print(experiments.decide(args.experiment_id))
+            except experiments.ExperimentError as exc:
+                print(f"not decided: {exc}", file=sys.stderr)
+                return 1
+        elif args.json:
+            _print(experiments.status(args.experiment_id))
+        else:
+            _print(experiments.report(args.experiment_id))
     return 0
 
 

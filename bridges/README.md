@@ -13,8 +13,20 @@ knows about a network lives here and nowhere else.
 
 ## Security
 
-- The webhook checks `X-Bridge-Token` against `WHATSAPP_BRIDGE_TOKEN` and warns
-  loudly if the variable is unset. Bind to localhost and front it with a tunnel.
+- The webhook checks `X-Bridge-Token` against `WHATSAPP_BRIDGE_TOKEN` (secret
+  store or environment). Without a token it refuses to start on any host but
+  loopback unless `--allow-unauthenticated` is passed.
+- The token proves the *transport*, not the sender. Set `WHATSAPP_OWNER_NUMBERS`
+  (comma-separated, international format) before connecting a business number:
+  a message from any other sender is refused before it reaches the router.
+- Every POST must be `Content-Type: application/json`; anything else is 415.
+  This is what stops a web page from firing a cross-site `text/plain` POST at
+  the loopback bridge without a CORS preflight.
+- Each request has a 15 s socket timeout and a validated `Content-Length`, so a
+  stalled client cannot hold the single-threaded server — and the owner's
+  control channel — open forever.
+- Unrecognised free text becomes a class-D triage card for the owner, never a
+  task a model executes. See `docs/SECURITY_REVIEW.md` for every finding.
 - Message bodies are never written to the HTTP log.
 - Replies are redacted and length-capped before they leave.
 - A repeated delivery (same message id, or same file name and body) is answered

@@ -196,9 +196,13 @@ def work(max_tasks: int = 5, *, dry_run: bool = False, session_id: str | None = 
                 tasks.update(task["task_id"], status="NEEDS_REVIEW")
                 continue
             if cls == "D":
-                summary["skipped"].append(
-                    {"task_id": task["task_id"], "why": "owner authority required"})
-                _raise_approval(task)
+                result = _owner_step(task)
+                summary["results"].append(result)
+                if result["status"] == "DONE":
+                    summary["attempted"] += 1
+                    summary["done"] += 1
+                else:
+                    summary["skipped"].append({"task_id": task["task_id"], "why": result["detail"]})
                 continue
             if router.is_safe_mode() and cls not in ("DET",):
                 summary["skipped"].append(
@@ -238,9 +242,46 @@ def _next_resume_point() -> str:
             else "queue empty — triage or plan more work")
 
 
+def _owner_step(task) -> dict:
+    """A class-D step is done by the owner, not by us — but it can still finish.
+
+    Before approval: raise the card once.  After the owner approves: the step
+    is DONE only when its own validation passes (the owner really did the
+    thing), otherwise it stays READY and is re-checked on the next loop.
+    Without this a D step could never complete and the plan behind it stalled
+    forever on a card the owner had already answered.
+    """
+    task_id = task["task_id"]
+    approval_id = task["approval_id"]
+    row = approvals.get(approval_id) if approval_id else None
+    if row is None or row["status"] == approvals.PENDING:
+        approval_id = _raise_approval(task)
+        return {"task_id": task_id, "status": "NEEDS_APPROVAL", "approval": approval_id,
+                "detail": "owner authority required"}
+    if row["status"] != approvals.APPROVED:
+        return {"task_id": task_id, "status": "SKIPPED",
+                "detail": f"{approval_id} was {row['status'].lower()}"}
+    checked = _validate(task, {"output": f"{approval_id} approved by {row['decided_by']}"})
+    if not checked["ok"]:
+        tasks.update(task_id, last_error=f"approved but not yet verifiable: {checked['detail'][:300]}")
+        return {"task_id": task_id, "status": "WAITING",
+                "detail": f"{approval_id} approved; waiting for proof — {checked['detail'][:200]}"}
+    evidence = f"owner step: {approval_id} approved by {row['decided_by']}; {checked['detail']}"
+    tasks.complete(task_id, evidence[:900], next_action="")
+    return {"task_id": task_id, "status": "DONE", "class": "D", "evidence": evidence[:200]}
+
+
 def _raise_approval(task) -> str:
     if task["approval_id"]:
         return task["approval_id"]
+    if (task["kind"] or "") == "triage":
+        return approvals.create(
+            f"Triage: {task['title']}",
+            why="free text captured from a message; only you can say whether it is work",
+            cost="none", reversibility="fully — approving only makes it a READY task",
+            prepared="nothing is executed until you approve",
+            resumes="the note becomes a READY task for decomposition",
+            task_id=task["task_id"])
     return approvals.create(
         task["title"], why="the step crosses an owner authority boundary",
         cost="see the task description", reversibility="unknown",

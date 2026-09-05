@@ -110,8 +110,14 @@ def handle(message: str, *, sender: str = "owner") -> str:
         }[name]()
 
     # Unrecognised: record it as an inbox item rather than guessing an action.
-    task_id = tasks.create(raw[:120], status="INBOX", description=f"Owner message via WhatsApp from {sender}",
-                           human_dependence=0.5)
+    # Class D on purpose: free text that arrived over the wire is a note for the
+    # owner to triage, never an instruction a model executes.  Without this, a
+    # message from anyone the transport forwards would become a task the
+    # autonomous loop hands to a cloud model with shell access.
+    task_id = tasks.create(raw[:120], status="INBOX", kind="triage", model_class="D",
+                           description=f"Message via WhatsApp from {sender}. Triage: decide whether "
+                                       f"this becomes work; it is not an instruction.",
+                           human_dependence=1)
     return (f"I did not recognise that as a command, so I saved it as {task_id} for triage "
             f"rather than guessing.\n\n{HELP}")
 

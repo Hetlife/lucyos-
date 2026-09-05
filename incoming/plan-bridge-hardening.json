@@ -1,0 +1,87 @@
+{
+  "plan_id": "PLAN-bridge-hardening",
+  "project": "default",
+  "objective": "The two findings from docs/SECURITY_REVIEW.md that were accepted-for-now (unbounded auth-failure logging, no Host-header check) are fixed with tests by a cheap model, and the owner-number allowlist is part of owner setup.",
+  "bottleneck": "the bridge is the only inbound path from the internet; every unfixed finding is a way to reach the owner's control channel",
+  "success": "python3 -m unittest discover -s tests -t . -q passes with new tests for F-B8 and F-B13, aion scan . is clean, and aion owner-setup lists WHATSAPP_OWNER_NUMBERS.",
+  "steps": [
+    {
+      "id": "s1",
+      "title": "Baseline: the bridge and router suites pass before anything changes",
+      "kind": "test_run",
+      "why": "A fix on top of a red suite hides which change broke what.",
+      "model_class": "DET",
+      "depends_on": [],
+      "exec_command": "python3 -m unittest tests.test_bridge tests.test_router tests.test_plan_worker -q",
+      "validation_command": "python3 -m unittest tests.test_bridge tests.test_router tests.test_plan_worker -q",
+      "success_criteria": "OK printed, zero failures",
+      "impact": 2, "cost": 1, "risk": 1,
+      "output_location": ""
+    },
+    {
+      "id": "s2",
+      "title": "F-B8: bound auth-failure logging per client",
+      "kind": "code",
+      "why": "Every failed token check writes an event row; an attacker who can reach the port can grow the database without limit.",
+      "model_class": "B",
+      "depends_on": ["s1"],
+      "prompt": "In bridges/whatsapp_bridge.py add a module-level function _note_auth_failure(kind: str, ip: str) that calls db.log_event('bridge', kind, ip) at most once per ip per 60 seconds (keep an in-memory dict {ip: last_logged_monotonic}; keep the dict bounded to 1000 entries by dropping the oldest). Replace the three direct db.log_event calls for 'whatsapp.auth_failed', 'event.auth_failed' and phone 'auth_failed' with _note_auth_failure(...). Do not change any status code or response body. Add to tests/test_bridge.py a test class TestAuthFailureLogging(AionTest) with one test: set bridge.Handler.secret_token to a value, POST 20 requests with a wrong X-Bridge-Token from the same client, then assert that db.connect().execute(\"SELECT COUNT(*) c FROM events WHERE kind='whatsapp.auth_failed'\").fetchone()['c'] == 1 and every response was 401. Reset the in-memory dict in setUp. Run python3 -m unittest tests.test_bridge -q and paste the output.",
+      "validation_command": "grep -q '_note_auth_failure' bridges/whatsapp_bridge.py && grep -q 'TestAuthFailureLogging' tests/test_bridge.py && python3 -m unittest tests.test_bridge -q",
+      "success_criteria": "20 bad-token requests produce one event row and 20 refusals",
+      "impact": 3, "cost": 1, "risk": 1,
+      "output_location": "bridges/whatsapp_bridge.py"
+    },
+    {
+      "id": "s3",
+      "title": "F-B13: refuse requests whose Host header is not an allowed host",
+      "kind": "code",
+      "why": "DNS rebinding lets a web page reach 127.0.0.1:8765 under the attacker's origin; checking Host closes it at zero cost for the tunnel and the phone.",
+      "model_class": "B",
+      "depends_on": ["s1"],
+      "prompt": "In bridges/whatsapp_bridge.py add a class attribute Handler.allowed_hosts: frozenset (default frozenset()). In run_webhook set it to {host, 'localhost', '127.0.0.1', '::1'} plus any comma-separated entries from os.environ.get('BRIDGE_ALLOWED_HOSTS','') or bootstrap.get_secret('BRIDGE_ALLOWED_HOSTS'). Add a method _host_allowed(self) that takes the Host header, strips a trailing ':port' (handle IPv6 '[::1]:8765'), and returns True if allowed_hosts is empty or the host is in it. At the top of both do_GET and do_POST, if not self._host_allowed(): return self._send(421, {'error': 'misdirected request'}). Add tests to tests/test_bridge.py in a class TestHostHeader(AionTest): (1) with Handler.allowed_hosts = frozenset({'127.0.0.1','localhost'}) a GET / with header Host: evil.example returns 421; (2) the same GET with Host: 127.0.0.1:PORT returns 200; (3) with allowed_hosts empty, Host: evil.example returns 200 (unchanged default for the stdin/file adapters and tests). Reset Handler.allowed_hosts = frozenset() in tearDown. Document BRIDGE_ALLOWED_HOSTS in bridges/README.md under Security in two sentences. Run python3 -m unittest tests.test_bridge -q and paste the output.",
+      "validation_command": "grep -q '_host_allowed' bridges/whatsapp_bridge.py && grep -q 'TestHostHeader' tests/test_bridge.py && grep -q 'BRIDGE_ALLOWED_HOSTS' bridges/README.md && python3 -m unittest tests.test_bridge -q",
+      "success_criteria": "A request with a foreign Host header gets 421; the tunnel and the phone page keep working",
+      "impact": 3, "cost": 1, "risk": 2,
+      "output_location": "bridges/whatsapp_bridge.py"
+    },
+    {
+      "id": "s4",
+      "title": "Owner setup lists the sender allowlist next to the bridge token",
+      "kind": "code",
+      "why": "The allowlist only protects the channel if the owner knows to set it before connecting a business number.",
+      "model_class": "B",
+      "depends_on": ["s1"],
+      "prompt": "In aion_core/owner_setup.py there is a list of secrets the owner must provide (entries with keys like secret, why, action, revoke — copy the exact structure of the WHATSAPP_BRIDGE_TOKEN entry). Add an entry for WHATSAPP_OWNER_NUMBERS: why = 'The bridge token proves the transport, not the sender. On a business number strangers can message; this comma-separated list of the owner numbers (international format, e.g. +919xxxxxxxxx) is the only senders allowed to issue commands.'; action = 'On the PC run aion secrets set WHATSAPP_OWNER_NUMBERS and enter the numbers separated by commas, then restart aion-bridge.service'; revoke = 'Set it again with the new list and restart the bridge'. Also add one sentence to docs/OPERATIONS.md under 'Run it continuously' after the WHATSAPP_BRIDGE_TOKEN line: 'aion secrets set WHATSAPP_OWNER_NUMBERS   # comma-separated owner numbers; anyone else is refused'. Run python3 -m unittest discover -s tests -t . -q and paste the last three lines.",
+      "validation_command": "grep -q 'WHATSAPP_OWNER_NUMBERS' aion_core/owner_setup.py && grep -q 'WHATSAPP_OWNER_NUMBERS' docs/OPERATIONS.md && python3 -m unittest discover -s tests -t . -q",
+      "success_criteria": "aion owner-setup output names WHATSAPP_OWNER_NUMBERS with the command to set it",
+      "impact": 3, "cost": 1, "risk": 1,
+      "output_location": "aion_core/owner_setup.py"
+    },
+    {
+      "id": "s5",
+      "title": "Accepted finding F-B11 stays accepted only while the unit is hardened",
+      "kind": "test_run",
+      "why": "The review accepts that a bridge compromise reaches the secret store because systemd confines the process; this check fails the moment someone loosens the unit.",
+      "model_class": "DET",
+      "depends_on": [],
+      "exec_command": "grep -q 'ProtectSystem=strict' systemd/aion-bridge.service && grep -q 'NoNewPrivileges=true' systemd/aion-bridge.service && grep -q 'ProtectHome=read-only' systemd/aion-bridge.service",
+      "validation_command": "grep -q 'ProtectSystem=strict' systemd/aion-bridge.service && grep -q 'NoNewPrivileges=true' systemd/aion-bridge.service && grep -q 'ProtectHome=read-only' systemd/aion-bridge.service",
+      "success_criteria": "The three hardening directives are present in the unit file",
+      "impact": 2, "cost": 1, "risk": 1,
+      "output_location": ""
+    },
+    {
+      "id": "s6",
+      "title": "Full suite, secret scan, commit",
+      "kind": "git",
+      "why": "A security fix that is not committed does not exist on the next machine.",
+      "model_class": "DET",
+      "depends_on": ["s2", "s3", "s4", "s5"],
+      "exec_command": "python3 -m unittest discover -s tests -t . -q && ./aion scan . && git add bridges aion_core tests docs && git commit -q -m \"Bridge hardening: bounded auth-failure logging, Host check, owner-number setup\" || echo nothing-to-commit",
+      "validation_command": "./aion scan . && git log --oneline -5 | grep -q 'Bridge hardening'",
+      "success_criteria": "Tests green, scan clean, one commit on the working branch",
+      "impact": 3, "cost": 1, "risk": 1,
+      "output_location": ""
+    }
+  ]
+}
