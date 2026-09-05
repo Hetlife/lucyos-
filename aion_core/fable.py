@@ -7,10 +7,11 @@ session starts already knowing the machine.
 """
 from __future__ import annotations
 
+import json
 from pathlib import Path
 
-from . import (agents, approvals, config, db, errors, health, metrics, packets,
-               resume, security, tasks, util)
+from . import (agents, approvals, config, db, errors, health, metrics, milestones,
+               packets, resume, security, tasks, util)
 
 PACK = "FABLE"
 # Two phases, authorised separately by the owner.
@@ -201,8 +202,9 @@ so sharply that tomorrow's session cannot misinterpret it, then stop."""
     if cap <= 1200:
         return f"""SCOPE FOR AN INR {cap:.0f} SESSION
 Artifacts 1 and 3 in full, artifact 2 briefly, artifact 4 only if budget remains.
-Artifact 1 is worth more than 2, which is worth more than 3, which is worth more
-than 4. If you can only finish one, finish 1 properly."""
+Priority when the ceiling arrives early: 1, then 3, then 2, then 4. If you can
+only finish one, finish 1 properly — a decidable experiment is the whole point
+of this session, and a half-written one decides nothing."""
     return """HOW TO SPEND THE BUDGET
 Artifact 1 is worth more than 2, which is worth more than 3, which is worth more
 than 4. If you can only finish one, finish 1 properly. A vague experiment wastes
@@ -234,16 +236,19 @@ Stop at the ceiling even mid-thought; tomorrow's session resumes from your files
 Spend the budget on judgement, not on length. A short, decidable artifact beats a
 long one.
 
-CONTEXT YOU MAY READ
-The repository is public: {REPO_URL} (branch {BRANCH}).
-Read only these, and only if you need them:
-  README.md                     what the system is
-  TOMORROW.md                   how it gets installed
-  aion_core/seed.py             the mission, milestones, standing decisions, queue
-  aion_core/plan.py             the PLAN format you must emit (TEMPLATE at the top)
-  bridges/whatsapp_bridge.py    only for artifact 3
-  aion_core/router.py           only for artifact 3
-Do not read the rest. It will not change your answer and it costs money.
+CONTEXT — IT IS ATTACHED, NOT FETCHABLE
+The repository ({REPO_URL}, branch {BRANCH}) is PRIVATE. You cannot open it and
+you must not pretend to. Everything you need has been attached to this message
+by the owner, from `<AION_HOME>/FABLE/`:
+  FABLE_CONTEXT.md              measured machine and project reality
+  FABLE_TASK_QUEUE.md           the ranked queue and what is class C
+  FABLE_DECISIONS.md            standing decisions — do not reopen without evidence
+  FABLE_COMPLETION_CRITERIA.md  what finishing actually means
+  PLAN_FORMAT.md                the plan schema you must emit for artifact 3
+  MISSION_AND_MILESTONES.md     the mission, M0-M6, and where the ladder stands
+If one of those is missing from this message, say so and work without it rather
+than inventing its contents. Ask for a specific file only if its absence would
+change your answer — otherwise proceed and mark the gap UNKNOWN.
 
 THE THREE ARTIFACTS
 
@@ -256,7 +261,8 @@ THE THREE ARTIFACTS
    way to learn it. An experiment that cannot fail is not an experiment.
 
 2. MILESTONE_LADDER.md — the path to INR 1,00,000/month net
-   The mission and milestones M0-M6 are in seed.py. For each: the number that
+   The mission, the M0-M6 definitions and their current measured status are in
+   the attached MISSION_AND_MILESTONES.md. For each: the number that
    defines it, how it is measured from real rows, the capability the system
    needs to reach it, and whether that capability exists today. State plainly
    which milestones the current machinery can reach unassisted. Say where real
@@ -264,7 +270,7 @@ THE THREE ARTIFACTS
    milestone is the real wall — it is rarely the last one.
 
 3. plan-<name>.json — one or more executable plans
-   Use the PLAN format in aion_core/plan.py. Every step needs: kind, model_class
+   Use the schema in the attached PLAN_FORMAT.md. Every step needs: kind, model_class
    (DET, A or B — reserve C only for what genuinely needs a strong model),
    depends_on, exec_command for DET steps or prompt for A/B steps, a
    validation_command that exits 0 only if the step really worked, and a
@@ -313,6 +319,10 @@ def build_pack() -> list[str]:
         "FABLE_HANDOFF.md": _handoff(),
         "FABLE_RESUME.md": _resume_doc(),
         "FABLE_DO_NOT_WASTE_TOKENS.md": _no_waste(),
+        # An offline session cannot read the repository, so the two things it
+        # would otherwise have to open source files for travel with the pack.
+        "PLAN_FORMAT.md": _plan_format(),
+        "MISSION_AND_MILESTONES.md": _mission_and_milestones(),
     }
     for name, body in files.items():
         util.atomic_write(d / name, security.redact(body))
@@ -328,6 +338,80 @@ def build_pack() -> list[str]:
     util.write_json(d / "FABLE_READINESS.json", readiness())
     written.append(str(d / "FABLE_READINESS.json"))
     return written
+
+
+def _plan_format() -> str:
+    """The PLAN schema, rendered from plan.TEMPLATE so it cannot drift from it."""
+    from . import plan
+    return f"""# PLAN FORMAT
+
+Artifact 3 must match this exactly. `aion plan check` rejects anything that
+does not, so treat it as a hostile reviewer — because one runs.
+
+Emit JSON. This template is generated from the real validator's own template,
+so it is never out of date:
+
+```json
+{json.dumps(plan.TEMPLATE, indent=2)}
+```
+
+## What the validator enforces
+
+- `objective` must be present and non-empty.
+- `steps` must be a non-empty list; every step needs `id`, `title`, `kind`.
+- `model_class`, when given, must be one of {", ".join(plan.VALID_CLASSES)}.
+- A DET step needs `exec_command` — the command that does the work.
+- An A or B step needs `prompt` — the exact instruction a cheap model runs.
+- Every step needs `validation_command` **or** `success_criteria`. A step no
+  one can check is not a step.
+- `depends_on` must reference ids that exist, and the graph must be acyclic.
+
+## Writing steps a weaker model can actually execute
+
+Assume a fresh Ubuntu machine with Python 3.11, git, and the repo at `~/lucyos`.
+Do not assume Ollama is installed, that any paid API key exists, or that any
+credential is present. Reserve `model_class: C` for what genuinely needs strong
+reasoning — every C step you write is money spent later.
+"""
+
+
+def _mission_and_milestones() -> str:
+    """Mission and the M0-M6 definitions, for a session that cannot read the code."""
+    state = milestones.check()
+    rows = "\n".join(
+        f"| {code} | {'reached' if info['reached'] else 'not reached'} | {info['evidence']} |"
+        for code, info in state.items())
+    return f"""# MISSION AND MILESTONES
+
+## Mission
+INR 1,00,000 per month of real, owner-withdrawable **net** profit.
+
+## How a milestone is allowed to move
+Only from rows in the `finance` table with `stage='ACTUAL'` and non-empty
+`evidence`. A forecast, a pipeline value, a sandbox run or a test payment never
+moves a milestone. This is enforced in `aion_core/milestones.py`, not by policy,
+and the major ones ({", ".join(sorted(milestones.MAJOR))}) stop the build loop so
+the owner decides what happens next.
+
+## The ladder, and where it actually stands right now
+
+| Milestone | Status | Measured by |
+|---|---|---|
+{rows}
+
+## What each one means
+
+- **M0** — the first evidenced rupee. One real revenue row.
+- **M1** — one payer has paid at least twice. Repeatability, not luck.
+- **M2** — ten evidenced deliveries and positive net. A real, working offer.
+- **M3** — thirty recorded hands-off days. The system runs without the owner.
+- **M4** — three consecutive months at INR 25,000 net.
+- **M5** — two projects each independently at M2 economics. Not one lucky offer.
+- **M6** — three consecutive months at INR 1,00,000 net. The mission.
+
+Be honest in your analysis about which rung is the real wall. It is rarely the
+last one, and naming the wrong wall wastes everything downstream of it.
+"""
 
 
 def _readme() -> str:
@@ -619,7 +703,42 @@ def _files_index() -> str:
 
 
 def _completion_criteria() -> str:
-    return """# FABLE COMPLETION CRITERIA
+    """Criteria for the phase that is actually active.
+
+    Phase 1 has no machine, so criteria that require running a command are not
+    just unachievable there — handing them to an offline session invites it to
+    claim it ran something it could not.
+    """
+    if not PHASES[current_phase()]["needs_machine"]:
+        return """# FABLE COMPLETION CRITERIA — PHASE 1 (OFFLINE)
+
+You have no machine this session. Nothing here asks you to run anything, and
+claiming you ran something is the one unrecoverable failure.
+
+The session is DONE when all of these hold:
+
+1. **EXPERIMENT.md** exists in full: one offer, one channel, one buyer type; a
+   hypothesis stated so it can be false; unit economics with every cost named
+   including model spend; the minimum valid test; a cost ceiling in INR; a time
+   window; success and failure conditions **both as numbers**; and the decision
+   each outcome forces.
+2. Every number you could not determine is written `UNKNOWN` with the cheapest
+   named way to learn it — not guessed, not averaged, not illustrated.
+3. **MILESTONE_LADDER.md** names which rung is the real wall and why, and says
+   where real capital must enter and roughly how much.
+4. Each **plan-<name>.json** validates against PLAN_FORMAT.md: every step has a
+   `validation_command` or `success_criteria`, DET steps have `exec_command`,
+   A/B steps have `prompt`, and `depends_on` forms an acyclic graph.
+5. No step is class C unless a weaker model genuinely cannot do it. Every C step
+   you leave behind is money the owner spends again later.
+6. A **HANDOFF** section states: what you assumed, what you could not determine,
+   what the on-machine session should do first, and your honest estimate of what
+   this session cost.
+
+Anything not meeting its criterion is PARTIAL or UNKNOWN — never DONE. An
+artifact that cannot fail a test is not finished, it is decoration.
+"""
+    return """# FABLE COMPLETION CRITERIA — PHASE 2 (ON MACHINE)
 
 The session is DONE only when all of the following hold and each is backed by a
 command that was actually run:
