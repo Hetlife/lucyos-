@@ -273,3 +273,79 @@ class TestBridgeHardening(AionTest):
         preview = worker.work(max_tasks=3, dry_run=True)
         self.assertTrue(all(r["would"] == "raised as an owner approval"
                             for r in preview["results"] if r["task_id"] == row["task_id"]))
+
+
+class TestAuthFailureLogging(AionTest):
+    """F-B8: twenty bad tokens are twenty refusals but one event row."""
+
+    def setUp(self):
+        super().setUp()
+        bridge._auth_fail_last.clear()
+        bridge.Handler.secret_token = "bridge-test-token-not-real"
+
+    def tearDown(self):
+        bridge.Handler.secret_token = ""
+        bridge._auth_fail_last.clear()
+        super().tearDown()
+
+    def test_repeated_bad_tokens_log_once_per_minute(self):
+        from aion_core import db
+        body = json.dumps({"message": "status"}).encode()
+        headers = {"Content-Type": "application/json", "X-Bridge-Token": "wrong"}
+        with _PhoneServer() as url:
+            codes = []
+            for _ in range(20):
+                req = urllib.request.Request(url + "/", data=body, headers=headers, method="POST")
+                try:
+                    urllib.request.build_opener(urllib.request.ProxyHandler({})).open(req, timeout=5)
+                except urllib.error.HTTPError as e:
+                    codes.append(e.code)
+        self.assertEqual(codes, [401] * 20)
+        n = db.connect().execute(
+            "SELECT COUNT(*) c FROM events WHERE kind='whatsapp.auth_failed'").fetchone()["c"]
+        self.assertEqual(n, 1)
+
+    def test_the_ip_table_is_bounded(self):
+        for i in range(bridge._AUTH_FAIL_MAX_IPS + 50):
+            bridge._note_auth_failure("whatsapp.auth_failed", f"10.0.{i // 256}.{i % 256}")
+        self.assertLessEqual(len(bridge._auth_fail_last), bridge._AUTH_FAIL_MAX_IPS)
+
+
+class TestHostHeader(AionTest):
+    """F-B13: a request whose Host does not name us is misdirected."""
+
+    def tearDown(self):
+        bridge.Handler.allowed_hosts = frozenset()
+        super().tearDown()
+
+    def _get(self, url, host):
+        req = urllib.request.Request(url + "/", headers={"Host": host}, method="GET")
+        opener = urllib.request.build_opener(urllib.request.ProxyHandler({}))
+        try:
+            with opener.open(req, timeout=5) as r:
+                return r.status
+        except urllib.error.HTTPError as e:
+            return e.code
+
+    def test_foreign_host_is_refused_and_own_host_is_served(self):
+        bridge.Handler.allowed_hosts = frozenset({"127.0.0.1", "localhost"})
+        with _PhoneServer() as url:
+            port = url.rsplit(":", 1)[1]
+            self.assertEqual(self._get(url, "evil.example"), 421)
+            self.assertEqual(self._get(url, f"127.0.0.1:{port}"), 200)
+            self.assertEqual(self._get(url, "localhost"), 200)
+
+    def test_empty_allowlist_keeps_the_default_behaviour(self):
+        bridge.Handler.allowed_hosts = frozenset()
+        with _PhoneServer() as url:
+            self.assertEqual(self._get(url, "evil.example"), 200)
+
+    def test_webhook_allowlist_includes_loopback_bound_host_and_extras(self):
+        import os
+        os.environ["BRIDGE_ALLOWED_HOSTS"] = "100.64.0.9, aion.local"
+        try:
+            hosts = bridge.load_allowed_hosts("0.0.0.0")
+        finally:
+            os.environ.pop("BRIDGE_ALLOWED_HOSTS", None)
+        for h in ("127.0.0.1", "localhost", "::1", "0.0.0.0", "100.64.0.9", "aion.local"):
+            self.assertIn(h, hosts)

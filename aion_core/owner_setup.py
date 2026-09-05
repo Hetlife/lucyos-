@@ -15,6 +15,19 @@ REQUIREMENTS = [
                   "in private_state/secrets.env and never enters git, logs or chat.",
          revoke="Rotate/revoke in the bridge provider console, then re-run the same command.",
          resumes="WhatsApp becomes the live command surface; `aion serve` starts answering."),
+    dict(tier="REQUIRED NOW", service="WhatsApp owner numbers (sender allowlist)",
+         secret="WHATSAPP_OWNER_NUMBERS",
+         purpose="The bridge token proves the transport, not the sender. On a business number "
+                 "strangers can message; this comma-separated list of the owner numbers "
+                 "(international format, e.g. +919xxxxxxxxx) is the only senders allowed to "
+                 "issue commands.",
+         permission="Nothing external — a local allowlist read by the bridge at start",
+         action="On the PC run `aion secrets set WHATSAPP_OWNER_NUMBERS` and enter the numbers "
+                "separated by commas, then restart aion-bridge.service.",
+         security="A message from any other number is refused before it reaches the router and "
+                  "touches no state. Without it, anyone the transport forwards can approve.",
+         revoke="Set it again with the new list and restart the bridge.",
+         resumes="Only your number(s) can send status, approve, deny, pause or resume."),
     dict(tier="REQUIRED SOON", service="Phone interface token",
          secret="PHONE_API_TOKEN",
          purpose="Auth for the mobile page (bridges/web/phone.html) at /app — money-first "

@@ -25,6 +25,12 @@ knows about a network lives here and nowhere else.
 - Each request has a 15 s socket timeout and a validated `Content-Length`, so a
   stalled client cannot hold the single-threaded server — and the owner's
   control channel — open forever.
+- The `Host` header must name this server: loopback names, the bound host, or
+  an entry in `BRIDGE_ALLOWED_HOSTS` (comma-separated, secret store or env,
+  e.g. a Tailscale IP). Anything else is answered 421, which closes DNS
+  rebinding at no cost to the tunnel or the phone page.
+- A failed token check is logged at most once per client per minute, so a
+  remote party cannot grow the event table by hammering the port.
 - Unrecognised free text becomes a class-D triage card for the owner, never a
   task a model executes. See `docs/SECURITY_REVIEW.md` for every finding.
 - Message bodies are never written to the HTTP log.

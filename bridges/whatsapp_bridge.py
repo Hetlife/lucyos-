@@ -42,6 +42,35 @@ def _same(a: str, b: str) -> bool:
     return hmac.compare_digest(a.encode("utf-8", "replace"), b.encode("utf-8", "replace"))
 
 
+# F-B8: a bad token writes an event row.  Bound it so a remote party cannot
+# grow the database: one row per client per minute, dict capped at 1000 IPs.
+_AUTH_FAIL_WINDOW_S = 60.0
+_AUTH_FAIL_MAX_IPS = 1000
+_auth_fail_last: dict = {}
+
+
+def _note_auth_failure(kind: str, ip: str) -> bool:
+    """Log an auth failure at most once per ip per window.  Returns True if logged."""
+    now = time.monotonic()
+    last = _auth_fail_last.get(ip)
+    if last is not None and (now - last) < _AUTH_FAIL_WINDOW_S:
+        return False
+    if len(_auth_fail_last) >= _AUTH_FAIL_MAX_IPS and ip not in _auth_fail_last:
+        oldest = min(_auth_fail_last, key=_auth_fail_last.get)
+        del _auth_fail_last[oldest]
+    _auth_fail_last[ip] = now
+    db.log_event("bridge", kind, ip)
+    return True
+
+
+def load_allowed_hosts(host: str) -> frozenset:
+    """F-B13: the Host header must name us.  Loopback names plus the bound host
+    plus anything in BRIDGE_ALLOWED_HOSTS (secret store or env, comma-separated)."""
+    raw = bootstrap.get_secret("BRIDGE_ALLOWED_HOSTS") or os.environ.get("BRIDGE_ALLOWED_HOSTS", "")
+    extra = {h.strip().lower() for h in raw.split(",") if h.strip()}
+    return frozenset(LOOPBACK_HOSTS | {host.lower()} | extra)
+
+
 def load_owner_numbers() -> frozenset:
     raw = bootstrap.get_secret(OWNER_NUMBERS_NAME) or os.environ.get(OWNER_NUMBERS_NAME, "")
     return frozenset(n.strip() for n in raw.split(",") if n.strip())
@@ -107,6 +136,9 @@ class Handler(BaseHTTPRequestHandler):
     # Senders allowed to drive the control channel.  Empty = every sender the
     # transport forwards (only acceptable on a private, single-user transport).
     owner_numbers: frozenset = frozenset()
+    # Hosts this server answers to.  Empty = any (the stdin/file adapters and
+    # the tests); the webhook adapter always sets it.
+    allowed_hosts: frozenset = frozenset()
     # A client that connects and stalls must not hold the single-threaded
     # server — and with it the owner's control channel — open forever.
     timeout = 15
@@ -122,7 +154,19 @@ class Handler(BaseHTTPRequestHandler):
         self.end_headers()
         self.wfile.write(body)
 
+    def _host_allowed(self) -> bool:
+        if not self.allowed_hosts:
+            return True
+        host = (self.headers.get("Host") or "").strip().lower()
+        if host.startswith("["):                      # [::1]:8765
+            host = host[1:].split("]", 1)[0]
+        else:
+            host = host.rsplit(":", 1)[0] if host.count(":") == 1 else host
+        return host in self.allowed_hosts
+
     def do_POST(self):  # noqa: N802
+        if not self._host_allowed():
+            return self._send(421, {"error": "misdirected request"})
         try:
             length = int(self.headers.get("Content-Length") or 0)
         except ValueError:
@@ -147,7 +191,7 @@ class Handler(BaseHTTPRequestHandler):
         if self.secret_token:
             provided = self.headers.get("X-Bridge-Token", "")
             if not _same(provided, self.secret_token):
-                db.log_event("bridge", "whatsapp.auth_failed", self.client_address[0])
+                _note_auth_failure("whatsapp.auth_failed", self.client_address[0])
                 return self._send(401, {"error": "unauthorized"})
 
         try:
@@ -178,7 +222,7 @@ class Handler(BaseHTTPRequestHandler):
         if not key:
             return self._send(503, {"error": "event ingestion not configured"})
         if not sevaa.verify(raw, self.headers.get(sevaa.SIGNATURE_HEADER), key):
-            db.log_event("bridge", "event.auth_failed", self.client_address[0])
+            _note_auth_failure("event.auth_failed", self.client_address[0])
             return self._send(401, {"error": "bad signature"})
         try:
             event = json.loads(raw.decode("utf-8"))
@@ -200,7 +244,7 @@ class Handler(BaseHTTPRequestHandler):
 
     def _handle_phone_post(self, path: str, raw: bytes) -> None:
         if not self._phone_authorized():
-            db.log_event("phone", "auth_failed", self.client_address[0])
+            _note_auth_failure("phone.auth_failed", self.client_address[0])
             return self._send(401, {"error": "unauthorized"})
         try:
             payload = json.loads(raw.decode("utf-8")) if raw else {}
@@ -241,11 +285,13 @@ class Handler(BaseHTTPRequestHandler):
     }
 
     def do_GET(self):  # noqa: N802
+        if not self._host_allowed():
+            return self._send(421, {"error": "misdirected request"})
         path = self.path.split("?", 1)[0].rstrip("/") or "/"
 
         if path in self._PHONE_GET_ROUTES:
             if not self._phone_authorized():
-                db.log_event("phone", "auth_failed", self.client_address[0])
+                _note_auth_failure("phone.auth_failed", self.client_address[0])
                 return self._send(401, {"error": "unauthorized"})
             return self._send(200, self._PHONE_GET_ROUTES[path]())
 
@@ -283,6 +329,7 @@ def run_webhook(host: str, port: int, *, allow_unauthenticated: bool = False) ->
         print("Bind to localhost only and put a tunnel or reverse proxy in front.",
               file=sys.stderr)
     Handler.owner_numbers = load_owner_numbers()
+    Handler.allowed_hosts = load_allowed_hosts(host)
     if not Handler.owner_numbers:
         print(f"NOTE: {OWNER_NUMBERS_NAME} is unset — every sender the transport forwards can "
               f"issue commands. Set it before connecting a shared or business number.",
@@ -296,7 +343,8 @@ def run_webhook(host: str, port: int, *, allow_unauthenticated: bool = False) ->
     print(f"AION WhatsApp bridge listening on http://{host}:{port} "
           f"(bridge auth {'on' if Handler.secret_token else 'OFF'}, "
           f"phone auth {'on' if Handler.phone_token else 'OFF'}, "
-          f"owner allowlist {'on' if Handler.owner_numbers else 'OFF'})")
+          f"owner allowlist {'on' if Handler.owner_numbers else 'OFF'}, "
+          f"hosts {sorted(Handler.allowed_hosts)})")
     try:
         server.serve_forever()
     except KeyboardInterrupt:
