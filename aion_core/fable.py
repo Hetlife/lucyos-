@@ -302,11 +302,86 @@ Then the cheap loop executes them. Write for that reader.
 """
 
 
+def _start_here() -> str:
+    """Everything in one file, so a session can be started with a single read.
+
+    The repository is private, so a chat session cannot fetch anything and the
+    owner would otherwise have to attach six files in the right order. Composed
+    from the same generators as the individual files, so it cannot drift from
+    them.
+    """
+    parts = [
+        "# START HERE — the whole Fable session in one file",
+        "",
+        "You have been pointed at this file and nothing else. It contains the",
+        "prompt, the measured state, the standing decisions, the schema you must",
+        "emit and the definition of done. You need no other file and cannot fetch",
+        "one. Read all of it before writing anything.",
+        "",
+        "---",
+        "",
+        "# PART 1 — YOUR INSTRUCTIONS",
+        "",
+        _offline_prompt() if not PHASES[current_phase()]["needs_machine"] else _start_prompt(),
+        "",
+        "---",
+        "",
+        "# PART 2 — MEASURED STATE",
+        "",
+        "Everything here was checked by a command, not assumed. Where it",
+        "disagrees with your expectations, it wins.",
+        "",
+        _context(),
+        "",
+        "---",
+        "",
+        "# PART 3 — THE QUEUE",
+        "",
+        _task_queue(),
+        "",
+        "---",
+        "",
+        "# PART 4 — STANDING DECISIONS",
+        "",
+        "Already settled. Reopening one without new evidence wastes the budget.",
+        "",
+        _decisions(),
+        "",
+        "---",
+        "",
+        "# PART 5 — MISSION AND MILESTONES",
+        "",
+        _mission_and_milestones(),
+        "",
+        "---",
+        "",
+        "# PART 6 — THE PLAN SCHEMA YOU MUST EMIT",
+        "",
+        _plan_format(),
+        "",
+        "---",
+        "",
+        "# PART 7 — WHAT FINISHING MEANS",
+        "",
+        _completion_criteria(),
+        "",
+        "---",
+        "",
+        "# PART 8 — BEGIN",
+        "",
+        "Start with artifact 1. Do not restate this file back to the owner, do not",
+        "summarise what you have read, and do not ask permission to begin — the",
+        "owner has already given it by pointing you here. Write the experiment.",
+    ]
+    return "\n".join(parts)
+
+
 def build_pack() -> list[str]:
     """Write the whole launch pack.  Idempotent; safe to re-run any time."""
     d = pack_dir()
     written = []
     files = {
+        "START_HERE.md": _start_here(),
         "README.md": _readme(),
         "FABLE_MASTER_PROMPT.md": _master_prompt(),
         "FABLE_START_PROMPT.txt": _start_prompt(),
@@ -539,8 +614,10 @@ apply it, so cheap and local models execute it afterwards without you:
 A step you cannot express as a command or a prompt is not yet decomposed.
 Aim to leave fewer than 20% of steps at class C.
 
-HARD SPEND CEILING: INR 2,000. NOT A TARGET.
-Aim to finish under it. Treat INR 1,500 as the point where you consolidate.
+HARD SPEND CEILING THIS SESSION: INR {b['phase_cap_inr']:.0f}. NOT A TARGET.
+That is the tranche the owner has authorised now, inside a cumulative maximum of
+INR {BUDGET_CAP_INR:.0f}. Aim to finish under it; treat {b['phase_cap_inr'] * 0.75:.0f} as the point where you
+stop expanding scope and consolidate what you have.
 
 Record every call the moment you make it:
   aion usage claude-opus-5 C --cost <INR> --task-id <TASK>
@@ -575,11 +652,26 @@ RULES
 - Checkpoint with `aion checkpoint` after each milestone.
 - Never write a credential into state, git, logs or WhatsApp.
 
+WHAT SURVIVES THIS SESSION, AND WHAT DOES NOT
+If you are running in a cloud sandbox rather than on the permanent host, the
+shared brain at {home} is EPHEMERAL — it disappears when the session ends, and
+so does every task you closed and every file you wrote there. Only the git
+repository is durable. So:
+- Write your real artifacts into {repo} (`incoming/` for plans, `docs/` or
+  `PROJECTS/` for decisions and analysis) and COMMIT AND PUSH them.
+- Treat shared-brain writes as working state, not as delivery.
+- Before you finish, run `git status` and confirm nothing you care about is
+  uncommitted. An artifact that exists only in the shared brain is lost work.
+Check which you are on: if `{home}` was created minutes ago and the host is not
+the permanent machine, assume ephemeral and commit everything.
+
 FINISH BY (or when the governor tells you to stop, whichever comes first)
 1. Write {home}/FABLE/FABLE_HANDOFF.md with the result packet.
 2. Update FABLE_SESSION_LOG.md with your actual measured spend.
 3. `aion checkpoint --next-action '<the real next step>'`
-4. `aion handoff now` — writes FABLE/SONNET_START_PROMPT.txt and switches
+4. Commit and push everything durable to {repo}, on the working branch — never
+   to main. This step is not optional; see the block above.
+5. `aion handoff now` — writes FABLE/SONNET_START_PROMPT.txt and switches
    unattended execution to claude-sonnet-5. The build loop then runs every 10
    minutes on its own and stops at a major milestone.
 

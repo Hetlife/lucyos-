@@ -1,6 +1,6 @@
 # FABLE CONTEXT
 
-_Measured 2026-09-05T14:52:48+00:00. Every line below was checked, not assumed._
+_Measured 2026-09-05T15:14:43+00:00. Every line below was checked, not assumed._
 
 ## Owner objective
 WhatsApp is the steering wheel, OpenClaw is the driver interface, AION is the brain,
@@ -21,7 +21,7 @@ State: SQLite at `state/aion.sqlite3` (truth) + generated markdown views.
 - `task_queue`: OK — 6 ready, 0 running, 0 blocked, 0 stale claims released
 - `errors`: OK — 0 unresolved
 - `budget`: OK — day ₹0/200.0, month ₹0/2000.0, governor NORMAL
-- `git`: OK — branch claude/aion-whatsapp-control-1seild, 2 uncommitted paths
+- `git`: OK — branch claude/aion-whatsapp-control-1seild, 1 uncommitted paths
 - `ollama`: OK — not installed here — local-model routing degrades to class B
 - `network`: OK — outbound reachable
 - `secret_store`: OK — /root/openclaw/shared_brain/private_state/secrets.env mode 0o600 (must be 0o600)

@@ -15,7 +15,7 @@ Pure reasoning that survives contact with the machine tomorrow. Your output is
 three artifacts the owner saves as files. Nothing else counts.
 
 BUDGET: INR 700 FOR THIS SESSION. HARD CEILING.
-Phase 1 of 2. Phase 2 (INR 1300) runs tomorrow on the machine.
+Phase 1 of 2. Phase 2 (INR 700) runs tomorrow on the machine.
 Stop at the ceiling even mid-thought; tomorrow's session resumes from your files.
 Spend the budget on judgement, not on length. A short, decidable artifact beats a
 long one.
