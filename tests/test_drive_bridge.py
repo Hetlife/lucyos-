@@ -52,6 +52,24 @@ class DriveTests(AionTest):
         self.assertLess(path.stat().st_size, 2048)
         self.assertEqual(status['human_action_required'], [])
 
+    def test_push_status_uses_requested_schema_and_exact_path(self):
+        with patch('urllib.request.urlopen', side_effect=OSError()):
+            self.bridge.push_status()
+        data = self.remote.data[('03_CONTEXT', 'MARK2_STATUS.json')]
+        status = json.loads(data)
+        self.assertIn('hostname', status)
+        self.assertIn('recently_completed', status)
+        self.assertNotIn('host', status)
+        self.assertNotIn('recent_completed', status)
+        clean(data, 'MARK2_STATUS.json')
+
+    def test_ready_handoff_requires_live_gate_and_exact_name(self):
+        self.bridge.ready_handoff()
+        self.assertFalse((self.bridge.outbox / 'handoffs/MARK2_BRIDGE_READY.md').exists())
+        self.bridge.test()
+        self.bridge.push('handoffs')
+        self.assertIn(('05_HANDOFFS', 'MARK2_BRIDGE_READY.md'), self.remote.data)
+
     def test_secret_file_names_and_content(self):
         for name in ['.env', 'private_state/safe.md', 'keys.pem', 'id_ed25519.md',
                      'oauth.json', 'cookies.txt', '../safe.md', '/safe.md', 'raw.log']:

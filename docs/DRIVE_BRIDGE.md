@@ -15,13 +15,13 @@ mark2-drive stage --kind handoffs --file /path/to/reviewed-handoff.md
 mark2-drive stage --kind reports --file /path/to/reviewed-report.json
 mark2-drive push-handoffs
 mark2-drive push-reports
-mark2-drive push-context
+mark2-drive push-status
 mark2-drive pull-inbox
 mark2-drive test
 mark2-drive sync
 ```
 
-`status` generates a compact export locally. `stage` is the explicit publication
+`status` generates a compact export locally; `push-status` regenerates and uploads only MARK2_STATUS.json. The export uses hostname and recently_completed as requested. A live-tested bridge also publishes 05_HANDOFFS/MARK2_BRIDGE_READY.md, accurately reporting whether its timer is active. `stage` is the explicit publication
 boundary: use it only on a reviewed, non-secret document. Exports are limited to
 UTF-8 Markdown, text and JSON, 256 KiB per file. Raw shared-brain documents, logs,
 backups, database files and repositories are never automatically copied.
@@ -34,7 +34,7 @@ redacted and shipped. Structured status contains only fixed labels, counts,
 validated local IDs and timestamps, not task descriptions or private messages.
 
 Reports/handoffs use immutable content-addressed names. Only the generated
-`03_CONTEXT/MARK2_STATUS.json` is intentionally replaced. Successful uploads are
+`03_CONTEXT/MARK2_STATUS.json` and the generated readiness handoff are intentionally replaced. Successful uploads are
 read back and SHA-256 verified before committing the local ledger. Unchanged
 staged documents are skipped. Missing/replaced remote objects are not discovered
 by the local skip optimization; use the safe test and an explicit republish if an
@@ -92,7 +92,7 @@ limited to 1,000 entries and 4 MiB returned output; the service also has a total
 ## Authorization and activation
 
 Rclone is already installed; no extra package installation is needed.
-Current rclone warns its shared Google OAuth client is retiring. Use a Google
+Current rclone warns its shared Google OAuth client is retiring. The standard shared-client flow can still be attempted with `scripts/authorize_drive.py --shared-client`; reaching its login URL does not establish that Google will accept the client. If rejected or for a durable owned-client setup, use a Google
 Desktop OAuth client owned by the dedicated Mark-2 account/project:
 
 1. In https://console.cloud.google.com/apis/library/drive.googleapis.com enable

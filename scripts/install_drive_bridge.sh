@@ -27,6 +27,8 @@ if [ "${1:-}" = '--enable' ]; then
     "$REPO/scripts/mark2-drive" test
     "$REPO/scripts/mark2-drive" sync
     systemctl --user enable --now mark2-drive.timer
+    "$REPO/scripts/mark2-drive" push-handoffs
+    "$REPO/scripts/mark2-drive" push-status
 else
     echo 'Drive units installed but not enabled; live authentication/test required.'
 fi

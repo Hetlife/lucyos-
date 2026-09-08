@@ -317,15 +317,17 @@ class Bridge:
             raise BridgeError('inbox_items_rejected')
         return dict(results)
 
-    def push(self, kind):
+    def push(self, kind, only=None):
         folder = self.outbox / kind
         folder.mkdir(parents=True, exist_ok=True, mode=0o700)
         count = 0
         for path in sorted(folder.iterdir()):
+            if only is not None and path.name != only:
+                continue
             data = read_safe(path)
             h = digest(data)
             name = path.name
-            if name != 'MARK2_STATUS.json':
+            if name not in ('MARK2_STATUS.json', 'MARK2_BRIDGE_READY.md'):
                 suffix = '-' + h[:16]
                 if not path.stem.endswith(suffix):
                     name = path.stem + suffix + path.suffix
@@ -346,9 +348,9 @@ class Bridge:
         return {'uploaded': count}
 
     def status(self):
-        result = {'updated_at': now(), 'host': 'Mark-2', 'system_health': 'unknown',
+        result = {'updated_at': now(), 'hostname': 'Mark-2', 'system_health': 'unknown',
                   'active_project': None, 'active_task': None, 'current_bottleneck': None,
-                  'recent_completed': [], 'recent_failures': [], 'pending_approvals': 0,
+                  'recently_completed': [], 'recent_failures': [], 'pending_approvals': 0,
                   'human_action_required': [], 'next_action': 'review_local_resume',
                   'ollama_status': 'unknown', 'git_status_summary': 'unknown',
                   'last_sync': self.state.get('last_sync'),
@@ -359,7 +361,7 @@ class Bridge:
                 result['pending_approvals'] = c.execute(
                     "SELECT count(*) FROM approvals WHERE status='PENDING'").fetchone()[0]
                 for field, query, pattern in [
-                    ('recent_completed', "SELECT task_id FROM tasks WHERE status='DONE' ORDER BY completed_at DESC LIMIT 5", r'TASK-[A-F0-9]{8}'),
+                    ('recently_completed', "SELECT task_id FROM tasks WHERE status='DONE' ORDER BY completed_at DESC LIMIT 5", r'TASK-[A-F0-9]{8}'),
                     ('recent_failures', "SELECT error_id FROM errors WHERE status='OPEN' ORDER BY created_at DESC LIMIT 5", r'ERR-[A-F0-9]{8}')]:
                     result[field] = [r[0] for r in c.execute(query) if re.fullmatch(pattern, r[0])]
                 row = c.execute("SELECT task_id, project FROM tasks WHERE status='IN_PROGRESS' LIMIT 1").fetchone()
@@ -403,6 +405,30 @@ class Bridge:
         atomic(self.outbox / 'context/MARK2_STATUS.json', data)
         return result
 
+    def ready_handoff(self):
+        if not (self.root / 'AUTH_VERIFIED').exists():
+            return
+        try:
+            active = subprocess.run(['systemctl', '--user', 'is-active', '--quiet',
+                                     'mark2-drive.timer'], capture_output=True, timeout=5).returncode == 0
+        except (OSError, subprocess.TimeoutExpired):
+            active = False
+        data = ('# Mark-2 Drive bridge readiness\n\n'
+                'Live Drive read/write and safe round-trip: verified.\n'
+                'Automatic exchange timer: ' + ('active' if active else 'not active') + '.\n'
+                'Canonical code: GitHub Hetlife/lucyos-.\n'
+                'Canonical state: local AION shared brain; never stored on Drive.\n'
+                'Transport: explicit scanned text packets; no approvals granted by Drive.\n'
+                'Status: MARK2_SHARED/03_CONTEXT/MARK2_STATUS.json.\n'
+                'Inbox: MARK2_SHARED/00_INBOX; AI SYNC PACKET text files enter local TRIAGE.\n'
+                'Recovery: local state/drive_bridge/ledger.json and docs/DRIVE_BRIDGE.md.\n').encode()
+        clean(data, 'MARK2_BRIDGE_READY.md')
+        atomic(self.outbox / 'handoffs/MARK2_BRIDGE_READY.md', data)
+
+    def push_status(self):
+        self.status()
+        return self.push('context', only='MARK2_STATUS.json')
+
     def test(self):
         self.remote.folders()
         data = b'Mark-2 safe Drive bridge round-trip test.\n'
@@ -414,11 +440,13 @@ class Bridge:
             if self.remote.get('99_ARCHIVE', 'MARK2_BRIDGE_TEST.txt') != data:
                 raise BridgeError('round_trip_failed')
         atomic(self.root / 'AUTH_VERIFIED', json_bytes({'verified_at': now()}))
-        return {'round_trip': 'passed', 'folders': 'created'}
+        self.ready_handoff()
+        return {'round_trip': 'passed', 'folders': 'verified'}
 
     def sync(self):
         if not (self.root / 'AUTH_VERIFIED').exists():
             raise BridgeError('live_test_required')
+        self.ready_handoff()
         failures = []
         # One blocked direction must not prevent independent safe exports.
         for action in [self.pull, lambda: self.push('handoffs'), lambda: self.push('reports'),
@@ -441,7 +469,7 @@ def main():
     os.umask(0o077)
     p = argparse.ArgumentParser(description=__doc__)
     p.add_argument('operation', choices=['pull-inbox', 'push-handoffs', 'push-reports',
-                   'push-context', 'status', 'test', 'sync', 'stage'])
+                   'push-context', 'push-status', 'status', 'test', 'sync', 'stage'])
     p.add_argument('--kind', choices=KINDS)
     p.add_argument('--file', type=Path)
     args = p.parse_args()
@@ -452,6 +480,11 @@ def main():
                 if not args.kind or not args.file:
                     p.error('stage requires --kind and --file')
                 result = bridge.stage(args.kind, args.file)
+            elif args.operation == 'push-status':
+                result = bridge.push_status()
+            elif args.operation == 'push-handoffs':
+                bridge.ready_handoff()
+                result = bridge.push('handoffs')
             elif args.operation.startswith('push-'):
                 result = bridge.push(args.operation[5:])
             elif args.operation == 'pull-inbox':

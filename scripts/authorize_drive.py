@@ -20,14 +20,20 @@ from bridges.drive_bridge import atomic
 def main():
     os.umask(0o077)
     p = argparse.ArgumentParser(description=__doc__)
-    p.add_argument('--client-file', type=Path, required=True)
+    p.add_argument('--client-file', type=Path)
+    p.add_argument('--shared-client', action='store_true',
+                   help='Attempt the standard shared client; Google may reject retired clients')
     args = p.parse_args()
-    source = args.client_file
-    if source.is_symlink() or source.stat().st_mode & 0o077 or source.stat().st_size > 16384:
-        raise ValueError()
-    client = json.loads(source.read_bytes())['installed']
-    if not client['client_id'].endswith('.apps.googleusercontent.com') or not client['client_secret']:
-        raise ValueError()
+    client = None
+    if args.client_file:
+        source = args.client_file
+        if source.is_symlink() or source.stat().st_mode & 0o077 or source.stat().st_size > 16384:
+            raise ValueError()
+        client = json.loads(source.read_bytes())['installed']
+        if not client['client_id'].endswith('.apps.googleusercontent.com') or not client['client_secret']:
+            raise ValueError()
+    elif not args.shared_client:
+        p.error('provide --client-file or --shared-client')
     path = Path.home() / '.config/rclone/rclone.conf'
     path.parent.mkdir(parents=True, exist_ok=True, mode=0o700)
     cfg = configparser.ConfigParser(interpolation=None)
@@ -37,8 +43,9 @@ def main():
     if cfg.get('gdrive', 'token', fallback=''):
         print('Existing authorization found; verify with mark2-drive test.')
         return 0
-    cfg['gdrive'].update(type='drive', scope='drive', client_id=client['client_id'],
-                         client_secret=client['client_secret'])
+    cfg['gdrive'].update(type='drive', scope='drive')
+    if client:
+        cfg['gdrive'].update(client_id=client['client_id'], client_secret=client['client_secret'])
     import io
     content = io.StringIO()
     cfg.write(content)
@@ -46,6 +53,8 @@ def main():
     # Suppress output: rclone can otherwise dump configuration after authorization.
     command = [str(Path.home() / '.local/bin/rclone'), 'config', 'update', 'gdrive',
                'config_is_local', 'true', 'config_auth_no_browser', 'true', '--no-output']
+    if args.shared_client:
+        command.extend(['config_shared_client_id', 'true'])
     print('Waiting for Google browser authorization on Mark-2 localhost:53682.', flush=True)
     with subprocess.Popen(command, stdout=subprocess.PIPE, stderr=subprocess.STDOUT,
                           text=True) as proc:
