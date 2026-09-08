@@ -5,5 +5,6 @@ Documentation=file://@REPO@/scripts/README.md
 [Service]
 Type=oneshot
 Environment=AION_HOME=@AION_HOME@
+Environment=PATH=/root/.local/bin:/usr/local/bin:/usr/bin:/bin
 WorkingDirectory=@REPO@
 ExecStart=@REPO@/scripts/maintenance.sh
