@@ -18,6 +18,9 @@ Safety rails, in order of importance:
 """
 from __future__ import annotations
 
+from contextlib import contextmanager
+
+import fcntl
 import json
 import os
 import shlex
@@ -44,6 +47,7 @@ FORBIDDEN = ["rm -rf /", "mkfs", "dd if=", ":(){", "shutdown", "reboot",
 
 TIMEOUT_S = 300
 MAX_OUTPUT_CHARS = 2000
+WORK_LOCK_NAME = "worker.lock"
 
 
 class Refused(Exception):
@@ -144,20 +148,34 @@ def run_cloud(prompt: str) -> dict:
 
 # ---------------------------------------------------------------- the loop
 
+@contextmanager
+def _execution_lock():
+    """Yield whether this process exclusively owns the real-work loop lock."""
+    lock_path = config.home() / "state" / WORK_LOCK_NAME
+    lock_file = lock_path.open("a+")
+    acquired = False
+    try:
+        try:
+            fcntl.flock(lock_file.fileno(), fcntl.LOCK_EX | fcntl.LOCK_NB)
+            acquired = True
+        except BlockingIOError:
+            pass
+        yield acquired
+    finally:
+        if acquired:
+            fcntl.flock(lock_file.fileno(), fcntl.LOCK_UN)
+        lock_file.close()
+
+
 def work(max_tasks: int = 5, *, dry_run: bool = False, session_id: str | None = None) -> dict:
     """Execute up to `max_tasks` ready tasks.  Returns a factual summary."""
     summary = {"attempted": 0, "done": 0, "failed": 0, "skipped": [], "stopped": None,
                "results": []}
 
-    if router.is_paused():
-        summary["stopped"] = "paused by owner"
-        return summary
-
-    shift = governor.enforce()
-    if shift["changed"]:
-        summary["governor"] = shift["message"]
-
     if dry_run:
+        if router.is_paused():
+            summary["stopped"] = "paused by owner"
+            return summary
         # A preview changes no state, so walking the ready queue is the only
         # correct way to look ahead: next_task() would return the same task.
         for task in tasks.ready(max_tasks):
@@ -166,8 +184,25 @@ def work(max_tasks: int = 5, *, dry_run: bool = False, session_id: str | None = 
         summary["stopped"] = "dry run — nothing was executed"
         return summary
 
+    with _execution_lock() as acquired:
+        if not acquired:
+            summary["stopped"] = "another worker loop is active"
+            return summary
+        return _work_locked(max_tasks, session_id, summary)
+
+
+def _work_locked(max_tasks: int, session_id: str | None, summary: dict) -> dict:
+    """Run a real work loop while the caller holds the singleton lock."""
+    if router.is_paused():
+        summary["stopped"] = "paused by owner"
+        return summary
+
+    shift = governor.enforce()
+    if shift["changed"]:
+        summary["governor"] = shift["message"]
+
     own_session = session_id is None
-    if own_session and not dry_run:
+    if own_session:
         session_id = sessions.start("openclaw", model_class="DET",
                                     objective=f"autonomous execution of up to {max_tasks} tasks")
 
@@ -208,7 +243,7 @@ def work(max_tasks: int = 5, *, dry_run: bool = False, session_id: str | None = 
                 continue
 
             summary["attempted"] += 1
-            result = _execute(task, cls, dry_run=dry_run, session_id=session_id)
+            result = _execute(task, cls, dry_run=False, session_id=session_id)
             summary["results"].append(result)
             if result["status"] == "DONE":
                 summary["done"] += 1
@@ -218,14 +253,14 @@ def work(max_tasks: int = 5, *, dry_run: bool = False, session_id: str | None = 
             else:
                 summary["failed"] += 1
 
-        if own_session and not dry_run and session_id:
+        if own_session and session_id:
             sessions.end(session_id,
                          outcome=f"{summary['done']} done, {summary['failed']} failed, "
                                  f"{len(summary['skipped'])} skipped"
                                  + (f"; stopped: {summary['stopped']}" if summary["stopped"] else ""),
                          resume_point=_next_resume_point())
     except Exception:
-        if own_session and not dry_run and session_id:
+        if own_session and session_id:
             sessions.end(session_id, outcome="loop crashed", status="FAILED",
                          resume_point="inspect `aion errors`")
         raise

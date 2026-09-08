@@ -1,3 +1,4 @@
+import fcntl
 import json
 import unittest
 from unittest.mock import patch
@@ -166,6 +167,40 @@ class TestWorkerLoop(AionTest):
         result = worker.work(max_tasks=3, dry_run=True)
         self.assertEqual(tasks.counts(), before)
         self.assertTrue(all(r["status"] == "DRY_RUN" for r in result["results"]))
+
+    def test_overlapping_loop_is_refused_without_state_mutation(self):
+        t = tasks.create("must remain untouched", model_class="DET", kind="file_write",
+                         exec_command="echo should-not-run", success_criteria="output")
+        before_task = dict(tasks.get(t))
+        before_counts = {
+            table: db.connect().execute(f"SELECT COUNT(*) FROM {table}").fetchone()[0]
+            for table in ("errors", "approvals", "model_usage", "sessions")
+        }
+        lock_path = config.home() / "state" / worker.WORK_LOCK_NAME
+        with lock_path.open("a+") as held:
+            fcntl.flock(held.fileno(), fcntl.LOCK_EX | fcntl.LOCK_NB)
+            preview = worker.work(max_tasks=1, dry_run=True)
+            result = worker.work(max_tasks=1)
+
+        self.assertEqual(preview["stopped"], "dry run — nothing was executed")
+        self.assertEqual(result["stopped"], "another worker loop is active")
+        self.assertEqual(result["attempted"], 0)
+        self.assertEqual(dict(tasks.get(t)), before_task)
+        after_counts = {
+            table: db.connect().execute(f"SELECT COUNT(*) FROM {table}").fetchone()[0]
+            for table in ("errors", "approvals", "model_usage", "sessions")
+        }
+        self.assertEqual(after_counts, before_counts)
+
+    @patch("aion_core.worker._do_work", side_effect=RuntimeError("executor crashed"))
+    def test_execution_lock_releases_after_exception(self, _do_work):
+        tasks.create("crashing job", model_class="DET", kind="file_write",
+                     exec_command="echo never-finishes", success_criteria="output")
+        with self.assertRaisesRegex(RuntimeError, "executor crashed"):
+            worker.work(max_tasks=1)
+
+        with worker._execution_lock() as acquired:
+            self.assertTrue(acquired)
 
 
 class TestAutomaticDownshift(AionTest):

@@ -117,7 +117,7 @@ def complete(task_id: str, evidence: str, next_action: str = "") -> None:
     if not evidence or not evidence.strip():
         raise TaskError("cannot mark DONE without evidence (test run, measurement or observation)")
     update(task_id, status="DONE", evidence=evidence, next_action=next_action,
-           completed_at=util.now())
+           blockers="", last_error="", completed_at=util.now())
     from . import resume  # late import: resume depends on this module
     nxt = next_task()
     resume.checkpoint(

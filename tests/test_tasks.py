@@ -18,6 +18,15 @@ class TestTasks(AionTest):
         tasks.complete(t, "ran `python3 -m unittest`: 24 passed")
         self.assertEqual(tasks.get(t)["status"], "DONE")
 
+    def test_completion_clears_stale_failure_text(self):
+        t = tasks.create("eventually succeeds", blockers="executor unavailable",
+                         last_error="old validation failure")
+        tasks.complete(t, "validation passed")
+        row = tasks.get(t)
+        self.assertEqual(row["status"], "DONE")
+        self.assertEqual(row["blockers"], "")
+        self.assertEqual(row["last_error"], "")
+
     def test_claim_is_exclusive(self):
         t = tasks.create("one owner only")
         self.assertTrue(tasks.claim(t, "agent-a"))
