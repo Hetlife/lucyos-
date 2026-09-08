@@ -1,3 +1,5 @@
+import os
+import sqlite3
 import unittest
 from unittest import mock
 
@@ -74,6 +76,38 @@ class TestBudgetGovernor(AionTest):
         m = metrics.money()
         self.assertEqual(m["real_revenue_inr"], 0.0)
         self.assertIn("FORECAST", m["non_actual"])
+
+    def test_legacy_finance_rows_migrate_with_unknown_payer(self):
+        from aion_core import db
+        db.close()
+        legacy_db = self.tmp / "legacy.db"
+        conn = sqlite3.connect(legacy_db)
+        conn.execute(
+            "CREATE TABLE finance (id INTEGER PRIMARY KEY AUTOINCREMENT, at TEXT NOT NULL, "
+            "day TEXT NOT NULL, kind TEXT NOT NULL, stage TEXT NOT NULL DEFAULT 'ACTUAL', "
+            "amount_inr REAL NOT NULL, project TEXT NOT NULL DEFAULT 'default', "
+            "description TEXT NOT NULL DEFAULT '', evidence TEXT NOT NULL DEFAULT '')"
+        )
+        conn.execute(
+            "INSERT INTO finance(at, day, kind, amount_inr, description, evidence) "
+            "VALUES('2026-01-01T00:00:00Z', '2026-01-01', 'revenue', 100, 'legacy payer', 'pay_old')"
+        )
+        conn.commit()
+        conn.close()
+        os.environ["AION_DB"] = str(legacy_db)
+
+        migrated = db.connect()
+        self.assertIn("payer_id", {r["name"] for r in migrated.execute("PRAGMA table_info(finance)")})
+        self.assertIsNone(migrated.execute("SELECT payer_id FROM finance").fetchone()["payer_id"])
+
+    def test_money_add_cli_stores_payer_id(self):
+        from aion_core import cli, db
+        self.assertEqual(cli.main([
+            "money-add", "revenue", "100", "--evidence", "pay_cli",
+            "--payer-id", "payer_cli",
+        ]), 0)
+        row = db.connect().execute("SELECT payer_id FROM finance").fetchone()
+        self.assertEqual(row["payer_id"], "payer_cli")
 
 
 class TestFailureLoop(AionTest):

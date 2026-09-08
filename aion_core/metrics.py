@@ -66,16 +66,18 @@ def _governor(pct: float) -> str:
 
 
 def record_money(kind: str, amount_inr: float, *, stage: str = "ACTUAL", project: str = "default",
-                 description: str = "", evidence: str = "") -> None:
+                 description: str = "", evidence: str = "",
+                 payer_id: str | None = None) -> None:
     if stage not in STAGES:
         raise ValueError(f"unknown stage {stage!r}; use one of {STAGES}")
     if stage == "ACTUAL" and not evidence:
         raise ValueError("ACTUAL money requires evidence (transaction id, statement line, invoice)")
     conn = db.connect()
     conn.execute(
-        "INSERT INTO finance(at, day, kind, stage, amount_inr, project, description, evidence) "
-        "VALUES(?,?,?,?,?,?,?,?)",
-        (util.now(), util.today(), kind, stage, amount_inr, project, description, evidence))
+        "INSERT INTO finance(at, day, kind, stage, amount_inr, project, payer_id, description, "
+        "evidence) VALUES(?,?,?,?,?,?,?,?,?)",
+        (util.now(), util.today(), kind, stage, amount_inr, project, payer_id, description,
+         evidence))
     conn.commit()
 
 

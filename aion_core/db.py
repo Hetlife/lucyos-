@@ -158,6 +158,7 @@ CREATE TABLE IF NOT EXISTS finance (
     stage       TEXT NOT NULL DEFAULT 'ACTUAL', -- ACTUAL|FORECAST|SIMULATION|PAPER|BACKTEST
     amount_inr  REAL NOT NULL,
     project     TEXT NOT NULL DEFAULT 'default',
+    payer_id    TEXT,
     description TEXT NOT NULL DEFAULT '',
     evidence    TEXT NOT NULL DEFAULT ''
 );
@@ -300,6 +301,11 @@ _ADDED_COLUMNS = {
         ("exec_command", "TEXT NOT NULL DEFAULT ''"),
         ("validation_command", "TEXT NOT NULL DEFAULT ''"),
         ("plan_id", "TEXT"),
+    ],
+    # Nullable by design: revenue recorded before stable payer identity was
+    # introduced remains unknown rather than being inferred from description.
+    "finance": [
+        ("payer_id", "TEXT"),
     ],
 }
 

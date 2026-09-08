@@ -212,7 +212,7 @@ def work(max_tasks: int = 5, *, dry_run: bool = False, session_id: str | None = 
             summary["results"].append(result)
             if result["status"] == "DONE":
                 summary["done"] += 1
-            elif result["status"] in ("NEEDS_APPROVAL", "SKIPPED", "WAITING"):
+            elif result["status"] in ("NEEDS_APPROVAL", "NEEDS_REVIEW", "SKIPPED", "WAITING"):
                 summary["skipped"].append({"task_id": result["task_id"],
                                            "why": result.get("detail", result["status"])})
             else:
@@ -314,6 +314,18 @@ def _execute(task, cls: str, *, dry_run: bool, session_id: str | None) -> dict:
         return _fail(task_id, cls, produced["output"], session_id)
 
     checked = _validate(task, produced)
+    if checked.get("needs_review"):
+        evidence = f"{produced.get('how', cls)}: {checked['detail']}"
+        tasks.update(task_id, status="NEEDS_REVIEW", owner_agent=None, claimed_at=None,
+                     evidence=evidence[:900], last_error="")
+        metrics.record_usage(produced.get("model", agent_id), cls, task_id=task_id,
+                             cost_inr=produced.get("cost_inr", 0.0),
+                             note=task["title"][:100])
+        if session_id:
+            sessions.log(session_id, "result",
+                         f"{task_id} NEEDS_REVIEW — {checked['detail'][:150]}")
+        return {"task_id": task_id, "status": "NEEDS_REVIEW", "class": cls,
+                "evidence": evidence[:200], "detail": checked["detail"][:300]}
     if not checked["ok"]:
         return _fail(task_id, cls, f"validation failed: {checked['detail']}", session_id)
 
@@ -372,6 +384,10 @@ def _validate(task, produced: dict) -> dict:
         return {"ok": exists,
                 "detail": f"{p} {'exists' if exists else 'was not written'}"}
     text = (produced.get("output") or "").strip()
+    if (task["model_class"] or "B") in ("A", "B") and not task["exec_command"]:
+        return {"ok": False, "needs_review": True,
+                "detail": f"no independent validation; model produced {len(text)} characters: "
+                          f"{text[:600]}"}
     return {"ok": bool(text),
             "detail": f"produced {len(text)} characters of output: {text[:300]}"}
 

@@ -95,6 +95,37 @@ class TestWorkerLoop(AionTest):
         self.assertEqual(result["done"], 0)
         self.assertNotEqual(tasks.get(t)["status"], "DONE")
 
+    @patch("aion_core.worker._do_work")
+    def test_model_output_without_independent_validation_needs_review(self, do_work):
+        do_work.return_value = {"ok": True, "output": "I completed the requested change.",
+                                "how": "test model", "model": "test-model"}
+        t = tasks.create("model-only claim", model_class="B", kind="code",
+                         success_criteria="the change works")
+
+        result = worker.work(max_tasks=1)
+        row = tasks.get(t)
+
+        self.assertEqual(result["results"][0]["status"], "NEEDS_REVIEW")
+        self.assertEqual(result["failed"], 0)
+        self.assertEqual(row["status"], "NEEDS_REVIEW")
+        self.assertEqual(row["retry_count"], 0)
+        self.assertIsNone(row["owner_agent"])
+        self.assertIsNone(row["claimed_at"])
+        self.assertIn("I completed the requested change", row["evidence"])
+        self.assertEqual(row["last_error"], "")
+
+    @patch("aion_core.worker._do_work")
+    def test_model_work_with_explicit_validation_can_complete(self, do_work):
+        do_work.return_value = {"ok": True, "output": "implemented",
+                                "how": "test model", "model": "test-model"}
+        t = tasks.create("validated model work", model_class="A", kind="code",
+                         validation_command="python3 -c 'raise SystemExit(0)'")
+
+        result = worker.work(max_tasks=1)
+
+        self.assertEqual(result["done"], 1)
+        self.assertEqual(tasks.get(t)["status"], "DONE")
+
     @patch("aion_core.worker.ollama_available", return_value=False)
     def test_missing_executor_waits_instead_of_burning_retries(self, _availability):
         t = tasks.create("needs a model", model_class="A", kind="classify",
@@ -246,6 +277,24 @@ class TestHandoffAndMilestones(AionTest):
         metrics.record_money("revenue", 1000, stage="ACTUAL", evidence="pay_REAL1",
                              description="first customer")
         self.assertTrue(milestones.check()["M0"]["reached"])
+
+    def test_repeat_payer_milestone_uses_stable_payer_id(self):
+        from aion_core import milestones
+        metrics.record_money("revenue", 1000, evidence="pay_1",
+                             description="same description", payer_id="payer_1")
+        metrics.record_money("revenue", 1000, evidence="pay_2",
+                             description="same description", payer_id="payer_2")
+        self.assertFalse(milestones.check()["M1"]["reached"])
+
+        metrics.record_money("revenue", 1000, evidence="pay_3",
+                             description="different description", payer_id="payer_1")
+        self.assertTrue(milestones.check()["M1"]["reached"])
+
+    def test_unknown_payers_do_not_reach_repeat_payer_milestone(self):
+        from aion_core import milestones
+        metrics.record_money("revenue", 1000, evidence="pay_1", description="customer")
+        metrics.record_money("revenue", 1000, evidence="pay_2", description="customer")
+        self.assertFalse(milestones.check()["M1"]["reached"])
 
     def test_a_milestone_is_recorded_once(self):
         from aion_core import milestones

@@ -128,6 +128,7 @@ def _main(argv=None) -> int:
     mo.add_argument("--stage", default="ACTUAL", choices=list(metrics.STAGES))
     mo.add_argument("--description", default="")
     mo.add_argument("--evidence", default="")
+    mo.add_argument("--payer-id", help="stable payer identifier for repeat-payer measurement")
 
     rem = sub.add_parser("remember")
     rem.add_argument("kind", choices=list(memory.KINDS))
@@ -319,7 +320,8 @@ def _main(argv=None) -> int:
         _print(metrics.budget_status())
     elif cmd == "money-add":
         metrics.record_money(args.kind, args.amount, stage=args.stage,
-                             description=args.description, evidence=args.evidence)
+                             description=args.description, evidence=args.evidence,
+                             payer_id=args.payer_id)
         _print(reports.money())
     elif cmd == "remember":
         _print(memory.remember(args.kind, args.title, args.body, confidence=args.confidence,

@@ -42,7 +42,9 @@ def check() -> dict:
     revenue = _actual_revenue_rows()
     payers = {}
     for r in revenue:
-        payers[r["description"]] = payers.get(r["description"], 0) + 1
+        payer_id = r["payer_id"]
+        if payer_id:
+            payers[payer_id] = payers.get(payer_id, 0) + 1
     deliveries = len(revenue)
     net_by_month = _monthly_net()
 
