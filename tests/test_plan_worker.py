@@ -1,5 +1,6 @@
 import json
 import unittest
+from unittest.mock import patch
 
 from tests.base import AionTest
 from aion_core import approvals, config, db, governor, metrics, plan, tasks, worker
@@ -94,7 +95,8 @@ class TestWorkerLoop(AionTest):
         self.assertEqual(result["done"], 0)
         self.assertNotEqual(tasks.get(t)["status"], "DONE")
 
-    def test_missing_executor_waits_instead_of_burning_retries(self):
+    @patch("aion_core.worker.ollama_available", return_value=False)
+    def test_missing_executor_waits_instead_of_burning_retries(self, _availability):
         t = tasks.create("needs a model", model_class="A", kind="classify",
                          success_criteria="something")
         result = worker.work(max_tasks=3)
@@ -181,7 +183,8 @@ if __name__ == "__main__":
 
 
 class TestBudgetCeilingBehaviour(AionTest):
-    def test_ceiling_holds_paid_work_but_not_free_work(self):
+    @patch("aion_core.worker.ollama_available", return_value=False)
+    def test_ceiling_holds_paid_work_but_not_free_work(self, _availability):
         paid = tasks.create("paid job", model_class="B", kind="code",
                             success_criteria="x", impact=1)
         free = tasks.create("free job", model_class="DET", kind="file_write",

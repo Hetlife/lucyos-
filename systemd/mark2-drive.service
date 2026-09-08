@@ -1,0 +1,23 @@
+[Unit]
+Description=Mark-2 sanitized Google Drive exchange
+ConditionPathExists=@AION_HOME@/state/drive_bridge/AUTH_VERIFIED
+
+[Service]
+Type=oneshot
+WorkingDirectory=@REPO@
+Environment=AION_HOME=@AION_HOME@
+Environment=PATH=/root/.local/bin:/usr/local/bin:/usr/bin:/bin
+ExecStart=@REPO@/scripts/mark2-drive sync
+TimeoutStartSec=240
+KillMode=control-group
+UMask=0077
+Nice=10
+MemoryMax=256M
+TasksMax=32
+NoNewPrivileges=true
+PrivateTmp=true
+ProtectSystem=strict
+ReadWritePaths=@AION_HOME@/state/drive_bridge @AION_HOME@/INBOX @AION_HOME@/OUTBOX/drive /root/.config/rclone
+RestrictAddressFamilies=AF_UNIX AF_INET AF_INET6
+StandardOutput=journal
+StandardError=journal

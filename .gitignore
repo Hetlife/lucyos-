@@ -7,3 +7,16 @@ __pycache__/
 venv/
 # The shared brain is machine state, never source.
 shared_brain/
+
+# Drive credentials and private material must never enter version control.
+private_state/
+.env
+.env.*
+secrets.env
+*.pem
+*.key
+id_ed25519*
+rclone.conf
+*oauth*.json
+*credentials*.json
+cookies*

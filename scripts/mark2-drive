@@ -1,0 +1,5 @@
+#!/bin/sh
+set -eu
+REPO=$(CDPATH= cd -- "$(dirname -- "$(readlink -f -- "$0")")/.." && pwd)
+cd "$REPO"
+exec python3 -m bridges.drive_bridge "$@"
