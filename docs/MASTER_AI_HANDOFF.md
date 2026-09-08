@@ -1,6 +1,15 @@
 # Master AI Handoff — LucyOS / AION
 
-Updated: 2026-09-04 UTC
+Updated: 2026-09-08 UTC (current restart priority); older details below
+
+## Current restart priority — 2026-09-08
+
+The latest owner instruction is to save and resume the Google Drive bridge after
+Codex limits reset. **Read `docs/DRIVE_BRIDGE_RESUME.md` first and follow its exact
+next actions.** The older phone-interface handoff below is historical context,
+not the current next task. The Drive bridge is tested; external Google consent
+and live verification are pending. No canonical operating-loop changes are
+approved. A usage-limit reset does not automatically launch a new agent.
 
 ## Read this first
 
