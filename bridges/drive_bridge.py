@@ -185,6 +185,18 @@ class Rclone:
         self.run('copyto', str(path), 'gdrive:MARK2_SHARED/' + folder + '/' + name,
                  '--no-traverse')
 
+    def exists(self, folder, name):
+        try:
+            result = json.loads(self.run(
+                'lsjson', 'gdrive:MARK2_SHARED/' + folder, '--files-only',
+                '--max-depth', '1', '--include', '/' + name))
+            return any(e.get('Name') == name for e in result)
+        except (ValueError, TypeError):
+            raise BridgeError('invalid_remote_listing') from None
+
+    def delete(self, folder, name):
+        self.run('deletefile', 'gdrive:MARK2_SHARED/' + folder + '/' + name)
+
 
 class Bridge:
     def __init__(self, root=None, remote=None):
@@ -383,9 +395,9 @@ class Bridge:
         except (sqlite3.Error, ValueError):
             result['system_health'] = 'database_unavailable'
         if not (self.root / 'AUTH_VERIFIED').exists():
-            result['human_action_required'] = ['GOOGLE_OAUTH']
+            result['human_action_required'] = ['GOOGLE_DRIVE_AUTH']
             result['current_bottleneck'] = 'drive_authorization_pending'
-            result['next_action'] = 'complete_google_authorization'
+            result['next_action'] = 'verify_google_drive_service_account'
         elif result['recent_failures']:
             result['current_bottleneck'] = 'local_errors_require_review'
         try:
@@ -432,16 +444,30 @@ class Bridge:
     def test(self):
         self.remote.folders()
         data = b'Mark-2 safe Drive bridge round-trip test.\n'
-        clean(data, 'MARK2_BRIDGE_TEST.txt')
+        stamp = datetime.now(timezone.utc).strftime('%Y%m%dT%H%M%S%fZ')
+        name = f'MARK2_CONNECTION_TEST_{stamp}_{os.getpid()}.txt'
+        clean(data, name)
+        if self.remote.exists('99_ARCHIVE', name):
+            raise BridgeError('round_trip_name_collision')
+        created = False
         with tempfile.TemporaryDirectory(dir=self.root) as tmp:
             path = Path(tmp) / 'test.txt'
             atomic(path, data)
-            self.remote.put('99_ARCHIVE', 'MARK2_BRIDGE_TEST.txt', path)
-            if self.remote.get('99_ARCHIVE', 'MARK2_BRIDGE_TEST.txt') != data:
-                raise BridgeError('round_trip_failed')
+            try:
+                self.remote.put('99_ARCHIVE', name, path)
+                created = True
+                if not self.remote.exists('99_ARCHIVE', name):
+                    raise BridgeError('round_trip_listing_failed')
+                if self.remote.get('99_ARCHIVE', name) != data:
+                    raise BridgeError('round_trip_read_failed')
+            finally:
+                if created:
+                    self.remote.delete('99_ARCHIVE', name)
+            if self.remote.exists('99_ARCHIVE', name):
+                raise BridgeError('round_trip_delete_failed')
         atomic(self.root / 'AUTH_VERIFIED', json_bytes({'verified_at': now()}))
         self.ready_handoff()
-        return {'round_trip': 'passed', 'folders': 'verified'}
+        return {'round_trip': 'passed', 'folders': 'verified', 'cleanup': 'verified'}
 
     def sync(self):
         if not (self.root / 'AUTH_VERIFIED').exists():

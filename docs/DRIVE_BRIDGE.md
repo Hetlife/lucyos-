@@ -3,9 +3,10 @@
 The bridge exchanges staged, scanned documents through `gdrive:MARK2_SHARED`.
 GitHub remains authoritative for code. The local AION SQLite database and shared
 brain remain authoritative for operations. No canonical loop files are modified.
-No paid APIs, model calls, mounts, automatic deletes, or general directory syncs
-are used. ChatGPT's own account connection is separate and cannot be verified by
-this server; select the same dedicated Google account during authorization.
+No paid APIs, model calls, mounts, or general directory syncs are used. The only
+automatic deletion is cleanup of the bridge's own unique connection-test file.
+Authentication is unattended through a dedicated Google service account; the
+previous localhost/browser OAuth flow is not used.
 
 ## Commands
 
@@ -75,7 +76,8 @@ The owner-specified first live check is `00_INBOX/mark2-drive-test.txt`.
 - Code: `bridges/drive_bridge.py`; CLI: `scripts/mark2-drive`.
 - Staging: `OUTBOX/drive/{handoffs,reports,context}` under AION_HOME.
 - Ledger/lock/auth gate: `state/drive_bridge` under AION_HOME, private directory.
-- Credential store: `/root/.config/rclone/rclone.conf`, mode 0600, directory 0700.
+- Credential reference: `service_account_file` in protected `rclone.conf`; the
+  JSON itself stays under local `private_state/google`, directory 0700/file 0600.
 - Status: `OUTBOX/drive/context/MARK2_STATUS.json`.
 
 Every completed transfer is checkpointed with atomic replace/fsync. Delivery
@@ -91,30 +93,17 @@ limited to 1,000 entries and 4 MiB returned output; the service also has a total
 
 ## Authorization and activation
 
-Rclone is already installed; no extra package installation is needed.
-Current rclone warns its shared Google OAuth client is retiring. The standard shared-client flow can still be attempted with `scripts/authorize_drive.py --shared-client`; reaching its login URL does not establish that Google will accept the client. If rejected or for a durable owned-client setup, use a Google
-Desktop OAuth client owned by the dedicated Mark-2 account/project:
+Rclone is already installed; no extra package installation is needed. The
+`gdrive` remote uses Drive scope plus a `service_account_file` path; credential
+contents are never embedded in `rclone.conf`. `shared_with_me = true` makes the
+owner-shared `MARK2_SHARED` folder addressable without duplicating it. The Google
+Drive API must be enabled in the credential's Google Cloud project.
 
-1. In https://console.cloud.google.com/apis/library/drive.googleapis.com enable
-   Google Drive API in the dedicated account's project.
-2. In https://console.cloud.google.com/auth/clients configure consent/audience
-   as necessary and create a Desktop app OAuth client. For lasting unattended
-   access, use an appropriate production/internal consent configuration; external
-   testing grants can expire. Keep access limited to the dedicated account.
-3. Supply its JSON locally as `/root/.config/rclone/google-oauth-client.json`
-   with mode 0600, using a secure local file transfer. Never send it through chat,
-   Drive or Git. This is the owner credential-provisioning step.
-4. The operator runs `scripts/authorize_drive.py --client-file` with that path,
-   with a private browser route/SSH tunnel to localhost:53682 ready. The helper
-   emits only the temporary local login URL and times out after ten minutes.
-   The owner signs in using the dedicated account and approves Drive access.
-   The client material and refreshed authorization remain in protected rclone
-   config. The input JSON can be removed locally after successful import.
-5. The operator runs `mark2-drive test` (creates the nine folder paths and retains
-   one harmless archive test file), verifies the requested inbox test, and runs
-   `scripts/install_drive_bridge.sh --enable`. This performs another real test and
-   full manual sync before enabling the timer. No owner terminal work is needed
-   for these operator-run commands.
+The operator runs `mark2-drive test` (verifies the folder tree and performs a
+unique write/list/read/delete round-trip with verified cleanup), then runs
+`scripts/install_drive_bridge.sh --enable`. This performs another real test and
+full manual sync before enabling the timer. No owner terminal work is needed for
+these operator-run commands.
 
 Folders: `00_INBOX`, `01_LUCYOS`, `02_STRATEGY_FACTORY`, `03_CONTEXT`, `04_REPORTS`,
 `05_HANDOFFS`, `06_APPROVALS`, `99_ARCHIVE`, all below `MARK2_SHARED`.
@@ -134,18 +123,15 @@ journalctl --user -u mark2-drive.service -n 20 --no-pager
 systemctl --user disable --now mark2-drive.timer
 ```
 
-Revoking the Google OAuth grant and stopping the timer reverses authorization and
-automation. Existing local and remote documents are retained.
+Disabling/deleting the service-account key and stopping the timer reverses
+authorization and automation. Existing local and remote documents are retained.
 
 ## Validation and deployment checkpoint
 
 Offline tests: `python3 -m unittest tests.test_drive_bridge -q`.
 Regression/security tests: `python3 -m unittest discover -s tests -t . -q`,
 `./aion scan .`, `git diff --check`.
-Actual authorization, remote read/write, live round-trip and scheduled sync
-remain pending until OAuth is completed. A fake-remote test is not evidence of a
-live Drive connection. Unit syntax and the unauthenticated service gate can be
-checked before OAuth without enabling the timer.
-
-References: https://rclone.org/drive/#making-your-own-client-id and
-https://rclone.org/remote_setup/#configuring-using-ssh-tunnel
+Actual authentication, remote read/write, live round-trip and scheduled sync
+remain pending until the service account passes the live test. A fake-remote test
+is not evidence of a live Drive connection. Unit syntax and the unauthenticated
+service gate can be checked before enabling the timer.

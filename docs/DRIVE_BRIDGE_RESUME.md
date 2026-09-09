@@ -27,47 +27,35 @@ read this file; no new paid-usage scheduler has been installed.
 - Pre-change AION backup: `aion-backup-20260908T145104+0000.tar.gz`, restored with
   database integrity OK (13 tasks, 18 memories). Backups remain local.
 
-## Actual blocker
+## Actual blocker (updated 2026-09-09)
 
-The user reports ChatGPT has created MARK2_SHARED and its eight child folders
-in the dedicated Drive account. Mark-2 has NOT authenticated and cannot verify
-those remote objects yet. `gdrive` exists in protected rclone config, but no
-OAuth grant was present at checkpoint. ChatGPT's connection does not provide
-rclone credentials. Never extract ChatGPT/browser cookies or tokens.
-
-A standard rclone shared-client authorization attempt reached a real local
-browser listener. That attempt was stopped for this checkpoint; its old link
-is invalid. A fresh attempt is required. The shared client has a retirement
-warning and Google may reject it; only then use a privately provisioned Google
-Desktop OAuth client. No secret may be pasted into chat, committed or uploaded.
+The protected `gdrive` remote now references the locally supplied service-account
+file and enables Shared-with-me visibility. Credential structure and identity
+were validated without displaying secret fields. Google rejected the first live
+listing because the Google Drive API is disabled in the credential's Cloud
+project. The project owner must enable that API; browser OAuth is no longer part
+of this integration.
 
 ## Exact next actions for the resuming agent
 
-1. Read `/root/AGENTS.md`, `/root/SESSION_NOTES.md`, this file and
-   `docs/DRIVE_BRIDGE.md`; verify Git state and inspect credential presence only,
-   never print credential values. Reuse existing setup.
-2. If authorization is still absent, run
-   `python3 scripts/authorize_drive.py --shared-client` from `/root/lucyos` with
-   loopback/network permissions. It suppresses secrets and prints the temporary
-   local authorization URL. Request only the unavoidable owner browser consent
-   and a client-side private route to localhost:53682. The agent cannot create
-   an SSH tunnel on the owner's computer. If Google rejects the shared client,
-   follow the owned-client path documented in DRIVE_BRIDGE.md.
-3. Once consent is genuinely complete, verify `rclone lsd gdrive:` and
+1. Read this file and `docs/DRIVE_BRIDGE.md`; verify Git state and inspect
+   credential presence only, never print credential values. Reuse existing setup.
+2. Confirm the project owner has enabled Google Drive API, then verify
+   `rclone lsd gdrive:` and
    `rclone lsd gdrive:MARK2_SHARED` without printing arbitrary private filenames
    or raw errors into chat. Record successful read access honestly.
-4. Verify `MARK2_SHARED/00_INBOX/mark2-drive-test.txt` supplied by the user.
+3. Verify `MARK2_SHARED/00_INBOX/mark2-drive-test.txt` supplied by the user.
    Scan locally before displaying anything. Ordinary text is not a task packet;
    if it lacks the documented packet format, report the rejection and retain it.
-5. Run `mark2-drive test`. This creates/reuses folders and verifies a harmless
-   round-trip without deleting Drive source files. Do not fabricate a passed
+4. Run `mark2-drive test`. This creates/reuses folders and verifies a harmless
+   unique write/list/read/delete round-trip. Do not fabricate a passed
    live test from the offline fake-remote tests.
-6. Run `scripts/install_drive_bridge.sh --enable`: it requires a successful live
+5. Run `scripts/install_drive_bridge.sh --enable`: it requires a successful live
    test and manual sync before enabling the independent timer, then publishes
    the exact readiness handoff and status paths. Verify real timer execution and
    remote files `05_HANDOFFS/MARK2_BRIDGE_READY.md` and
    `03_CONTEXT/MARK2_STATUS.json` afterward. Recover any failures from the ledger.
-7. Update notes/checkpoint and commit relevant changes after appropriate checks.
+6. Update notes/checkpoint and commit relevant changes after appropriate checks.
    Report only the seven fields requested by the owner: Drive connected, bridge
    location, automatic sync, tests, Git commit, remaining blocker, exact owner
    action if any. Then continue independent authorized work.

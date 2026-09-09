@@ -35,6 +35,16 @@ class Remote:
         self.data[(folder, name)] = path.read_bytes()
         self.writes += 1
 
+    def exists(self, folder, name):
+        if self.fail:
+            raise BridgeError('remote_unavailable')
+        return (folder, name) in self.data
+
+    def delete(self, folder, name):
+        if self.fail:
+            raise BridgeError('remote_unavailable')
+        del self.data[(folder, name)]
+
 
 class DriveTests(AionTest):
     def setUp(self):
@@ -43,7 +53,11 @@ class DriveTests(AionTest):
         self.bridge = Bridge(self.tmp, self.remote)
 
     def test_round_trip_and_status(self):
-        self.assertEqual(self.bridge.test()['round_trip'], 'passed')
+        result = self.bridge.test()
+        self.assertEqual(result['round_trip'], 'passed')
+        self.assertEqual(result['cleanup'], 'verified')
+        self.assertFalse(any(name.startswith('MARK2_CONNECTION_TEST_')
+                             for _, name in self.remote.data))
         with patch('urllib.request.urlopen', side_effect=OSError()):
             status = self.bridge.status()
         path = self.bridge.outbox / 'context/MARK2_STATUS.json'
@@ -51,6 +65,12 @@ class DriveTests(AionTest):
         clean(path.read_bytes(), path.name)
         self.assertLess(path.stat().st_size, 2048)
         self.assertEqual(status['human_action_required'], [])
+
+    def test_round_trip_cleanup_failure_does_not_create_auth_gate(self):
+        with patch.object(self.remote, 'delete', side_effect=BridgeError('remote_unavailable')):
+            with self.assertRaises(BridgeError):
+                self.bridge.test()
+        self.assertFalse((self.bridge.root / 'AUTH_VERIFIED').exists())
 
     def test_push_status_uses_requested_schema_and_exact_path(self):
         with patch('urllib.request.urlopen', side_effect=OSError()):
