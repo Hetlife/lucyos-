@@ -7,7 +7,7 @@ keeps building past the thing it was trying to prove.
 """
 from __future__ import annotations
 
-from . import db, memory, metrics, util
+from . import db, deliveries, memory, metrics, util
 
 MAJOR = {"M0", "M2", "M4", "M6"}   # loop stops on these
 
@@ -45,16 +45,17 @@ def check() -> dict:
         payer_id = r["payer_id"]
         if payer_id:
             payers[payer_id] = payers.get(payer_id, 0) + 1
-    deliveries = len(revenue)
-    net_by_month = _monthly_net()
+    delivery_economics = deliveries.economics()
 
     results = {
         "M0": (bool(revenue),
                f"{len(revenue)} evidenced revenue row(s)"),
         "M1": (any(c >= 2 for c in payers.values()),
                f"largest payer count: {max(payers.values()) if payers else 0}"),
-        "M2": (deliveries >= 10 and sum(net_by_month.values()) > 0,
-               f"{deliveries} evidenced deliveries, net INR {round(sum(net_by_month.values()), 2)}"),
+        "M2": (delivery_economics["completed_deliveries"] >= 10
+               and delivery_economics["contribution_inr"] > 0,
+               f"{delivery_economics['completed_deliveries']} evidenced completed deliveries, "
+               f"attributable contribution INR {delivery_economics['contribution_inr']}"),
         "M3": (db.get_meta("hands_off_days", "0").isdigit()
                and int(db.get_meta("hands_off_days", "0")) >= 30,
                f"{db.get_meta('hands_off_days', '0')} hands-off days recorded"),
@@ -70,10 +71,16 @@ def check() -> dict:
 
 
 def _projects_at_m2() -> int:
-    rows = db.connect().execute(
-        "SELECT project, SUM(CASE WHEN kind='revenue' THEN amount_inr ELSE -amount_inr END) net, "
-        "COUNT(*) n FROM finance WHERE stage='ACTUAL' GROUP BY project").fetchall()
-    return sum(1 for r in rows if r["net"] > 0 and r["n"] >= 10)
+    projects = db.connect().execute(
+        "SELECT DISTINCT project FROM deliveries WHERE status='COMPLETED' "
+        "AND (evidence!='' OR reference!='')"
+    ).fetchall()
+    count = 0
+    for row in projects:
+        economics = deliveries.economics(row["project"])
+        if economics["completed_deliveries"] >= 10 and economics["contribution_inr"] > 0:
+            count += 1
+    return count
 
 
 def newly_reached() -> list[str]:

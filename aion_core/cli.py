@@ -10,7 +10,7 @@ from pathlib import Path
 from . import (agents, approvals, backup, bootstrap, config, db, errors, fable, health,
                memory, metrics, notebook, owner_setup, packets, reports, resume, router,
                security, seed, sessions, tasks, util, plan, worker, governor, handoff,
-               milestones)
+               milestones, deliveries)
 
 
 def _print(text):
@@ -129,6 +129,22 @@ def _main(argv=None) -> int:
     mo.add_argument("--description", default="")
     mo.add_argument("--evidence", default="")
     mo.add_argument("--payer-id", help="stable payer identifier for repeat-payer measurement")
+    mo.add_argument("--project", default="default")
+    mo.add_argument("--delivery-id", help="explicit delivery attribution")
+    mo.add_argument("--cost-category", choices=list(deliveries.COST_CATEGORIES))
+
+    dl = sub.add_parser("delivery-add", help="record delivery evidence")
+    dl.add_argument("--delivery-id", help="stable external id; generated when omitted")
+    dl.add_argument("--project", default="default")
+    dl.add_argument("--payer-id")
+    dl.add_argument("--customer-id")
+    dl.add_argument("--status", default="COMPLETED", choices=list(deliveries.STATUSES))
+    dl.add_argument("--reference", default="")
+    dl.add_argument("--evidence", default="")
+
+    fa = sub.add_parser("finance-attribute", help="link an existing finance row to a delivery")
+    fa.add_argument("finance_id", type=int)
+    fa.add_argument("delivery_id")
 
     rem = sub.add_parser("remember")
     rem.add_argument("kind", choices=list(memory.KINDS))
@@ -320,9 +336,19 @@ def _main(argv=None) -> int:
         _print(metrics.budget_status())
     elif cmd == "money-add":
         metrics.record_money(args.kind, args.amount, stage=args.stage,
+                             project=args.project,
                              description=args.description, evidence=args.evidence,
-                             payer_id=args.payer_id)
+                             payer_id=args.payer_id, delivery_id=args.delivery_id,
+                             cost_category=args.cost_category)
         _print(reports.money())
+    elif cmd == "delivery-add":
+        _print(deliveries.record(
+            delivery_id=args.delivery_id, project=args.project, payer_id=args.payer_id,
+            customer_id=args.customer_id, status=args.status, reference=args.reference,
+            evidence=args.evidence))
+    elif cmd == "finance-attribute":
+        deliveries.attribute_finance(args.finance_id, args.delivery_id)
+        _print(f"finance row {args.finance_id} attributed to {args.delivery_id}")
     elif cmd == "remember":
         _print(memory.remember(args.kind, args.title, args.body, confidence=args.confidence,
                                source=args.source))

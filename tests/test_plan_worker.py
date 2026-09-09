@@ -137,6 +137,23 @@ class TestWorkerLoop(AionTest):
         wo = config.home() / "AGENTS" / "work_orders" / f"{t}.md"
         self.assertTrue(wo.exists(), "the prepared work order must be kept")
 
+    @patch("aion_core.worker.run_command")
+    def test_class_b_timeout_is_bounded_and_does_not_burn_retry(self, run_command):
+        run_command.return_value = {
+            "ok": False, "code": -1, "output": "timed out after 900s",
+            "cmd": "worker", "timed_out": True,
+        }
+        db.set_meta("cloud_worker_cmd", "bash scripts/aion_codex_worker.sh {prompt_file}")
+        t = tasks.create("bounded coding job", model_class="B", kind="code",
+                         validation_command="test -f expected-output")
+
+        result = worker.work(max_tasks=1)
+
+        self.assertEqual(result["results"][0]["status"], "WAITING")
+        self.assertEqual(tasks.get(t)["retry_count"], 0)
+        self.assertIn("partial workspace work preserved", tasks.get(t)["last_error"])
+        self.assertEqual(run_command.call_args.kwargs["timeout_s"], 900)
+
     def test_owner_class_work_becomes_an_approval(self):
         tasks.create("spend money", model_class="D", kind="spend", success_criteria="owner")
         worker.work(max_tasks=1)

@@ -67,17 +67,32 @@ def _governor(pct: float) -> str:
 
 def record_money(kind: str, amount_inr: float, *, stage: str = "ACTUAL", project: str = "default",
                  description: str = "", evidence: str = "",
-                 payer_id: str | None = None) -> None:
+                 payer_id: str | None = None, delivery_id: str | None = None,
+                 cost_category: str | None = None) -> None:
     if stage not in STAGES:
         raise ValueError(f"unknown stage {stage!r}; use one of {STAGES}")
     if stage == "ACTUAL" and not evidence:
         raise ValueError("ACTUAL money requires evidence (transaction id, statement line, invoice)")
+    if cost_category is not None:
+        from .deliveries import COST_CATEGORIES
+        if kind != "cost" or cost_category not in COST_CATEGORIES:
+            raise ValueError(f"cost_category requires kind='cost' and one of {COST_CATEGORIES}")
     conn = db.connect()
+    if delivery_id:
+        delivery = conn.execute(
+            "SELECT project, payer_id FROM deliveries WHERE delivery_id=?", (delivery_id,)
+        ).fetchone()
+        if not delivery:
+            raise ValueError(f"unknown delivery {delivery_id}")
+        if delivery["project"] != project:
+            raise ValueError("money and delivery must belong to the same project")
+        if payer_id and delivery["payer_id"] and payer_id != delivery["payer_id"]:
+            raise ValueError("money and delivery have conflicting payer identities")
     conn.execute(
-        "INSERT INTO finance(at, day, kind, stage, amount_inr, project, payer_id, description, "
-        "evidence) VALUES(?,?,?,?,?,?,?,?,?)",
-        (util.now(), util.today(), kind, stage, amount_inr, project, payer_id, description,
-         evidence))
+        "INSERT INTO finance(at, day, kind, stage, amount_inr, project, payer_id, delivery_id, "
+        "cost_category, description, evidence) VALUES(?,?,?,?,?,?,?,?,?,?,?)",
+        (util.now(), util.today(), kind, stage, amount_inr, project, payer_id, delivery_id,
+         cost_category, description, evidence))
     conn.commit()
 
 

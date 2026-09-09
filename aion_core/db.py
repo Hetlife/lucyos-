@@ -150,6 +150,21 @@ CREATE TABLE IF NOT EXISTS model_usage (
 );
 CREATE INDEX IF NOT EXISTS idx_usage_day ON model_usage(day);
 
+CREATE TABLE IF NOT EXISTS deliveries (
+    delivery_id TEXT PRIMARY KEY,
+    project TEXT NOT NULL DEFAULT 'default',
+    payer_id TEXT,
+    customer_id TEXT,
+    status TEXT NOT NULL DEFAULT 'PLANNED',
+    reference TEXT NOT NULL DEFAULT '',
+    evidence TEXT NOT NULL DEFAULT '',
+    created_at TEXT NOT NULL,
+    updated_at TEXT NOT NULL,
+    completed_at TEXT
+);
+CREATE INDEX IF NOT EXISTS idx_deliveries_project_status
+    ON deliveries(project, status);
+
 CREATE TABLE IF NOT EXISTS finance (
     id          INTEGER PRIMARY KEY AUTOINCREMENT,
     at          TEXT NOT NULL,
@@ -159,6 +174,8 @@ CREATE TABLE IF NOT EXISTS finance (
     amount_inr  REAL NOT NULL,
     project     TEXT NOT NULL DEFAULT 'default',
     payer_id    TEXT,
+    delivery_id TEXT REFERENCES deliveries(delivery_id),
+    cost_category TEXT,
     description TEXT NOT NULL DEFAULT '',
     evidence    TEXT NOT NULL DEFAULT ''
 );
@@ -306,6 +323,10 @@ _ADDED_COLUMNS = {
     # introduced remains unknown rather than being inferred from description.
     "finance": [
         ("payer_id", "TEXT"),
+        # Explicitly nullable.  Old rows and genuinely unattributable money
+        # must stay unlinked rather than acquiring guessed identities.
+        ("delivery_id", "TEXT"),
+        ("cost_category", "TEXT"),
     ],
 }
 
@@ -316,6 +337,7 @@ def _migrate(conn: sqlite3.Connection) -> None:
         for name, spec in columns:
             if name not in have:
                 conn.execute(f"ALTER TABLE {table} ADD COLUMN {name} {spec}")
+    conn.execute("CREATE INDEX IF NOT EXISTS idx_finance_delivery ON finance(delivery_id)")
     conn.commit()
 
 

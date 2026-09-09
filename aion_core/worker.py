@@ -46,6 +46,7 @@ FORBIDDEN = ["rm -rf /", "mkfs", "dd if=", ":(){", "shutdown", "reboot",
              "chmod 777 /", "curl | sh", "| sh", "> /dev/sd", "sudo "]
 
 TIMEOUT_S = 300
+CLASS_B_TIMEOUT_S = 900
 MAX_OUTPUT_CHARS = 2000
 WORK_LOCK_NAME = "worker.lock"
 
@@ -80,14 +81,15 @@ def check_command(cmd: str) -> None:
                       "Approve it once with `aion allow-command '<prefix>'`.")
 
 
-def run_command(cmd: str, cwd: Path | None = None) -> dict:
+def run_command(cmd: str, cwd: Path | None = None, *, timeout_s: int = TIMEOUT_S) -> dict:
     """Run an allowlisted command and return its real result."""
     check_command(cmd)
     try:
         proc = subprocess.run(cmd, shell=True, capture_output=True, text=True,
-                              timeout=TIMEOUT_S, cwd=str(cwd or repo_root()))
+                              timeout=timeout_s, cwd=str(cwd or repo_root()))
     except subprocess.TimeoutExpired:
-        return {"ok": False, "code": -1, "output": f"timed out after {TIMEOUT_S}s", "cmd": cmd}
+        return {"ok": False, "code": -1, "output": f"timed out after {timeout_s}s",
+                "cmd": cmd, "timed_out": True}
     output = ((proc.stdout or "") + (proc.stderr or "")).strip()
     if len(output) > MAX_OUTPUT_CHARS:
         output = output[:MAX_OUTPUT_CHARS] + "\n… output truncated"
@@ -134,16 +136,18 @@ def cloud_command() -> str:
     return db.get_meta("cloud_worker_cmd", "") or os.environ.get("AION_CLOUD_CMD", "")
 
 
-def run_cloud(prompt: str) -> dict:
+def run_cloud(prompt: str, *, timeout_s: int = TIMEOUT_S) -> dict:
     template = cloud_command()
     if not template:
         return {"ok": False, "output": "no cloud worker configured "
-                                       "(aion set-cloud-cmd '<command with {prompt_file}>')"}
+                                       "(aion set-cloud-cmd '<command with {prompt_file}>')",
+                "unavailable": True}
     prompt_file = config.home() / "AGENTS" / "work_orders" / f"prompt-{util.new_id('WO')}.txt"
     util.atomic_write(prompt_file, prompt)
     cmd = template.replace("{prompt_file}", shlex.quote(str(prompt_file)))
-    result = run_command(cmd)
-    return {"ok": result["ok"], "output": result["output"], "cmd": cmd}
+    result = run_command(cmd, timeout_s=timeout_s)
+    return {"ok": result["ok"], "output": result["output"], "cmd": cmd,
+            "timed_out": result.get("timed_out", False)}
 
 
 # ---------------------------------------------------------------- the loop
@@ -393,14 +397,19 @@ def _do_work(task, cls: str) -> dict:
         out = run_ollama(prompt)
         return {"ok": out["ok"] and bool(out["output"]), "output": out["output"],
                 "how": f"local model {out.get('model')}", "model": out.get("model", "ollama")}
-    out = run_cloud(prompt)
+    out = run_cloud(prompt, timeout_s=CLASS_B_TIMEOUT_S if cls == "B" else TIMEOUT_S)
     if not out["ok"]:
-        # No executor available: keep the prepared work order and say so plainly.
+        # Missing executors and bounded timeouts are environmental limits, not
+        # proof that the implementation failed. Preserve the work order and any
+        # partial workspace changes, then wait without consuming a task retry.
         wo = config.home() / "AGENTS" / "work_orders" / f"{task['task_id']}.md"
         util.atomic_write(wo, prompt)
-        return {"ok": False, "unavailable": True,
-                "output": f"no {cls}-class executor available ({out['output']}). "
-                          f"Work order saved to {wo} for a worker session."}
+        if out.get("unavailable") or out.get("timed_out"):
+            reason = (f"executor window ended ({out['output']}); partial workspace work preserved"
+                      if out.get("timed_out") else f"no {cls}-class executor available ({out['output']})")
+            return {"ok": False, "unavailable": True,
+                    "output": f"{reason}. Work order saved to {wo} for a worker session."}
+        return {"ok": False, "output": out["output"]}
     return {"ok": True, "output": out["output"], "how": "cloud worker", "model": "cloud"}
 
 
