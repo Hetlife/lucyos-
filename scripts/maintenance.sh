@@ -16,6 +16,7 @@ log() { "${AION}" session log "${SESSION}" --kind "$1" --text "$2" >/dev/null; }
 "${AION}" backup         >/dev/null && log action "backup created and restore-tested"
 "${AION}" sync-docs      >/dev/null && log action "markdown surfaces regenerated"
 "${AION}" owner-setup    >/dev/null && log action "owner setup list refreshed"
+"${AION}" hands-off-evaluate >/dev/null && log action "yesterday hands-off evidence evaluated"
 if "${AION}" scan "${REPO}" >/dev/null; then
   log test "secret scan clean"
 else

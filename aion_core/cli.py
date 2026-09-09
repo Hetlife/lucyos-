@@ -10,7 +10,7 @@ from pathlib import Path
 from . import (agents, approvals, backup, bootstrap, config, db, errors, fable, health,
                memory, metrics, notebook, owner_setup, packets, reports, resume, router,
                security, seed, sessions, tasks, util, plan, worker, governor, handoff,
-               milestones, deliveries)
+               milestones, deliveries, autonomy)
 
 
 def _print(text):
@@ -151,6 +151,9 @@ def _main(argv=None) -> int:
     mc.add_argument("month", help="completed calendar month, YYYY-MM")
     mc.add_argument("--costs-complete", action="store_true", required=True)
     mc.add_argument("--evidence", required=True)
+
+    hd = sub.add_parser("hands-off-evaluate", help="derive a completed UTC operating day")
+    hd.add_argument("--day", help="past UTC day YYYY-MM-DD; defaults to yesterday")
 
     rem = sub.add_parser("remember")
     rem.add_argument("kind", choices=list(memory.KINDS))
@@ -359,6 +362,8 @@ def _main(argv=None) -> int:
         deliveries.close_month(args.project, args.month,
                                costs_complete=args.costs_complete, evidence=args.evidence)
         _print(f"closed {args.project} {args.month} with complete attributable costs")
+    elif cmd == "hands-off-evaluate":
+        _print(autonomy.evaluate_day(args.day) if args.day else autonomy.evaluate_yesterday())
     elif cmd == "remember":
         _print(memory.remember(args.kind, args.title, args.body, confidence=args.confidence,
                                source=args.source))

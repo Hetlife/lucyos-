@@ -7,7 +7,7 @@ keeps building past the thing it was trying to prove.
 """
 from __future__ import annotations
 
-from . import db, deliveries, memory, metrics, util
+from . import autonomy, db, deliveries, memory, metrics, util
 
 MAJOR = {"M0", "M2", "M4", "M6"}   # loop stops on these
 
@@ -52,9 +52,8 @@ def check() -> dict:
                and delivery_economics["contribution_inr"] > 0,
                f"{delivery_economics['completed_deliveries']} evidenced completed deliveries, "
                f"attributable contribution INR {delivery_economics['contribution_inr']}"),
-        "M3": (db.get_meta("hands_off_days", "0").isdigit()
-               and int(db.get_meta("hands_off_days", "0")) >= 30,
-               f"{db.get_meta('hands_off_days', '0')} hands-off days recorded"),
+        "M3": (autonomy.consecutive_days() >= 30,
+               f"{autonomy.consecutive_days()} consecutive evidence-derived hands-off days"),
         "M4": (_consecutive_months_at(25000) >= 3,
                f"{_consecutive_months_at(25000)} consecutive month(s) at INR 25,000 net"),
         "M5": (_projects_at_m2() >= 2,

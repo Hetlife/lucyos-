@@ -224,6 +224,16 @@ CREATE TABLE IF NOT EXISTS events (
 );
 CREATE INDEX IF NOT EXISTS idx_events_day ON events(day);
 
+CREATE TABLE IF NOT EXISTS hands_off_days (
+    day TEXT PRIMARY KEY,
+    autonomous_completions INTEGER NOT NULL,
+    owner_operations INTEGER NOT NULL,
+    owner_approvals INTEGER NOT NULL,
+    qualifies INTEGER NOT NULL,
+    evidence TEXT NOT NULL,
+    evaluated_at TEXT NOT NULL
+);
+
 CREATE TABLE IF NOT EXISTS sessions (
     session_id   TEXT PRIMARY KEY,
     started_at   TEXT NOT NULL,
