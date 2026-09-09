@@ -1,0 +1,20 @@
+[Unit]
+Description=Mark-2 Remote Desktop Commander
+After=network-online.target
+Wants=network-online.target
+StartLimitIntervalSec=300
+StartLimitBurst=5
+
+[Service]
+Type=simple
+Environment=HOME=/root
+Environment=PATH=/root/.openclaw/tools/node/bin:/root/.local/bin:/usr/local/bin:/usr/bin:/bin
+WorkingDirectory=/root
+ExecStart=/root/.openclaw/tools/node/bin/npx --yes @wonderwhy-er/desktop-commander@0.2.48 remote
+Restart=on-failure
+RestartSec=15s
+NoNewPrivileges=true
+PrivateTmp=true
+
+[Install]
+WantedBy=default.target
