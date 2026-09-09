@@ -15,7 +15,12 @@ Nothing above needs a credential. `install.sh` is idempotent.
 ## Run it continuously
 
 ```bash
-aion secrets set WHATSAPP_BRIDGE_TOKEN   # value entered here, never in chat
+aion secrets set WHATSAPP_ACCESS_TOKEN   # values entered here, never in chat
+aion secrets set WHATSAPP_PHONE_NUMBER_ID
+aion secrets set WHATSAPP_VERIFY_TOKEN
+aion secrets set WHATSAPP_APP_SECRET
+aion secrets set WHATSAPP_GRAPH_API_VERSION
+aion secrets set WHATSAPP_ALLOWED_SENDER   # owner phone in international digits only
 scripts/install_services.sh
 systemctl --user enable --now aion-bridge.service
 loginctl enable-linger "$USER"           # keep running when logged out

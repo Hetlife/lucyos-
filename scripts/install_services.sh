@@ -20,8 +20,12 @@ systemctl --user enable --now aion-work.timer
 echo "maintenance timer enabled (nightly)"
 echo "build loop enabled (every 10 minutes, stops on a major milestone)"
 echo
-echo "Start the bridge when its token is set:"
-echo "  aion secrets set WHATSAPP_BRIDGE_TOKEN"
+echo "Start the bridge after its Cloud API settings are stored locally:"
+echo "  aion secrets set WHATSAPP_ACCESS_TOKEN"
+echo "  aion secrets set WHATSAPP_PHONE_NUMBER_ID"
+echo "  aion secrets set WHATSAPP_VERIFY_TOKEN"
+echo "  aion secrets set WHATSAPP_APP_SECRET"
+echo "  aion secrets set WHATSAPP_GRAPH_API_VERSION"
 echo "  systemctl --user enable --now aion-bridge.service"
 echo "  systemctl --user status aion-bridge.service"
 echo
