@@ -146,6 +146,12 @@ def _main(argv=None) -> int:
     fa.add_argument("finance_id", type=int)
     fa.add_argument("delivery_id")
 
+    mc = sub.add_parser("month-close", help="attest a completed project month")
+    mc.add_argument("project")
+    mc.add_argument("month", help="completed calendar month, YYYY-MM")
+    mc.add_argument("--costs-complete", action="store_true", required=True)
+    mc.add_argument("--evidence", required=True)
+
     rem = sub.add_parser("remember")
     rem.add_argument("kind", choices=list(memory.KINDS))
     rem.add_argument("title")
@@ -349,6 +355,10 @@ def _main(argv=None) -> int:
     elif cmd == "finance-attribute":
         deliveries.attribute_finance(args.finance_id, args.delivery_id)
         _print(f"finance row {args.finance_id} attributed to {args.delivery_id}")
+    elif cmd == "month-close":
+        deliveries.close_month(args.project, args.month,
+                               costs_complete=args.costs_complete, evidence=args.evidence)
+        _print(f"closed {args.project} {args.month} with complete attributable costs")
     elif cmd == "remember":
         _print(memory.remember(args.kind, args.title, args.body, confidence=args.confidence,
                                source=args.source))

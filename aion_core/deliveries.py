@@ -1,10 +1,14 @@
 """Evidence-backed deliveries and their attributable unit economics."""
 from __future__ import annotations
 
+import re
+from datetime import date
+
 from . import db, util
 
 STATUSES = ("PLANNED", "IN_PROGRESS", "COMPLETED", "CANCELLED")
 COST_CATEGORIES = ("delivery", "model", "payment", "refund", "acquisition", "direct")
+MONTH_RE = re.compile(r"^\d{4}-(0[1-9]|1[0-2])$")
 
 
 def record(*, project: str = "default", payer_id: str | None = None,
@@ -80,3 +84,59 @@ def economics(project: str | None = None) -> dict:
         "cost_inr": round(costs, 2),
         "contribution_inr": round(revenue - costs, 2),
     }
+
+
+def close_month(project: str, month: str, *, costs_complete: bool, evidence: str) -> None:
+    """Attest a finished project's calendar month; never infer cost completeness."""
+    if not project or not MONTH_RE.fullmatch(month):
+        raise ValueError("project and calendar month YYYY-MM are required")
+    if month >= date.today().strftime("%Y-%m"):
+        raise ValueError("only completed calendar months may be closed")
+    if not costs_complete:
+        raise ValueError("a close requires explicit confirmation that attributable costs are complete")
+    if not evidence:
+        raise ValueError("a close requires independent evidence/reference")
+    conn = db.connect()
+    conn.execute(
+        "INSERT INTO monthly_closes(project, month, costs_complete, evidence, closed_at) "
+        "VALUES(?,?,?,?,?) ON CONFLICT(project, month) DO UPDATE SET "
+        "costs_complete=excluded.costs_complete, evidence=excluded.evidence, "
+        "closed_at=excluded.closed_at",
+        (project, month, 1, evidence, util.now()))
+    conn.commit()
+
+
+def closed_portfolio_months() -> list[dict]:
+    """Return only fully attributable, explicitly closed portfolio months."""
+    conn = db.connect()
+    activity = conn.execute(
+        "SELECT SUBSTR(f.day,1,7) month, f.project, f.kind, SUM(f.amount_inr) amount "
+        "FROM finance f JOIN deliveries d ON d.delivery_id=f.delivery_id "
+        "WHERE f.stage='ACTUAL' AND d.status='COMPLETED' "
+        "AND (d.evidence!='' OR d.reference!='') GROUP BY month,f.project,f.kind"
+    ).fetchall()
+    unlinked = {(r["month"], r["project"]) for r in conn.execute(
+        "SELECT DISTINCT SUBSTR(day,1,7) month, project FROM finance "
+        "WHERE stage='ACTUAL' AND delivery_id IS NULL")}
+    closes = {(r["month"], r["project"]): r for r in conn.execute(
+        "SELECT * FROM monthly_closes WHERE costs_complete=1")}
+    by_month: dict[str, dict[str, dict[str, float]]] = {}
+    for row in activity:
+        project = by_month.setdefault(row["month"], {}).setdefault(
+            row["project"], {"revenue": 0.0, "cost": 0.0})
+        project[row["kind"]] = float(row["amount"])
+    result = []
+    for month, projects in sorted(by_month.items()):
+        if any((month, project) not in closes or (month, project) in unlinked
+               for project in projects):
+            continue
+        revenue = sum(v["revenue"] for v in projects.values())
+        cost = sum(v["cost"] for v in projects.values())
+        largest = max((v["revenue"] for v in projects.values()), default=0.0)
+        result.append({
+            "month": month, "revenue_inr": round(revenue, 2),
+            "cost_inr": round(cost, 2), "contribution_inr": round(revenue - cost, 2),
+            "projects": len(projects),
+            "largest_revenue_share_pct": round(100 * largest / revenue, 2) if revenue > 0 else None,
+        })
+    return result

@@ -165,6 +165,15 @@ CREATE TABLE IF NOT EXISTS deliveries (
 CREATE INDEX IF NOT EXISTS idx_deliveries_project_status
     ON deliveries(project, status);
 
+CREATE TABLE IF NOT EXISTS monthly_closes (
+    project TEXT NOT NULL,
+    month TEXT NOT NULL,
+    costs_complete INTEGER NOT NULL DEFAULT 0,
+    evidence TEXT NOT NULL,
+    closed_at TEXT NOT NULL,
+    PRIMARY KEY(project, month)
+);
+
 CREATE TABLE IF NOT EXISTS finance (
     id          INTEGER PRIMARY KEY AUTOINCREMENT,
     at          TEXT NOT NULL,

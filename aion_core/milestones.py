@@ -18,22 +18,18 @@ def _actual_revenue_rows() -> list:
     ).fetchall()
 
 
-def _monthly_net() -> dict:
-    rows = db.connect().execute(
-        "SELECT SUBSTR(day,1,7) m, kind, SUM(amount_inr) s FROM finance "
-        "WHERE stage='ACTUAL' GROUP BY m, kind").fetchall()
-    months: dict = {}
-    for r in rows:
-        months.setdefault(r["m"], {})[r["kind"]] = r["s"]
-    return {m: round(v.get("revenue", 0) - v.get("cost", 0), 2) for m, v in months.items()}
-
-
 def _consecutive_months_at(target: float) -> int:
-    months = _monthly_net()
+    months = deliveries.closed_portfolio_months()
     best = run = 0
-    for month in sorted(months):
-        run = run + 1 if months[month] >= target else 0
+    previous = None
+    for row in months:
+        year, month = map(int, row["month"].split("-"))
+        serial = year * 12 + month
+        run = run + 1 if (row["contribution_inr"] >= target
+                          and (previous is None or serial == previous + 1)) else (
+            1 if row["contribution_inr"] >= target else 0)
         best = max(best, run)
+        previous = serial
     return best
 
 
@@ -112,4 +108,11 @@ def report() -> str:
     for code, info in state.items():
         mark = "reached" if info["reached"] else "not reached"
         lines.append(f"{code}: {mark} — {info['evidence']}")
+    closed = deliveries.closed_portfolio_months()
+    if closed:
+        latest = closed[-1]
+        lines.append(f"Latest closed portfolio month {latest['month']}: "
+                     f"INR {latest['contribution_inr']} contribution across "
+                     f"{latest['projects']} project(s); largest revenue share "
+                     f"{latest['largest_revenue_share_pct']}%")
     return "\n".join(lines)
