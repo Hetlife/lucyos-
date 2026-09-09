@@ -205,6 +205,14 @@ def _work_locked(max_tasks: int, session_id: str | None, summary: dict) -> dict:
     if shift["changed"]:
         summary["governor"] = shift["message"]
 
+    cloud_available = bool(cloud_command())
+    available_classes = ({"A"} if ollama_available() or cloud_available else set())
+    if cloud_available:
+        available_classes.add("B")
+    requeued = tasks.requeue_available_executor_waits(available_classes)
+    if requeued:
+        summary["requeued"] = requeued
+
     own_session = session_id is None
     if own_session:
         session_id = sessions.start("openclaw", model_class="DET",
@@ -344,7 +352,8 @@ def _execute(task, cls: str, *, dry_run: bool, session_id: str | None) -> dict:
             # Retrying cannot help until the machine gains an executor, so this
             # waits without burning a retry — and the loop moves to other work.
             tasks.update(task_id, status="WAITING", owner_agent=None,
-                         blockers=f"no {cls}-class executor on this machine",
+                         blockers=tasks.EXECUTOR_WAIT_BLOCKERS.get(
+                             cls, f"no {cls}-class executor on this machine"),
                          last_error=produced["output"][:400])
             if session_id:
                 sessions.log(session_id, "note", f"{task_id} waiting: no {cls} executor")

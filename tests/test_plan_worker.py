@@ -80,6 +80,53 @@ class TestCommandSafety(AionTest):
 
 
 class TestWorkerLoop(AionTest):
+    @patch("aion_core.worker.ollama_available", return_value=True)
+    def test_stale_a_executor_wait_is_requeued_when_a_appears(self, _availability):
+        t = tasks.create("stale A wait", status="WAITING", model_class="A",
+                         blockers=tasks.EXECUTOR_WAIT_BLOCKERS["A"])
+
+        result = worker.work(max_tasks=0)
+
+        self.assertEqual(tasks.get(t)["status"], "READY")
+        self.assertEqual(result["requeued"], [t])
+
+    @patch("aion_core.worker.ollama_available", return_value=False)
+    def test_stale_b_executor_wait_is_requeued_when_cloud_appears(self, _availability):
+        db.set_meta("cloud_worker_cmd", "bash scripts/aion_codex_worker.sh {prompt_file}")
+        t = tasks.create("stale B wait", status="WAITING", model_class="B",
+                         blockers=tasks.EXECUTOR_WAIT_BLOCKERS["B"])
+
+        result = worker.work(max_tasks=0)
+
+        self.assertEqual(tasks.get(t)["status"], "READY")
+        self.assertEqual(result["requeued"], [t])
+
+    @patch("aion_core.worker.ollama_available", return_value=True)
+    def test_unrelated_waiting_tasks_are_not_requeued(self, _availability):
+        unrelated = [
+            tasks.create("budget", status="WAITING", model_class="A",
+                         blockers="budget ceiling (STOP)"),
+            tasks.create("owner", status="WAITING", model_class="A",
+                         blockers="owner action required"),
+            tasks.create("combined", status="WAITING", model_class="A",
+                         blockers=tasks.EXECUTOR_WAIT_BLOCKERS["A"] + "; transport credentials"),
+        ]
+
+        result = worker.work(max_tasks=0)
+
+        self.assertNotIn("requeued", result)
+        self.assertTrue(all(tasks.get(t)["status"] == "WAITING" for t in unrelated))
+
+    @patch("aion_core.worker.ollama_available", return_value=True)
+    def test_dry_run_does_not_requeue_executor_waits(self, _availability):
+        t = tasks.create("stale A wait", status="WAITING", model_class="A",
+                         blockers=tasks.EXECUTOR_WAIT_BLOCKERS["A"])
+        before = dict(tasks.get(t))
+
+        worker.work(max_tasks=1, dry_run=True)
+
+        self.assertEqual(dict(tasks.get(t)), before)
+
     def test_deterministic_step_runs_and_is_validated(self):
         plan.apply(PLAN)
         result = worker.work(max_tasks=1)

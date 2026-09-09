@@ -13,6 +13,10 @@ OPEN_STATES = [s for s in STATES if s not in ("DONE", "CANCELLED")]
 ACTIVE_STATES = ("CLAIMED", "RUNNING")
 # Completion requires evidence; these states must never be reported as DONE.
 INCOMPLETE = ("WAITING", "BLOCKED", "NEEDS_APPROVAL", "NEEDS_REVIEW", "FAILED")
+EXECUTOR_WAIT_BLOCKERS = {
+    "A": "no A-class executor on this machine",
+    "B": "no B-class executor on this machine",
+}
 
 FIELDS = (
     "project parent_task title description status priority impact probability unlocks "
@@ -105,6 +109,37 @@ def release_stale(max_age_s: int = config.STALE_CLAIM_SECONDS) -> list[str]:
         db.log_event("aion", "task.stale_release", tid)
     conn.commit()
     return ids
+
+
+def requeue_available_executor_waits(available_classes: set[str]) -> list[str]:
+    """Requeue only WAITING tasks parked by AION for a missing A/B executor.
+
+    Exact machine-authored blocker markers keep owner, budget, safe-mode and
+    other genuine holds out of this transition.  An attached approval is an
+    additional hard gate even if a legacy row happens to carry our marker.
+    """
+    conn = db.connect()
+    requeued = []
+    for model_class in sorted(available_classes & set(EXECUTOR_WAIT_BLOCKERS)):
+        marker = EXECUTOR_WAIT_BLOCKERS[model_class]
+        rows = conn.execute(
+            "SELECT task_id FROM tasks WHERE status='WAITING' AND model_class=? "
+            "AND blockers=? AND approval_id IS NULL",
+            (model_class, marker),
+        ).fetchall()
+        for row in rows:
+            cur = conn.execute(
+                "UPDATE tasks SET status='READY', blockers='', last_error='', "
+                "owner_agent=NULL, claimed_at=NULL, updated_at=? "
+                "WHERE task_id=? AND status='WAITING' AND model_class=? "
+                "AND blockers=? AND approval_id IS NULL",
+                (util.now(), row["task_id"], model_class, marker),
+            )
+            if cur.rowcount:
+                requeued.append(row["task_id"])
+                db.log_event("aion", "task.executor_requeue", row["task_id"], model_class)
+    conn.commit()
+    return requeued
 
 
 def complete(task_id: str, evidence: str, next_action: str = "") -> None:
