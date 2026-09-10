@@ -19,7 +19,7 @@ from urllib.parse import urlsplit
 
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 
-from aion_core import approvals, bootstrap, config, db, router, security  # noqa: E402
+from aion_core import api, approvals, bootstrap, config, db, router, security  # noqa: E402
 
 ROOT = Path(__file__).resolve().parent.parent
 WEB_ROOT = ROOT / "web"
@@ -33,6 +33,14 @@ API_COMMANDS = {
     "/api/agents": "agents",
     "/api/report": "report",
     "/api/today": "today",
+}
+# Structured JSON alongside the text routes above — same auth, same redaction,
+# same response envelope. The text routes are untouched; this is additive.
+V1_ROUTES = {
+    "/api/v1/snapshot": api.system_snapshot,
+    "/api/v1/money": api.money_split,
+    "/api/v1/projects": api.projects,
+    "/api/v1/costs": api.costs,
 }
 
 
@@ -111,6 +119,9 @@ class InterfaceHandler(BaseHTTPRequestHandler):
         if path.startswith("/api/"):
             if not self._authorized():
                 return self._json(401, {"error": "unauthorized"})
+            v1_fn = V1_ROUTES.get(path)
+            if v1_fn:
+                return self._json(200, {"ok": True, "data": v1_fn()})
             command = API_COMMANDS.get(path)
             if path == "/api/approvals":
                 rows = [{
