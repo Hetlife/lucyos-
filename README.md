@@ -56,7 +56,7 @@ copy-paste prompt is `docs/MASTER_AI_PROMPT.txt`.
 | `docs/` | Architecture, WhatsApp commands, operations |
 | `scripts/` | Install, services, nightly maintenance, pre-commit |
 | `systemd/` | User unit templates for the bridge and the nightly timer |
-| `tests/` | 86 tests covering every rule above |
+| `tests/` | 200 tests covering every rule above |
 | `<AION_HOME>/` | The shared brain: state, memory, inbox, logs (created, not committed) |
 
 Default `AION_HOME` is `~/openclaw/shared_brain`. It is machine state and is
