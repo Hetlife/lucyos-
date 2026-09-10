@@ -7,3 +7,6 @@ __pycache__/
 venv/
 # The shared brain is machine state, never source.
 shared_brain/
+
+# Ephemeral shared brain used by the routines; never source
+.aion_home_routine/
