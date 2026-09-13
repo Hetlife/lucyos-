@@ -4,6 +4,7 @@ const TOKEN_KEY = "aion.interface.token";
 const SNAPSHOT_KEY = "aion.interface.snapshot.v1";
 const MONEY_KEY = "aion.interface.money.v1";
 const COSTS_KEY = "aion.interface.costs.v1";
+const HEALTH_KEY = "aion.interface.health.v1";
 const QUEUE_KEY = "aion.interface.capture-queue.v1";
 const SNAPSHOT_FIELDS = ["status", "blockers", "today", "tasks"];
 
@@ -104,6 +105,20 @@ function renderBudget(costs) {
   byId("budget-label").textContent = `Spending: ${budgetLabel(pct)}`;
 }
 
+function renderHealth(snapshot) {
+  const dot = byId("health-dot");
+  const text = byId("health-text");
+  dot.classList.toggle("good", snapshot.healthy && !snapshot.paused);
+  dot.classList.toggle("bad", !snapshot.healthy && !snapshot.paused);
+  if (snapshot.paused) {
+    text.textContent = "Paused — nothing is running right now.";
+  } else if (snapshot.healthy) {
+    text.textContent = "Everything's running normally.";
+  } else {
+    text.textContent = `Needs attention — ${snapshot.bottleneck}.`;
+  }
+}
+
 async function decide(verb, id, action) {
   if (!confirm(`${verb === "APPROVE" ? "Approve" : "Deny"} ${id}?\n\n${action}`)) return;
   try {
@@ -118,10 +133,11 @@ async function refresh() {
   state.busy = true;
   try {
     const names = [...SNAPSHOT_FIELDS, "approvals"];
-    const [values, moneySplit, costs] = await Promise.all([
+    const [values, moneySplit, costs, health] = await Promise.all([
       Promise.all(names.map(name => api(`/api/${name}`))),
       api("/api/v1/money"),
       api("/api/v1/costs"),
+      api("/api/v1/snapshot"),
     ]);
     const live = Object.fromEntries(names.map((name, index) => [name, values[index]]));
     live.asOf = new Date().toISOString();
@@ -129,11 +145,13 @@ async function refresh() {
     renderApprovals(live.approvals);
     renderMoney(moneySplit);
     renderBudget(costs);
+    renderHealth(health);
     localStorage.setItem(SNAPSHOT_KEY, JSON.stringify(Object.fromEntries(
       [...SNAPSHOT_FIELDS, "asOf"].map(name => [name, live[name]])
     )));
     localStorage.setItem(MONEY_KEY, JSON.stringify(moneySplit));
     localStorage.setItem(COSTS_KEY, JSON.stringify(costs));
+    localStorage.setItem(HEALTH_KEY, JSON.stringify(health));
     setConnection(true);
     await flushQueue();
   } catch (error) {
@@ -182,5 +200,7 @@ const cachedMoney = storedJSON(MONEY_KEY, null);
 if (cachedMoney) renderMoney(cachedMoney);
 const cachedCosts = storedJSON(COSTS_KEY, null);
 if (cachedCosts) renderBudget(cachedCosts);
+const cachedHealth = storedJSON(HEALTH_KEY, null);
+if (cachedHealth) renderHealth(cachedHealth);
 if (state.token) { showDashboard(); refresh(); }
 if ("serviceWorker" in navigator) navigator.serviceWorker.register("/service-worker.js").catch(() => {});

@@ -26,6 +26,10 @@ main { max-width:720px; margin:0 auto; }
 .bar-fill.warn { background:var(--warn); }
 .bar-fill.critical { background:var(--danger); }
 .budget-label { margin:0; font-size:.8rem; color:var(--muted); }
+.health-line { display:flex; align-items:center; gap:9px; font-size:.95rem; font-weight:650; margin:0 0 12px; }
+.dot { width:10px; height:10px; border-radius:50%; background:var(--muted); flex-shrink:0; }
+.dot.good { background:var(--good); }
+.dot.bad { background:var(--danger); }
 pre { margin:0; white-space:pre-wrap; overflow-wrap:anywhere; font:500 .9rem/1.5 ui-monospace, SFMono-Regular, Menlo, monospace; }
 .connection { border-radius:999px; display:inline-block; padding:7px 11px; margin:0 0 14px; font-size:.76rem; font-weight:750; }
 .connection.online { background:#d8f3dc; color:#17552c; }.connection.offline { background:#efe3c4; color:#664d12; }
