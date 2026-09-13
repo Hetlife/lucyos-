@@ -60,7 +60,8 @@ textarea { resize:vertical; min-height:92px; }
 .chips input:checked + span { background:var(--ink); color:var(--card); border-color:var(--ink); }
 .approval { border-top:1px solid var(--line); padding:14px 0; }.approval:first-child { border-top:0; padding-top:0; }
 .approval-actions { display:grid; grid-template-columns:1fr 1fr; gap:9px; margin-top:10px; }.approve { background:var(--accent); color:var(--accent-ink); }.deny { background:transparent; color:var(--danger); border:1px solid currentColor; }
-.muted,#as-of { color:var(--muted); font-size:.8rem; } summary { cursor:pointer; font-weight:750; margin-bottom:14px; }
+.muted,#as-of { color:var(--muted); font-size:.8rem; }
+code { font:600 .82em ui-monospace, SFMono-Regular, Menlo, monospace; background:var(--track); padding:2px 6px; border-radius:6px; } summary { cursor:pointer; font-weight:750; margin-bottom:14px; }
 #toast { position:fixed; left:50%; bottom:calc(18px + env(safe-area-inset-bottom)); transform:translateX(-50%) translateY(120px); max-width:calc(100% - 36px); background:var(--ink); color:var(--card); padding:12px 18px; border-radius:999px; transition:.2s; z-index:10; text-align:center; font-size:.85rem; }
 #toast.show { transform:translateX(-50%) translateY(0); }
 [hidden] { display:none !important; }

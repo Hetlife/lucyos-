@@ -191,12 +191,17 @@ function renderProjects(rows) {
 }
 
 async function decide(verb, id, action) {
-  if (!confirm(`${verb === "APPROVE" ? "Approve" : "Deny"} ${id}?\n\n${action}`)) return;
+  const question = verb === "APPROVE" ? "Approve this?" : "Deny this?";
+  if (!confirm(`${question}\n\n${action}`)) return;
   try {
     const answer = await api("/api/command", { method: "POST", body: JSON.stringify({ message: `${verb} ${id}` }) });
     toast(answer.split("\n")[0]);
     await refresh();
-  } catch (error) { toast(error.message === "unauthorized" ? "Token rejected" : "Could not send decision"); }
+  } catch (error) {
+    toast(error.message === "unauthorized"
+      ? "That token didn't work — reconnect this device"
+      : "Couldn't send that — check your connection and try again");
+  }
 }
 
 async function refresh() {
