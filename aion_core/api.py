@@ -126,6 +126,17 @@ def projects() -> list[dict]:
     return out
 
 
+def tasks_ranked(limit: int = 10) -> list[dict]:
+    """The ready queue as cards, not one preformatted string."""
+    return [{
+        "task_id": row["task_id"],
+        "title": row["title"],
+        "next_action": row["next_action"] or "",
+        "model_class": row["model_class"],
+        "value": tasks.value(row),
+    } for row in tasks.ready(limit)]
+
+
 def costs() -> dict:
     """Model spend, broken down, with the governor's own numbers alongside."""
     conn = db.connect()

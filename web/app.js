@@ -5,8 +5,9 @@ const SNAPSHOT_KEY = "aion.interface.snapshot.v1";
 const MONEY_KEY = "aion.interface.money.v1";
 const COSTS_KEY = "aion.interface.costs.v1";
 const HEALTH_KEY = "aion.interface.health.v1";
+const TASKS_KEY = "aion.interface.tasks.v1";
 const QUEUE_KEY = "aion.interface.capture-queue.v1";
-const SNAPSHOT_FIELDS = ["status", "blockers", "today", "tasks"];
+const SNAPSHOT_FIELDS = ["status", "blockers", "today"];
 
 const byId = id => document.getElementById(id);
 const state = { token: localStorage.getItem(TOKEN_KEY) || "", busy: false };
@@ -119,6 +120,29 @@ function renderHealth(snapshot) {
   }
 }
 
+function renderTasks(rows) {
+  const root = byId("tasks");
+  root.replaceChildren();
+  if (!rows.length) {
+    const empty = document.createElement("p");
+    empty.className = "muted";
+    empty.textContent = "Nothing queued right now.";
+    root.append(empty);
+    return;
+  }
+  rows.forEach(row => {
+    const details = document.createElement("details");
+    const summary = document.createElement("summary");
+    summary.textContent = row.title;
+    const detail = document.createElement("p");
+    detail.className = "task-detail";
+    detail.textContent = `${row.task_id} · value ${row.value}` +
+      (row.next_action ? ` → ${row.next_action}` : "");
+    details.append(summary, detail);
+    root.append(details);
+  });
+}
+
 async function decide(verb, id, action) {
   if (!confirm(`${verb === "APPROVE" ? "Approve" : "Deny"} ${id}?\n\n${action}`)) return;
   try {
@@ -133,11 +157,12 @@ async function refresh() {
   state.busy = true;
   try {
     const names = [...SNAPSHOT_FIELDS, "approvals"];
-    const [values, moneySplit, costs, health] = await Promise.all([
+    const [values, moneySplit, costs, health, rankedTasks] = await Promise.all([
       Promise.all(names.map(name => api(`/api/${name}`))),
       api("/api/v1/money"),
       api("/api/v1/costs"),
       api("/api/v1/snapshot"),
+      api("/api/v1/tasks"),
     ]);
     const live = Object.fromEntries(names.map((name, index) => [name, values[index]]));
     live.asOf = new Date().toISOString();
@@ -146,12 +171,14 @@ async function refresh() {
     renderMoney(moneySplit);
     renderBudget(costs);
     renderHealth(health);
+    renderTasks(rankedTasks);
     localStorage.setItem(SNAPSHOT_KEY, JSON.stringify(Object.fromEntries(
       [...SNAPSHOT_FIELDS, "asOf"].map(name => [name, live[name]])
     )));
     localStorage.setItem(MONEY_KEY, JSON.stringify(moneySplit));
     localStorage.setItem(COSTS_KEY, JSON.stringify(costs));
     localStorage.setItem(HEALTH_KEY, JSON.stringify(health));
+    localStorage.setItem(TASKS_KEY, JSON.stringify(rankedTasks));
     setConnection(true);
     await flushQueue();
   } catch (error) {
@@ -202,5 +229,7 @@ const cachedCosts = storedJSON(COSTS_KEY, null);
 if (cachedCosts) renderBudget(cachedCosts);
 const cachedHealth = storedJSON(HEALTH_KEY, null);
 if (cachedHealth) renderHealth(cachedHealth);
+const cachedTasks = storedJSON(TASKS_KEY, null);
+if (cachedTasks) renderTasks(cachedTasks);
 if (state.token) { showDashboard(); refresh(); }
 if ("serviceWorker" in navigator) navigator.serviceWorker.register("/service-worker.js").catch(() => {});

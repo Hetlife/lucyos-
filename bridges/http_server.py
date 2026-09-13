@@ -41,6 +41,7 @@ V1_ROUTES = {
     "/api/v1/money": api.money_split,
     "/api/v1/projects": api.projects,
     "/api/v1/costs": api.costs,
+    "/api/v1/tasks": api.tasks_ranked,
 }
 
 

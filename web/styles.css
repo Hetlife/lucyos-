@@ -30,6 +30,13 @@ main { max-width:720px; margin:0 auto; }
 .dot { width:10px; height:10px; border-radius:50%; background:var(--muted); flex-shrink:0; }
 .dot.good { background:var(--good); }
 .dot.bad { background:var(--danger); }
+.task-list details { border-top:1px solid var(--line); padding:12px 0; }
+.task-list details:first-child { border-top:0; padding-top:0; }
+.task-list summary { cursor:pointer; font-weight:700; margin-bottom:0; list-style:none; }
+.task-list summary::-webkit-details-marker { display:none; }
+.task-list summary::after { content:"›"; float:right; color:var(--muted); transform:rotate(90deg); transition:transform .15s; }
+.task-list details[open] summary::after { transform:rotate(270deg); }
+.task-detail { margin:8px 0 0; color:var(--muted); font-size:.82rem; font-variant-numeric:tabular-nums; }
 pre { margin:0; white-space:pre-wrap; overflow-wrap:anywhere; font:500 .9rem/1.5 ui-monospace, SFMono-Regular, Menlo, monospace; }
 .connection { border-radius:999px; display:inline-block; padding:7px 11px; margin:0 0 14px; font-size:.76rem; font-weight:750; }
 .connection.online { background:#d8f3dc; color:#17552c; }.connection.offline { background:#efe3c4; color:#664d12; }

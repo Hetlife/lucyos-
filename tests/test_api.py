@@ -59,6 +59,19 @@ class TestProjects(AionTest):
         self.assertGreaterEqual(by_name["alpha"]["open_tasks"], 1)
 
 
+class TestTasksRanked(AionTest):
+    def test_ranked_shape_and_order(self):
+        low = tasks.create("low value work", impact=1, probability=0.3, cost=5)
+        high = tasks.create("high value work", impact=5, probability=0.9, cost=1)
+        rows = api.tasks_ranked()
+        json.dumps(rows)
+        ids = [r["task_id"] for r in rows]
+        self.assertLess(ids.index(high), ids.index(low))
+        top = rows[ids.index(high)]
+        for key in ("task_id", "title", "next_action", "model_class", "value"):
+            self.assertIn(key, top)
+
+
 class TestCosts(AionTest):
     def test_costs_sum_only_recorded_usage(self):
         metrics.record_usage("claude-sonnet-5", "B", cost_inr=42.5)
