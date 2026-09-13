@@ -19,7 +19,7 @@ main { max-width:720px; margin:0 auto; }
 .card { background:var(--card); border:1px solid var(--line); border-radius:22px; padding:20px; margin-bottom:14px; box-shadow:var(--shadow); overflow:hidden; }
 .hero { border-top:5px solid var(--accent); }
 .stat-number { display:block; font-size:2.6rem; font-weight:800; letter-spacing:-.02em; font-variant-numeric:tabular-nums; line-height:1.1; }
-.stat-number.negative { color:var(--danger); }
+.negative { color:var(--danger); }
 .stat-sub { margin:6px 0 16px; font-size:.85rem; color:var(--muted); font-variant-numeric:tabular-nums; }
 .bar { height:8px; border-radius:999px; background:var(--track); overflow:hidden; margin-bottom:6px; }
 .bar-fill { height:100%; border-radius:999px; background:var(--good); width:0%; transition:width .3s ease; }
@@ -37,6 +37,13 @@ main { max-width:720px; margin:0 auto; }
 .task-list summary::after { content:"›"; float:right; color:var(--muted); transform:rotate(90deg); transition:transform .15s; }
 .task-list details[open] summary::after { transform:rotate(270deg); }
 .task-detail { margin:8px 0 0; color:var(--muted); font-size:.82rem; font-variant-numeric:tabular-nums; }
+.project-grid { display:grid; gap:10px; grid-template-columns:1fr; }
+.project { border:1px solid var(--line); border-radius:16px; padding:14px 16px; }
+.project-head { display:flex; align-items:center; justify-content:space-between; gap:8px; margin-bottom:6px; }
+.project-head strong { font-size:.95rem; }
+.project-open { font-size:.72rem; font-weight:700; color:var(--muted); background:var(--track); padding:3px 9px; border-radius:999px; white-space:nowrap; }
+.project-net { margin:0 0 2px; font-weight:700; font-variant-numeric:tabular-nums; }
+@media (min-width:480px) { .project-grid { grid-template-columns:1fr 1fr; } }
 pre { margin:0; white-space:pre-wrap; overflow-wrap:anywhere; font:500 .9rem/1.5 ui-monospace, SFMono-Regular, Menlo, monospace; }
 .connection { border-radius:999px; display:inline-block; padding:7px 11px; margin:0 0 14px; font-size:.76rem; font-weight:750; }
 .connection.online { background:#d8f3dc; color:#17552c; }.connection.offline { background:#efe3c4; color:#664d12; }

@@ -6,6 +6,7 @@ const MONEY_KEY = "aion.interface.money.v1";
 const COSTS_KEY = "aion.interface.costs.v1";
 const HEALTH_KEY = "aion.interface.health.v1";
 const TASKS_KEY = "aion.interface.tasks.v1";
+const PROJECTS_KEY = "aion.interface.projects.v1";
 const QUEUE_KEY = "aion.interface.capture-queue.v1";
 const SNAPSHOT_FIELDS = ["status", "blockers", "today"];
 
@@ -143,6 +144,41 @@ function renderTasks(rows) {
   });
 }
 
+function renderProjects(rows) {
+  const root = byId("projects");
+  root.replaceChildren();
+  if (!rows.length) {
+    const empty = document.createElement("p");
+    empty.className = "muted";
+    empty.textContent = "No projects yet.";
+    root.append(empty);
+    return;
+  }
+  rows.forEach(row => {
+    const card = document.createElement("article");
+    card.className = "project";
+    const head = document.createElement("div");
+    head.className = "project-head";
+    const title = document.createElement("strong");
+    title.textContent = row.project;
+    const open = document.createElement("span");
+    open.className = "project-open";
+    open.textContent = `${row.open_tasks} open`;
+    head.append(title, open);
+    const net = document.createElement("p");
+    net.className = "project-net";
+    net.classList.toggle("negative", row.real_net_inr < 0);
+    net.textContent = `Real net ${formatInr(row.real_net_inr)}`;
+    const sim = document.createElement("p");
+    sim.className = "muted";
+    sim.textContent = row.simulated_net_inr
+      ? `Simulated ${formatInr(row.simulated_net_inr)}`
+      : "No simulated figures";
+    card.append(head, net, sim);
+    root.append(card);
+  });
+}
+
 async function decide(verb, id, action) {
   if (!confirm(`${verb === "APPROVE" ? "Approve" : "Deny"} ${id}?\n\n${action}`)) return;
   try {
@@ -157,12 +193,13 @@ async function refresh() {
   state.busy = true;
   try {
     const names = [...SNAPSHOT_FIELDS, "approvals"];
-    const [values, moneySplit, costs, health, rankedTasks] = await Promise.all([
+    const [values, moneySplit, costs, health, rankedTasks, projectRows] = await Promise.all([
       Promise.all(names.map(name => api(`/api/${name}`))),
       api("/api/v1/money"),
       api("/api/v1/costs"),
       api("/api/v1/snapshot"),
       api("/api/v1/tasks"),
+      api("/api/v1/projects"),
     ]);
     const live = Object.fromEntries(names.map((name, index) => [name, values[index]]));
     live.asOf = new Date().toISOString();
@@ -172,6 +209,7 @@ async function refresh() {
     renderBudget(costs);
     renderHealth(health);
     renderTasks(rankedTasks);
+    renderProjects(projectRows);
     localStorage.setItem(SNAPSHOT_KEY, JSON.stringify(Object.fromEntries(
       [...SNAPSHOT_FIELDS, "asOf"].map(name => [name, live[name]])
     )));
@@ -179,6 +217,7 @@ async function refresh() {
     localStorage.setItem(COSTS_KEY, JSON.stringify(costs));
     localStorage.setItem(HEALTH_KEY, JSON.stringify(health));
     localStorage.setItem(TASKS_KEY, JSON.stringify(rankedTasks));
+    localStorage.setItem(PROJECTS_KEY, JSON.stringify(projectRows));
     setConnection(true);
     await flushQueue();
   } catch (error) {
@@ -231,5 +270,7 @@ const cachedHealth = storedJSON(HEALTH_KEY, null);
 if (cachedHealth) renderHealth(cachedHealth);
 const cachedTasks = storedJSON(TASKS_KEY, null);
 if (cachedTasks) renderTasks(cachedTasks);
+const cachedProjects = storedJSON(PROJECTS_KEY, null);
+if (cachedProjects) renderProjects(cachedProjects);
 if (state.token) { showDashboard(); refresh(); }
 if ("serviceWorker" in navigator) navigator.serviceWorker.register("/service-worker.js").catch(() => {});
