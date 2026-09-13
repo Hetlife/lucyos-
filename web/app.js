@@ -45,11 +45,22 @@ function showDashboard() {
   byId("dashboard").hidden = false;
 }
 
+function relativeTime(iso) {
+  const diffSec = Math.round((Date.now() - new Date(iso).getTime()) / 1000);
+  if (diffSec < 10) return "just now";
+  if (diffSec < 60) return `${diffSec}s ago`;
+  const diffMin = Math.round(diffSec / 60);
+  if (diffMin < 60) return `${diffMin} minute${diffMin === 1 ? "" : "s"} ago`;
+  const diffHour = Math.round(diffMin / 60);
+  if (diffHour < 24) return `${diffHour} hour${diffHour === 1 ? "" : "s"} ago`;
+  return new Date(iso).toLocaleString();
+}
+
 function renderSnapshot(snapshot) {
   SNAPSHOT_FIELDS.forEach(field => {
     if (typeof snapshot[field] === "string") byId(field).textContent = snapshot[field];
   });
-  if (snapshot.asOf) byId("as-of").textContent = `Last successful refresh: ${new Date(snapshot.asOf).toLocaleString()}`;
+  if (snapshot.asOf) byId("as-of").textContent = `Updated ${relativeTime(snapshot.asOf)}`;
 }
 
 function renderApprovals(rows) {
@@ -222,11 +233,24 @@ async function refresh() {
     await flushQueue();
   } catch (error) {
     if (error.message === "unauthorized") {
+      stopAutoRefresh();
       localStorage.removeItem(TOKEN_KEY); state.token = "";
       byId("unlock").hidden = false; byId("dashboard").hidden = true;
       setConnection(false, "Token rejected · reconnect this device");
     } else setConnection(false);
   } finally { state.busy = false; }
+}
+
+const AUTO_REFRESH_MS = 60000;
+let autoRefreshTimer = null;
+
+function startAutoRefresh() {
+  stopAutoRefresh();
+  autoRefreshTimer = setInterval(() => { if (!document.hidden) refresh(); }, AUTO_REFRESH_MS);
+}
+function stopAutoRefresh() {
+  if (autoRefreshTimer) clearInterval(autoRefreshTimer);
+  autoRefreshTimer = null;
 }
 
 function captureQueue() { return storedJSON(QUEUE_KEY, []); }
@@ -245,7 +269,7 @@ async function flushQueue() {
 
 byId("token-form").addEventListener("submit", event => {
   event.preventDefault(); state.token = byId("token").value.trim();
-  localStorage.setItem(TOKEN_KEY, state.token); showDashboard(); refresh();
+  localStorage.setItem(TOKEN_KEY, state.token); showDashboard(); refresh(); startAutoRefresh();
 });
 byId("capture-form").addEventListener("submit", async event => {
   event.preventDefault();
@@ -272,5 +296,19 @@ const cachedTasks = storedJSON(TASKS_KEY, null);
 if (cachedTasks) renderTasks(cachedTasks);
 const cachedProjects = storedJSON(PROJECTS_KEY, null);
 if (cachedProjects) renderProjects(cachedProjects);
-if (state.token) { showDashboard(); refresh(); }
+if (state.token) { showDashboard(); refresh(); startAutoRefresh(); }
 if ("serviceWorker" in navigator) navigator.serviceWorker.register("/service-worker.js").catch(() => {});
+
+// Catch up immediately when the phone comes back to the foreground, rather
+// than waiting up to a minute for the next scheduled refresh.
+document.addEventListener("visibilitychange", () => {
+  if (!document.hidden && state.token) refresh();
+});
+
+// Keep "Updated Xs ago" honest between refreshes without hitting the network.
+setInterval(() => {
+  const cached = storedJSON(SNAPSHOT_KEY, {});
+  if (cached.asOf && !byId("dashboard").hidden) {
+    byId("as-of").textContent = `Updated ${relativeTime(cached.asOf)}`;
+  }
+}, 15000);
