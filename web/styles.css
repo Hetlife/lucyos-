@@ -3,9 +3,11 @@
   --bg: #f3f1eb; --card: #fffdf8; --ink: #17231c; --muted: #68736c;
   --line: #d9ded8; --accent: #d6ff4b; --accent-ink: #17231c;
   --danger: #a73b34; --shadow: 0 12px 32px rgba(23,35,28,.08);
+  --good: #2f7d43; --warn: #a3711b; --track: #e4e0d4;
 }
 @media (prefers-color-scheme: dark) {
-  :root { --bg:#101713; --card:#18221c; --ink:#edf5ee; --muted:#a7b3aa; --line:#314139; --accent:#c8f04a; --accent-ink:#101713; --danger:#ff8d82; --shadow:none; }
+  :root { --bg:#101713; --card:#18221c; --ink:#edf5ee; --muted:#a7b3aa; --line:#314139; --accent:#c8f04a; --accent-ink:#101713; --danger:#ff8d82; --shadow:none;
+    --good: #6fd48a; --warn: #e0b45c; --track: #263129; }
 }
 * { box-sizing: border-box; }
 html { font-family: ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif; background:var(--bg); color:var(--ink); }
@@ -16,6 +18,14 @@ main { max-width:720px; margin:0 auto; }
 .eyebrow { margin:0 0 4px; font-size:.68rem; font-weight:800; letter-spacing:.16em; color:var(--muted); }
 .card { background:var(--card); border:1px solid var(--line); border-radius:22px; padding:20px; margin-bottom:14px; box-shadow:var(--shadow); overflow:hidden; }
 .hero { border-top:5px solid var(--accent); }
+.stat-number { display:block; font-size:2.6rem; font-weight:800; letter-spacing:-.02em; font-variant-numeric:tabular-nums; line-height:1.1; }
+.stat-number.negative { color:var(--danger); }
+.stat-sub { margin:6px 0 16px; font-size:.85rem; color:var(--muted); font-variant-numeric:tabular-nums; }
+.bar { height:8px; border-radius:999px; background:var(--track); overflow:hidden; margin-bottom:6px; }
+.bar-fill { height:100%; border-radius:999px; background:var(--good); width:0%; transition:width .3s ease; }
+.bar-fill.warn { background:var(--warn); }
+.bar-fill.critical { background:var(--danger); }
+.budget-label { margin:0; font-size:.8rem; color:var(--muted); }
 pre { margin:0; white-space:pre-wrap; overflow-wrap:anywhere; font:500 .9rem/1.5 ui-monospace, SFMono-Regular, Menlo, monospace; }
 .connection { border-radius:999px; display:inline-block; padding:7px 11px; margin:0 0 14px; font-size:.76rem; font-weight:750; }
 .connection.online { background:#d8f3dc; color:#17552c; }.connection.offline { background:#efe3c4; color:#664d12; }

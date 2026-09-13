@@ -2,8 +2,10 @@
 
 const TOKEN_KEY = "aion.interface.token";
 const SNAPSHOT_KEY = "aion.interface.snapshot.v1";
+const MONEY_KEY = "aion.interface.money.v1";
+const COSTS_KEY = "aion.interface.costs.v1";
 const QUEUE_KEY = "aion.interface.capture-queue.v1";
-const SNAPSHOT_FIELDS = ["money", "status", "blockers", "today", "tasks"];
+const SNAPSHOT_FIELDS = ["status", "blockers", "today", "tasks"];
 
 const byId = id => document.getElementById(id);
 const state = { token: localStorage.getItem(TOKEN_KEY) || "", busy: false };
@@ -72,6 +74,36 @@ function renderApprovals(rows) {
   });
 }
 
+function formatInr(amount) {
+  const rounded = Math.round(amount);
+  const sign = rounded < 0 ? "−" : "";
+  return `${sign}₹${new Intl.NumberFormat("en-IN").format(Math.abs(rounded))}`;
+}
+
+function renderMoney(split) {
+  const net = byId("money-net");
+  net.textContent = formatInr(split.real.net_inr);
+  net.classList.toggle("negative", split.real.net_inr < 0);
+  byId("money-sub").textContent =
+    `Revenue ${formatInr(split.real.revenue_inr)} · Cost ${formatInr(split.real.cost_inr)}`;
+}
+
+function budgetLabel(pct) {
+  if (pct >= 95) return "Stopped";
+  if (pct >= 70) return "Nearly at limit";
+  if (pct >= 50) return "Slowing down";
+  return "On track";
+}
+
+function renderBudget(costs) {
+  const pct = Math.max(0, Math.min(100, costs.strong_model_pct));
+  const fill = byId("budget-fill");
+  fill.style.width = `${pct}%`;
+  fill.classList.toggle("warn", pct >= 50 && pct < 85);
+  fill.classList.toggle("critical", pct >= 85);
+  byId("budget-label").textContent = `Spending: ${budgetLabel(pct)}`;
+}
+
 async function decide(verb, id, action) {
   if (!confirm(`${verb === "APPROVE" ? "Approve" : "Deny"} ${id}?\n\n${action}`)) return;
   try {
@@ -86,14 +118,22 @@ async function refresh() {
   state.busy = true;
   try {
     const names = [...SNAPSHOT_FIELDS, "approvals"];
-    const values = await Promise.all(names.map(name => api(`/api/${name}`)));
+    const [values, moneySplit, costs] = await Promise.all([
+      Promise.all(names.map(name => api(`/api/${name}`))),
+      api("/api/v1/money"),
+      api("/api/v1/costs"),
+    ]);
     const live = Object.fromEntries(names.map((name, index) => [name, values[index]]));
     live.asOf = new Date().toISOString();
     renderSnapshot(live);
     renderApprovals(live.approvals);
+    renderMoney(moneySplit);
+    renderBudget(costs);
     localStorage.setItem(SNAPSHOT_KEY, JSON.stringify(Object.fromEntries(
       [...SNAPSHOT_FIELDS, "asOf"].map(name => [name, live[name]])
     )));
+    localStorage.setItem(MONEY_KEY, JSON.stringify(moneySplit));
+    localStorage.setItem(COSTS_KEY, JSON.stringify(costs));
     setConnection(true);
     await flushQueue();
   } catch (error) {
@@ -138,5 +178,9 @@ byId("forget").addEventListener("click", () => {
 });
 
 renderSnapshot(storedJSON(SNAPSHOT_KEY, {})); showQueue();
+const cachedMoney = storedJSON(MONEY_KEY, null);
+if (cachedMoney) renderMoney(cachedMoney);
+const cachedCosts = storedJSON(COSTS_KEY, null);
+if (cachedCosts) renderBudget(cachedCosts);
 if (state.token) { showDashboard(); refresh(); }
 if ("serviceWorker" in navigator) navigator.serviceWorker.register("/service-worker.js").catch(() => {});
