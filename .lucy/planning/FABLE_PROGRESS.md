@@ -110,3 +110,87 @@ this task's completion criteria.
 Exact resume point if interrupted: check run status for HEAD of
 planning/opus-fable-20260916 via GitHub Actions API; if jobs exist and are
 red, read the specific job's log next, do not re-diagnose the workflow file.
+
+
+## CI workflow-validation fix -- FINAL RESULT (2026-09-16)
+
+Fix commit: `2ff0f6b2bacfd82a4f16baf635dc8800772fb34d`
+Follow-up fix commit (Python 3.9 test compat, discovered by the now-working
+matrix): `6a5f7d81cd8697e1fef5ab95095bf1fd20202ce0`
+
+### Run 1 -- workflow fix alone (still red, but jobs now exist)
+- Run: 35116873386 -- https://github.com/Hetlife/lucyos-/actions/runs/35116873386
+- Overall: completed / failure
+- code-and-test (py3.9): FAILURE -- `AttributeError: 'PosixPath' object has no
+  attribute 'hardlink_to'` in tests/test_drive_bridge.py:120. Path.hardlink_to()
+  is Python 3.10+; LucyOS commits to 3.9+ (README.md). This was LucyOS's
+  first-ever real run of the 3.9 matrix entry, so the bug was never exercised
+  before. code-and-test (py3.11), (py3.13): success.
+- clean-bootstrap-health, upgrade-from-main-schema, authority-gate: success.
+- authority-drift (informational, continue-on-error): failure -- expected;
+  reports hash drift on .github/workflows/lucyos-ci.yml because that file was
+  legitimately just changed and not yet re-frozen.
+- macos-readiness (advisory, continue-on-error): failure -- same 3.9-class
+  issue plus a macOS-specific one, superseded by run 2's finding below.
+
+### Run 2 -- after the 3.9-compat fix
+- Run: 35117351924 -- https://github.com/Hetlife/lucyos-/actions/runs/35117351924
+- Overall: completed / **success**
+- **code-and-test (py3.9): SUCCESS** -- https://github.com/Hetlife/lucyos-/actions/runs/35117351924/job/104866039315
+- code-and-test (py3.11): SUCCESS -- job 104866039443
+- code-and-test (py3.13): SUCCESS -- job 104866039354
+- **clean-bootstrap-health: SUCCESS** -- job 104866039939
+- **upgrade-from-main-schema: SUCCESS** -- job 104866039282
+- **authority-gate: SUCCESS** -- job 104866039441
+- authority-drift (informational): failure -- same expected hash-drift signal
+  as run 1 (still not re-frozen -- see "Not done" below).
+- macos-readiness (advisory): failure, root cause identified and DIFFERENT
+  from the 3.9 issue -- `bridges/drive_bridge.py:read_safe()` rejects any path
+  whose ancestor is a symlink (line 129, `part.is_symlink()`). On the macOS
+  runner, `$RUNNER_TEMP`/`$TMPDIR` resolves under `/var/folders/...`, and
+  `/var` itself is a symlink to `/private/var` on macOS -- so every
+  drive-bridge test that stages a file under the test's tmp dir trips this
+  check and raises `rejected_source`. 4 test errors, all in
+  tests/test_drive_bridge.py. This is a genuine macOS-specific finding, not a
+  CI or Python-version problem, and out of scope for this task (the task said
+  fix the four required checks and *keep macos-readiness advisory until it
+  passes* -- not fix it now). Recorded here as the exact next step for
+  whoever picks up Mac readiness (S-05 territory, or a new task): either
+  resolve symlinks before the ancestor walk (`path.resolve()` up front) while
+  still rejecting a *final* symlink component, or scope the check to reject
+  only if the leaf or an ancestor *inside the repo/AION_HOME* is a symlink,
+  not OS-standard symlinked tmp roots. This needs a security-reasoning pass,
+  not a quick patch -- do not weaken read_safe() without one.
+
+### Confirmed via GitHub API (not narrated from memory)
+- get_workflow_run(35113032369): status completed, conclusion failure,
+  list_workflow_jobs returns total_count 0 -- matches the reported
+  "zero jobs" symptom exactly, before the fix.
+- get_workflow_run(35117351924): status completed, conclusion success, after
+  both fixes.
+
+### Not done (explicitly out of scope per the task)
+- No Sonnet bulk coding started.
+- No merge to main.
+- No required-status-check configuration in branch protection -- the task
+  said not to configure this until checks had actually appeared in a
+  successful run; they now have (run 35117351924), so OWNER-01 (branch
+  protection naming exactly `code-and-test`, `clean-bootstrap-health`,
+  `upgrade-from-main-schema`, `authority-gate`) is now actionable by the
+  owner, but I did not configure it myself (no tool access to repository
+  admin settings, and it is an owner-only action per HIGH_MODEL_BASELINE.json
+  regardless).
+- authority-drift still shows hash drift on .github/workflows/lucyos-ci.yml
+  (expected, since that file legitimately changed twice this session and
+  hasn't been re-frozen). Re-freezing is FABLE-01-class work and wasn't part
+  of this fix request; flagging so it isn't mistaken for an unresolved bug.
+
+## Exact resume point
+
+CI is green on the four required checks at commit 6a5f7d81. Next actions, in
+order: (1) owner configures branch protection naming the four check names
+now proven to exist; (2) re-freeze (FABLE_FREEZE_SHA) once this and any
+further protected-path changes settle, to clear the authority-drift signal;
+(3) macos-readiness's symlink/tmp-root finding is available for whoever
+scopes the next Mac-readiness task -- do not fix it inline without a
+security-reasoning pass on read_safe().
