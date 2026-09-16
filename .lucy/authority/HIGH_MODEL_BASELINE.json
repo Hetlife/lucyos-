@@ -5,7 +5,7 @@
   "contract": ".lucy/handoffs/2026-09-16/03_HIGH_TO_LOW_MODEL_AUTHORITY_CONTRACT.md",
   "execution_package": ".lucy/authority/LUCYOS_FABLE_ARCHITECT_EXECUTION_PACKAGE.md",
   "integration_branch": "integration/consolidation-20260916",
-  "fable_freeze_sha": "47cec6d1481e848e60921d769138bd8a130792ac",
+  "fable_freeze_sha": "6dd3085f34e13c0916bb29adb42a9a4132fb4345",
   "verifier": "scripts/verify_authority.py",
   "how_verified": "In CI on pull requests the verifier and this baseline are read from the BASE branch (never from the branch under test). On pushes and on Mark-2 the deployed tree is checked against protected_file_hashes and against the blobs at fable_freeze_sha.",
   "protected_paths": [
