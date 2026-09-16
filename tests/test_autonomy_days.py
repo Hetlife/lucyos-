@@ -1,6 +1,7 @@
 """Hands-off days distinguish approvals from owner operation."""
 from datetime import datetime, timedelta, timezone
 
+from aion_core import util
 from tests.base import AionTest
 
 
@@ -52,7 +53,7 @@ class TestAutonomyDays(AionTest):
     def test_today_cannot_be_evaluated(self):
         from aion_core import autonomy
         with self.assertRaises(ValueError):
-            autonomy.evaluate_day(datetime.now(timezone.utc).date().isoformat())
+            autonomy.evaluate_day(util.today())
 
 
 if __name__ == "__main__":
