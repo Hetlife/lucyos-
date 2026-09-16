@@ -71,6 +71,13 @@ def scan_text(text: str) -> list[dict]:
     for name, pattern in _PATTERNS:
         for match in pattern.finditer(text):
             value = match.group(2) if (name == "assigned_secret" and match.lastindex and match.lastindex >= 2) else match.group(0)
+            if name == "assigned_secret" and match.lastindex and match.lastindex >= 2:
+                # A kwarg passed through under its own name (`token_budget=token_budget`)
+                # is naming the value, not carrying one -- same idea as the existing
+                # ALL-CAPS/dotted _IDENTIFIER exemption below, but for the much more
+                # common case of a plain snake_case name equal to its own value.
+                if value.strip(",;\"')") == match.group(1):
+                    continue
             if _is_placeholder(value):
                 continue
             if name == "card_number" and not _luhn(re.sub(r"[ -]", "", match.group(0))):
