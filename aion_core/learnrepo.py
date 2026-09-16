@@ -561,6 +561,98 @@ def quarantine(candidate_id: str, reason: str) -> None:
     db.log_event("learnrepo", "learnrepo.quarantine", candidate_id, reason[:200])
 
 
+
+SKILL_REVIEW_STAGES = {"RESEARCH", "LICENSE", "SECURITY", "SANDBOX", "BENCHMARK", "ARCHITECTURE", "OWNER", "INSTALL", "TEST"}
+SKILL_REVIEW_ROLES = {"primary", "fallback"}
+LIFECYCLE_REVIEW_STAGE = {
+    "RESEARCHED": "RESEARCH",
+    "LICENSE_OK": "LICENSE",
+    "SECURITY_REVIEWED": "SECURITY",
+    "SANDBOXED": "SANDBOX",
+    "BENCHMARKED": "BENCHMARK",
+    "ARCHITECTURE_APPROVED": "ARCHITECTURE",
+    "OWNER_APPROVED": "OWNER",
+    "INSTALLED_DISABLED": "INSTALL",
+    "TESTED": "TEST",
+}
+
+
+def record_skill_review(skill_id: str, candidate_id: str, stage: str, evidence: dict, *,
+                        verdict: str = "PASS", candidate_url: str = "", role: str = "primary") -> str:
+    """Persist one LearnRepo review checkpoint for a catalog skill.
+
+    This is evidence storage only: it installs nothing and performs no network or model call.
+    At most two primary candidates plus one fallback may be tracked per skill.
+    """
+    from . import skills
+    import json
+    if skills.get(skill_id) is None:
+        raise ValueError(f"unknown skill {skill_id}")
+    stage = stage.strip().upper()
+    verdict = verdict.strip().upper()
+    role = role.strip().lower()
+    if stage not in SKILL_REVIEW_STAGES:
+        raise ValueError(f"invalid review stage {stage}")
+    if verdict not in {"PASS", "FAIL", "NEEDS_REVIEW"}:
+        raise ValueError(f"invalid review verdict {verdict}")
+    if role not in SKILL_REVIEW_ROLES:
+        raise ValueError(f"invalid candidate role {role}")
+    if not isinstance(evidence, dict) or not evidence:
+        raise ValueError("review evidence must be a non-empty object")
+    conn = db.connect()
+    existing_candidate = conn.execute(
+        "SELECT candidate_role FROM learnrepo_skill_reviews WHERE skill_id=? AND candidate_id=? LIMIT 1",
+        (skill_id, candidate_id)).fetchone()
+    if existing_candidate and existing_candidate["candidate_role"] != role:
+        raise ValueError("candidate role cannot change after review begins")
+    candidates = conn.execute(
+        "SELECT candidate_id,candidate_role FROM learnrepo_skill_reviews WHERE skill_id=? GROUP BY candidate_id,candidate_role",
+        (skill_id,)).fetchall()
+    if not existing_candidate:
+        primaries = sum(r["candidate_role"] == "primary" for r in candidates)
+        fallbacks = sum(r["candidate_role"] == "fallback" for r in candidates)
+        if role == "primary" and primaries >= 2:
+            raise ValueError("LearnRepo allows at most two primary candidates per skill")
+        if role == "fallback" and fallbacks >= 1:
+            raise ValueError("LearnRepo allows at most one fallback candidate per skill")
+    review_id = util.new_id("LRREV")
+    now = util.now()
+    payload = json.dumps(evidence, sort_keys=True, separators=(",", ":"))
+    conn.execute(
+        "INSERT INTO learnrepo_skill_reviews(review_id,skill_id,candidate_id,candidate_url,candidate_role,stage,verdict,evidence_json,created_at,updated_at) "
+        "VALUES(?,?,?,?,?,?,?,?,?,?) ON CONFLICT(skill_id,candidate_id,stage) DO UPDATE SET "
+        "candidate_url=excluded.candidate_url,candidate_role=excluded.candidate_role,verdict=excluded.verdict,evidence_json=excluded.evidence_json,updated_at=excluded.updated_at",
+        (review_id, skill_id, candidate_id, security.redact(candidate_url), role, stage, verdict, security.redact(payload), now, now))
+    conn.commit()
+    db.log_event("learnrepo", "skill.review", skill_id, f"{candidate_id}:{stage}:{verdict}")
+    row = conn.execute("SELECT review_id FROM learnrepo_skill_reviews WHERE skill_id=? AND candidate_id=? AND stage=?",
+                       (skill_id, candidate_id, stage)).fetchone()
+    return row["review_id"]
+
+
+def skill_review_status(skill_id: str) -> dict:
+    rows = db.connect().execute(
+        "SELECT * FROM learnrepo_skill_reviews WHERE skill_id=? ORDER BY candidate_role,candidate_id,stage",
+        (skill_id,)).fetchall()
+    stages = {}
+    for row in rows:
+        stages.setdefault(row["stage"], []).append({"candidate_id": row["candidate_id"], "role": row["candidate_role"], "verdict": row["verdict"]})
+    return {"skill_id": skill_id, "reviews": len(rows), "stages": stages}
+
+
+def review_gate(skill_id: str, lifecycle_target: str) -> tuple[bool, str]:
+    """Return whether LearnRepo evidence permits a catalog lifecycle transition."""
+    required = LIFECYCLE_REVIEW_STAGE.get(lifecycle_target.strip().upper())
+    if not required:
+        return True, "no LearnRepo evidence required for this lifecycle target"
+    rows = db.connect().execute(
+        "SELECT candidate_id,candidate_role,verdict FROM learnrepo_skill_reviews WHERE skill_id=? AND stage=?",
+        (skill_id, required)).fetchall()
+    passed = [r for r in rows if r["verdict"] == "PASS"]
+    if not passed:
+        return False, f"missing PASS LearnRepo {required} evidence"
+    return True, f"{required} evidence passed for {len(passed)} candidate(s)"
+
 def log_future_whole_lucyos_task() -> str:
     title = "Generalize LearnRepo health into organization-wide LucyOS health system"
     conn = db.connect()

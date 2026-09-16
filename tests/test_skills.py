@@ -137,6 +137,8 @@ class TestSkillCatalogLifecycle(AionTest):
         skills.sync_catalog()
         with self.assertRaises(skills.SkillError):
             skills.set_lifecycle("web.browser-kernel", "ACTIVE")
+        from aion_core import learnrepo
+        learnrepo.record_skill_review("web.browser-kernel", "playwright", "RESEARCH", {"official_repo": "checked"})
         skills.set_lifecycle("web.browser-kernel", "RESEARCHED")
         self.assertEqual(skills.get("web.browser-kernel")["lifecycle_state"], "RESEARCHED")
 
@@ -156,3 +158,50 @@ class TestSkillCatalogLifecycle(AionTest):
         skills.sync_catalog()
         after = db.connect().execute("SELECT COUNT(*) FROM model_usage").fetchone()[0]
         self.assertEqual(before, after)
+
+
+class TestLearnRepoSkillContract(AionTest):
+    def setUp(self):
+        super().setUp()
+        skills.sync_catalog()
+
+    def test_catalog_transition_requires_learnrepo_evidence(self):
+        with self.assertRaises(skills.SkillError):
+            skills.set_lifecycle("web.browser-kernel", "RESEARCHED")
+        from aion_core import learnrepo
+        learnrepo.record_skill_review(
+            "web.browser-kernel", "playwright", "RESEARCH",
+            {"official_repo": "https://github.com/microsoft/playwright", "checked": True},
+            candidate_url="https://github.com/microsoft/playwright")
+        skills.set_lifecycle("web.browser-kernel", "RESEARCHED")
+        self.assertEqual(skills.get("web.browser-kernel")["lifecycle_state"], "RESEARCHED")
+
+    def test_stage_progression_requires_matching_pass(self):
+        from aion_core import learnrepo
+        sid = "web.browser-kernel"
+        learnrepo.record_skill_review(sid, "playwright", "RESEARCH", {"docs": "checked"})
+        skills.set_lifecycle(sid, "RESEARCHED")
+        learnrepo.record_skill_review(sid, "playwright", "LICENSE", {"license": "Apache-2.0"}, verdict="NEEDS_REVIEW")
+        with self.assertRaises(skills.SkillError):
+            skills.set_lifecycle(sid, "LICENSE_OK")
+        learnrepo.record_skill_review(sid, "playwright", "LICENSE", {"license": "Apache-2.0", "commercial": "checked"})
+        skills.set_lifecycle(sid, "LICENSE_OK")
+
+    def test_candidate_limit_two_primary_one_fallback(self):
+        from aion_core import learnrepo
+        sid = "web.browser-agent"
+        for cid in ("one", "two"):
+            learnrepo.record_skill_review(sid, cid, "RESEARCH", {"checked": cid})
+        with self.assertRaises(ValueError):
+            learnrepo.record_skill_review(sid, "three", "RESEARCH", {"checked": 3})
+        learnrepo.record_skill_review(sid, "fallback", "RESEARCH", {"checked": "fallback"}, role="fallback")
+        with self.assertRaises(ValueError):
+            learnrepo.record_skill_review(sid, "fallback2", "RESEARCH", {"checked": "fallback2"}, role="fallback")
+
+    def test_review_recording_is_deterministic_zero_ai(self):
+        from aion_core import learnrepo
+        before = db.connect().execute("SELECT COUNT(*) FROM model_usage").fetchone()[0]
+        learnrepo.record_skill_review("docs.pdf-read", "pypdf", "RESEARCH", {"official_repo": "checked"})
+        after = db.connect().execute("SELECT COUNT(*) FROM model_usage").fetchone()[0]
+        self.assertEqual(before, after)
+        self.assertIn("RESEARCH", learnrepo.skill_review_status("docs.pdf-read")["stages"])

@@ -316,6 +316,15 @@ def set_lifecycle(skill_id: str, state: str, *, force: bool = False) -> None:
         return
     if not force and state not in LIFECYCLE_TRANSITIONS.get(current, set()):
         raise SkillError(f"invalid lifecycle transition {current}->{state}")
+    # Catalog candidates must carry LearnRepo evidence for every gated stage.
+    # Native/core rows without a source manifest remain compatible with existing tests/workflows.
+    if not force and row["source_manifest"] and state in {
+            "RESEARCHED", "LICENSE_OK", "SECURITY_REVIEWED", "SANDBOXED", "BENCHMARKED",
+            "ARCHITECTURE_APPROVED", "OWNER_APPROVED", "INSTALLED_DISABLED", "TESTED"}:
+        from . import learnrepo
+        ok, reason = learnrepo.review_gate(skill_id, state)
+        if not ok:
+            raise SkillError(f"cannot transition {skill_id} to {state}: {reason}")
     enabled = 0 if state != "ACTIVE" else row["enabled"]
     conn = db.connect()
     conn.execute("UPDATE skills SET lifecycle_state=?, enabled=?, updated_at=? WHERE skill_id=?",

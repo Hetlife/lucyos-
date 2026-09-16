@@ -1,0 +1,28 @@
+LUCYOS SKILL SYSTEM — Q004 LEARNREPO SKILL INTEGRATION CONTRACT
+Date: 2026-09-16
+
+PURPOSE
+Generalize LearnRepo from its pilot health queue into the evidence gate used by every catalog skill before lifecycle advancement.
+
+IMPLEMENTATION
+- Adds additive canonical SQLite table learnrepo_skill_reviews.
+- Stores review evidence by skill/candidate/stage; it is not a second registry.
+- Enforces at most two primary candidates plus one fallback per skill.
+- Requires PASS evidence before catalog candidates advance through RESEARCHED, LICENSE_OK, SECURITY_REVIEWED, SANDBOXED, BENCHMARKED, ARCHITECTURE_APPROVED, OWNER_APPROVED, INSTALLED_DISABLED or TESTED.
+- Existing native/core skills without a source manifest remain backward compatible.
+- Review recording performs no package install, network request, shell action or model call.
+
+REVIEW STAGES
+RESEARCH -> LICENSE -> SECURITY -> SANDBOX -> BENCHMARK -> ARCHITECTURE -> OWNER (when path uses it) -> INSTALL -> TEST.
+
+SAFETY
+Evidence is required, but evidence storage does not itself prove truth; workers must obtain evidence through the separate LearnRepo research/security/sandbox process. FAIL/NEEDS_REVIEW never satisfies a lifecycle gate.
+
+COST/TOKEN
+Deterministic SQLite operations only; zero model/API calls on the healthy path.
+
+ROLLBACK
+Revert Q004. The additive review table can remain harmlessly in newer SQLite databases; older binaries ignore it.
+
+NEXT
+Q005: unify cost/privacy/risk classes in manifests and registry without activating skills.
