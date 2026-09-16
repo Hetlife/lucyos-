@@ -14,6 +14,18 @@ from . import db, security, util
 _SKILL_ID = re.compile(r"^[a-z0-9][a-z0-9_.-]{2,79}$")
 _EXECUTOR_CLASSES = {"DET", "A", "B", "C", "D"}
 
+MANIFEST_SCHEMA_VERSION = 1
+MANIFEST_REQUIRED = {
+    "schema_version", "skill_id", "name", "version", "capabilities",
+    "executor_classes", "platforms", "requirements", "cost_class",
+}
+MANIFEST_OPTIONAL = {
+    "description", "enabled", "health_command", "test_command", "actions",
+    "permissions", "input_schema", "output_schema", "risk_class", "data_class",
+    "fallback", "evidence", "timeout_seconds", "retry", "idempotency",
+    "approval_rule", "rollback", "feature_flag",
+}
+
 DEFAULT_SKILLS = [
     dict(skill_id="core.state", name="Canonical state", capabilities="sqlite,state,events,idempotency",
          executor_classes="DET", platforms="any", network_required=0, ai_required=0,
@@ -166,3 +178,91 @@ def report(runtime: dict) -> list[dict]:
             "cost_class": row["cost_class"], "reason": reason,
         })
     return out
+
+
+def validate_manifest(data: dict) -> list[str]:
+    """Validate the Q002 manifest contract without third-party schema code.
+
+    The JSON schema file is documentation/interoperability. This deterministic
+    validator is the runtime gate so manifest checks remain local and free.
+    """
+    errors = []
+    if not isinstance(data, dict):
+        return ["manifest:not-object"]
+    missing = sorted(MANIFEST_REQUIRED - set(data))
+    if missing:
+        errors.append("manifest:missing:" + ",".join(missing))
+    unknown = sorted(set(data) - MANIFEST_REQUIRED - MANIFEST_OPTIONAL)
+    if unknown:
+        errors.append("manifest:unknown:" + ",".join(unknown))
+    if data.get("schema_version") != MANIFEST_SCHEMA_VERSION:
+        errors.append("manifest:unsupported-schema")
+    sid = str(data.get("skill_id", "")).strip().lower()
+    if not _SKILL_ID.match(sid):
+        errors.append("manifest:invalid-skill-id")
+    for key in ("name", "version", "cost_class"):
+        if not isinstance(data.get(key), str) or not data.get(key, "").strip():
+            errors.append(f"manifest:invalid-{key}")
+    for key in ("capabilities", "executor_classes", "platforms"):
+        value = data.get(key)
+        if not isinstance(value, list) or not value or not all(isinstance(x, str) and x.strip() for x in value):
+            errors.append(f"manifest:invalid-{key}")
+    classes = {x.strip().upper() for x in data.get("executor_classes", []) if isinstance(x, str)}
+    if classes and not classes <= _EXECUTOR_CLASSES:
+        errors.append("manifest:invalid-executor-class")
+    req = data.get("requirements")
+    if not isinstance(req, dict):
+        errors.append("manifest:invalid-requirements")
+    else:
+        allowed_req = {"network", "ai", "offline_supported"}
+        missing_req = allowed_req - set(req)
+        unknown_req = set(req) - allowed_req
+        if missing_req:
+            errors.append("manifest:missing-requirements:" + ",".join(sorted(missing_req)))
+        if unknown_req:
+            errors.append("manifest:unknown-requirements:" + ",".join(sorted(unknown_req)))
+        for key in allowed_req & set(req):
+            if not isinstance(req[key], bool):
+                errors.append(f"manifest:invalid-requirement-{key}")
+    for key in ("actions", "permissions", "fallback"):
+        if key in data and (not isinstance(data[key], list) or not all(isinstance(x, str) for x in data[key])):
+            errors.append(f"manifest:invalid-{key}")
+    if "timeout_seconds" in data and (not isinstance(data["timeout_seconds"], int) or data["timeout_seconds"] <= 0):
+        errors.append("manifest:invalid-timeout")
+    if "enabled" in data and not isinstance(data["enabled"], bool):
+        errors.append("manifest:invalid-enabled")
+    return errors
+
+
+def register_manifest(data: dict) -> str:
+    """Validate and map one manifest into the existing canonical registry.
+
+    Q002 intentionally stores only registry/routing fields in SQLite. Richer
+    policy fields remain in the manifest file until their dedicated queue items
+    define runtime semantics. Nothing in a manifest is executed here.
+    """
+    errors = validate_manifest(data)
+    if errors:
+        raise SkillError("; ".join(errors))
+    req = data["requirements"]
+    return register(
+        skill_id=data["skill_id"], name=data["name"], description=data.get("description", ""),
+        version=data["version"], capabilities=",".join(data["capabilities"]),
+        executor_classes=",".join(data["executor_classes"]), platforms=",".join(data["platforms"]),
+        network_required=req["network"], ai_required=req["ai"],
+        offline_supported=req["offline_supported"], cost_class=data["cost_class"],
+        enabled=data.get("enabled", True), health_command=data.get("health_command", ""),
+        test_command=data.get("test_command", ""),
+    )
+
+
+def load_manifest(path) -> dict:
+    """Read JSON data only; no imports, plugins, shell, or install hooks."""
+    import json
+    from pathlib import Path
+    p = Path(path)
+    data = json.loads(p.read_text(encoding="utf-8"))
+    errors = validate_manifest(data)
+    if errors:
+        raise SkillError("; ".join(errors))
+    return data
