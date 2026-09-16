@@ -4,6 +4,7 @@
   "repository": "Hetlife/lucyos-",
   "planning_branch": "planning/opus-fable-20260916",
   "base_branch": "feature/skill-system-q006-architecture-guard",
+  "integration_branch": "integration/consolidation-20260916",
   "verified_base_commit": "2b59aea7d785bbc42139dcb361834bb48ae158a3",
   "github_handoff_path": ".lucy/handoffs/2026-09-16",
   "drive_root": "MARK2_SHARED/05_HANDOFFS",
@@ -14,6 +15,8 @@
   "authority_baseline": ".lucy/authority/HIGH_MODEL_BASELINE.json",
   "sonnet_queue": ".lucy/execution/SONNET_TASK_QUEUE.md",
   "mark2_deployment_contract": ".lucy/deployment/MARK2_DEPLOYMENT_CONTRACT.md",
+  "fable_overnight_master_prompt": ".lucy/handoffs/2026-09-16/05_FABLE_SINGLE_PASS_OVERNIGHT_MASTER_PROMPT.txt",
+  "sonnet_autonomous_night_loop_prompt": ".lucy/handoffs/2026-09-16/06_SONNET_AUTONOMOUS_NIGHT_LOOP_PROMPT.txt",
   "main_merge": "OWNER_APPROVAL_REQUIRED",
   "mark2_deployment": "CODEX_EXACT_SHA_AFTER_FABLE_REVIEW"
 }
