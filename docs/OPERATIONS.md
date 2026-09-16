@@ -86,6 +86,62 @@ only reported healthy after it has actually been restored. The last 14 are kept.
 To restore for real: stop the bridge, extract the archive over the shared brain,
 run `aion health --deep`.
 
+### Encryption (optional)
+
+```bash
+aion secrets set BACKUP_PASSPHRASE   # prompts hidden; never logged or stored in the database
+aion backup                          # now encrypted; verify still round-trips
+```
+
+With no `BACKUP_PASSPHRASE` configured, backups are unencrypted exactly as
+before, and the archive's log line says so explicitly (`aion status` /
+`events` shows `unencrypted (no BACKUP_PASSPHRASE configured)`), never
+silently.
+
+This is not AES: LucyOS carries no third-party dependency, so the
+implementation is an HMAC-SHA256 keystream for encryption plus a separate
+HMAC-SHA256 tag over the salt, nonce and ciphertext for authentication
+(encrypt-then-MAC), built entirely from the standard library's `hmac` and
+`hashlib`. A wrong passphrase or a tampered archive fails the MAC check and
+`aion backup --verify-only` reports it as a clean failure — never a corrupt
+"success". Treat this as adequate for an off-host copy of an already
+locally-verified backup, not as a substitute for a real audited cipher if
+the threat model ever requires one.
+
+**Never** put the passphrase in a commit, a log line, a chat message, or an
+approval/task description — `aion secrets set` is the only place it is
+typed, and it never enters the database.
+
+### Off-host copy drill (manual — nothing here is automated tonight)
+
+The backup archive under `$AION_HOME/BACKUPS/` is local. A lost or corrupted
+machine loses every backup with it unless a copy exists somewhere else. This
+repo intentionally does not automate an upload (that needs credentials this
+task is forbidden from requesting or storing), so run this by hand
+periodically, or wire it into your own off-host tooling once the Mac
+migration (S-23's `aion export`) is in place:
+
+1. `aion secrets set BACKUP_PASSPHRASE` once, if you want the copy encrypted
+   at rest on the destination (recommended for anything leaving this
+   machine).
+2. `aion backup` — creates and restore-verifies the latest archive.
+3. Copy the newest file in `$AION_HOME/BACKUPS/aion-backup-*.tar.gz` to a
+   second location you control: a USB drive, a second machine over `scp`, or
+   a personal cloud drive you already trust with other backups. The archive
+   itself never contains `private_state/` or any secret, encrypted or not —
+   only the passphrase, entered separately at restore time, protects its
+   *contents* if the destination is not fully trusted.
+4. On the destination, confirm the copy is intact: `sha256sum` it and
+   compare against the source before deleting anything.
+5. To restore from an off-host copy: bring the archive back onto the
+   machine, run `aion backup --verify-only` against it (or point
+   `aion_core.backup.verify(path)` at it directly), then extract over the
+   shared brain as in "Backup and restore" above.
+
+There is no scheduled/automatic off-host copy in this repository as of this
+task — that is intentionally an owner decision (what destination, what
+credentials, what cadence), not something to wire up silently.
+
 ## Recovery after a crash or a model switch
 
 Run `aion boot`. It verifies the brain, ingests the sync inbox, applies notebook
