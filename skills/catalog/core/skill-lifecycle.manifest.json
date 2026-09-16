@@ -1,0 +1,39 @@
+{
+  "schema_version": 1,
+  "skill_id": "core.skill-lifecycle",
+  "name": "Skill lifecycle manager",
+  "version": "0.1.0",
+  "description": "Lifecycle metadata only; activation remains gated.",
+  "capabilities": [
+    "lifecycle",
+    "feature_flags",
+    "quarantine",
+    "rollback"
+  ],
+  "executor_classes": [
+    "DET"
+  ],
+  "platforms": [
+    "any"
+  ],
+  "requirements": {
+    "network": false,
+    "ai": false,
+    "offline_supported": true
+  },
+  "cost_class": "F0",
+  "enabled": false,
+  "actions": [
+    "lifecycle",
+    "feature_flags",
+    "quarantine",
+    "rollback"
+  ],
+  "permissions": [],
+  "fallback": [],
+  "lifecycle_state": "DISCOVERED",
+  "references": [],
+  "implementation_notes": "Lifecycle metadata only; activation remains gated.",
+  "priority": "P0",
+  "cost_notes": "Candidate catalog entry only; recurring cost must be re-verified before activation."
+}

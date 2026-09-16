@@ -1,0 +1,42 @@
+{
+  "schema_version": 1,
+  "skill_id": "docs.pdf-edit",
+  "name": "PDF create/edit/merge/redact",
+  "version": "0.1.0",
+  "description": "Verify true redaction and output render.",
+  "capabilities": [
+    "pdf_create",
+    "merge",
+    "split",
+    "redact"
+  ],
+  "executor_classes": [
+    "DET"
+  ],
+  "platforms": [
+    "any"
+  ],
+  "requirements": {
+    "network": false,
+    "ai": false,
+    "offline_supported": true
+  },
+  "cost_class": "F0",
+  "enabled": false,
+  "actions": [
+    "pdf_create",
+    "merge",
+    "split",
+    "redact"
+  ],
+  "permissions": [],
+  "fallback": [],
+  "lifecycle_state": "DISCOVERED",
+  "references": [
+    "https://github.com/py-pdf/pypdf",
+    "https://github.com/gotenberg/gotenberg"
+  ],
+  "implementation_notes": "Verify true redaction and output render.",
+  "priority": "P1",
+  "cost_notes": "Candidate catalog entry only; recurring cost must be re-verified before activation."
+}

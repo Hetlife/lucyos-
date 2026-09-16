@@ -1,0 +1,41 @@
+{
+  "schema_version": 1,
+  "skill_id": "data.file-system",
+  "name": "File system skill",
+  "version": "0.1.0",
+  "description": "Scoped directories and atomic writes.",
+  "capabilities": [
+    "read",
+    "write",
+    "move",
+    "hash",
+    "archive"
+  ],
+  "executor_classes": [
+    "DET"
+  ],
+  "platforms": [
+    "any"
+  ],
+  "requirements": {
+    "network": false,
+    "ai": false,
+    "offline_supported": true
+  },
+  "cost_class": "F0",
+  "enabled": false,
+  "actions": [
+    "read",
+    "write",
+    "move",
+    "hash",
+    "archive"
+  ],
+  "permissions": [],
+  "fallback": [],
+  "lifecycle_state": "DISCOVERED",
+  "references": [],
+  "implementation_notes": "Scoped directories and atomic writes.",
+  "priority": "P0",
+  "cost_notes": "Candidate catalog entry only; recurring cost must be re-verified before activation."
+}

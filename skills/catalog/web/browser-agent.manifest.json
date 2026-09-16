@@ -1,0 +1,42 @@
+{
+  "schema_version": 1,
+  "skill_id": "web.browser-agent",
+  "name": "Agentic browser recovery",
+  "version": "0.1.0",
+  "description": "Only after deterministic flow fails.",
+  "capabilities": [
+    "unfamiliar_page",
+    "self_heal",
+    "workflow_discovery"
+  ],
+  "executor_classes": [
+    "A",
+    "B",
+    "C"
+  ],
+  "platforms": [
+    "linux",
+    "macos"
+  ],
+  "requirements": {
+    "network": true,
+    "ai": true,
+    "offline_supported": false
+  },
+  "cost_class": "F0",
+  "enabled": false,
+  "actions": [
+    "unfamiliar_page",
+    "self_heal",
+    "workflow_discovery"
+  ],
+  "permissions": [],
+  "fallback": [],
+  "lifecycle_state": "DISCOVERED",
+  "references": [
+    "https://github.com/browser-use/browser-use"
+  ],
+  "implementation_notes": "Only after deterministic flow fails.",
+  "priority": "P1",
+  "cost_notes": "Candidate catalog entry only; recurring cost must be re-verified before activation."
+}

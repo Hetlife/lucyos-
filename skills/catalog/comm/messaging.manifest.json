@@ -1,0 +1,40 @@
+{
+  "schema_version": 1,
+  "skill_id": "comm.messaging",
+  "name": "Messaging / WhatsApp / Slack adapters",
+  "version": "0.1.0",
+  "description": "Outbound messaging governed by authority policy.",
+  "capabilities": [
+    "alerts",
+    "approvals",
+    "send",
+    "attachments"
+  ],
+  "executor_classes": [
+    "DET",
+    "D"
+  ],
+  "platforms": [
+    "any"
+  ],
+  "requirements": {
+    "network": true,
+    "ai": false,
+    "offline_supported": false
+  },
+  "cost_class": "E0",
+  "enabled": false,
+  "actions": [
+    "alerts",
+    "approvals",
+    "send",
+    "attachments"
+  ],
+  "permissions": [],
+  "fallback": [],
+  "lifecycle_state": "DISCOVERED",
+  "references": [],
+  "implementation_notes": "Outbound messaging governed by authority policy.",
+  "priority": "P1",
+  "cost_notes": "Candidate catalog entry only; recurring cost must be re-verified before activation."
+}

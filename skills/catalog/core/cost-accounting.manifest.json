@@ -1,0 +1,39 @@
+{
+  "schema_version": 1,
+  "skill_id": "core.cost-accounting",
+  "name": "Cost / token accounting",
+  "version": "0.1.0",
+  "description": "Track cost per successful task.",
+  "capabilities": [
+    "tokens",
+    "api_cost",
+    "cloud_cost",
+    "task_cost"
+  ],
+  "executor_classes": [
+    "DET"
+  ],
+  "platforms": [
+    "any"
+  ],
+  "requirements": {
+    "network": false,
+    "ai": false,
+    "offline_supported": true
+  },
+  "cost_class": "F0",
+  "enabled": false,
+  "actions": [
+    "tokens",
+    "api_cost",
+    "cloud_cost",
+    "task_cost"
+  ],
+  "permissions": [],
+  "fallback": [],
+  "lifecycle_state": "DISCOVERED",
+  "references": [],
+  "implementation_notes": "Track cost per successful task.",
+  "priority": "P0",
+  "cost_notes": "Candidate catalog entry only; recurring cost must be re-verified before activation."
+}

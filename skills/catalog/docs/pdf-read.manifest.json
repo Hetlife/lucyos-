@@ -1,0 +1,42 @@
+{
+  "schema_version": 1,
+  "skill_id": "docs.pdf-read",
+  "name": "PDF read/search/extract",
+  "version": "0.1.0",
+  "description": "Native extraction before OCR; recheck PyMuPDF licensing.",
+  "capabilities": [
+    "pdf_text",
+    "search",
+    "metadata",
+    "pages"
+  ],
+  "executor_classes": [
+    "DET"
+  ],
+  "platforms": [
+    "any"
+  ],
+  "requirements": {
+    "network": false,
+    "ai": false,
+    "offline_supported": true
+  },
+  "cost_class": "F0",
+  "enabled": false,
+  "actions": [
+    "pdf_text",
+    "search",
+    "metadata",
+    "pages"
+  ],
+  "permissions": [],
+  "fallback": [],
+  "lifecycle_state": "DISCOVERED",
+  "references": [
+    "https://github.com/py-pdf/pypdf",
+    "https://github.com/pymupdf/PyMuPDF"
+  ],
+  "implementation_notes": "Native extraction before OCR; recheck PyMuPDF licensing.",
+  "priority": "P1",
+  "cost_notes": "Candidate catalog entry only; recurring cost must be re-verified before activation."
+}

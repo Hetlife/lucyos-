@@ -1,0 +1,43 @@
+{
+  "schema_version": 1,
+  "skill_id": "business.legal-docs",
+  "name": "Contracts / legal document operations",
+  "version": "0.1.0",
+  "description": "Source citations required; no autonomous signing.",
+  "capabilities": [
+    "contract",
+    "clauses",
+    "diff",
+    "deadline",
+    "jurisdiction"
+  ],
+  "executor_classes": [
+    "DET",
+    "C",
+    "D"
+  ],
+  "platforms": [
+    "any"
+  ],
+  "requirements": {
+    "network": true,
+    "ai": true,
+    "offline_supported": true
+  },
+  "cost_class": "F0",
+  "enabled": false,
+  "actions": [
+    "contract",
+    "clauses",
+    "diff",
+    "deadline",
+    "jurisdiction"
+  ],
+  "permissions": [],
+  "fallback": [],
+  "lifecycle_state": "DISCOVERED",
+  "references": [],
+  "implementation_notes": "Source citations required; no autonomous signing.",
+  "priority": "P1",
+  "cost_notes": "Candidate catalog entry only; recurring cost must be re-verified before activation."
+}

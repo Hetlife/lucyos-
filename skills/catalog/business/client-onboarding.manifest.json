@@ -1,0 +1,41 @@
+{
+  "schema_version": 1,
+  "skill_id": "business.client-onboarding",
+  "name": "Client onboarding",
+  "version": "0.1.0",
+  "description": "Respect data boundaries.",
+  "capabilities": [
+    "client",
+    "documents",
+    "kickoff",
+    "crm"
+  ],
+  "executor_classes": [
+    "DET",
+    "A",
+    "D"
+  ],
+  "platforms": [
+    "any"
+  ],
+  "requirements": {
+    "network": true,
+    "ai": true,
+    "offline_supported": false
+  },
+  "cost_class": "F0",
+  "enabled": false,
+  "actions": [
+    "client",
+    "documents",
+    "kickoff",
+    "crm"
+  ],
+  "permissions": [],
+  "fallback": [],
+  "lifecycle_state": "DISCOVERED",
+  "references": [],
+  "implementation_notes": "Respect data boundaries.",
+  "priority": "P1",
+  "cost_notes": "Candidate catalog entry only; recurring cost must be re-verified before activation."
+}

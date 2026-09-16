@@ -1,0 +1,41 @@
+{
+  "schema_version": 1,
+  "skill_id": "business.website-analytics",
+  "name": "Website analytics / conversion",
+  "version": "0.1.0",
+  "description": "Privacy-preserving analytics preferred.",
+  "capabilities": [
+    "traffic",
+    "events",
+    "funnels",
+    "goals"
+  ],
+  "executor_classes": [
+    "DET"
+  ],
+  "platforms": [
+    "any"
+  ],
+  "requirements": {
+    "network": true,
+    "ai": false,
+    "offline_supported": false
+  },
+  "cost_class": "F1",
+  "enabled": false,
+  "actions": [
+    "traffic",
+    "events",
+    "funnels",
+    "goals"
+  ],
+  "permissions": [],
+  "fallback": [],
+  "lifecycle_state": "DISCOVERED",
+  "references": [
+    "https://github.com/plausible/analytics"
+  ],
+  "implementation_notes": "Privacy-preserving analytics preferred.",
+  "priority": "P1",
+  "cost_notes": "Candidate catalog entry only; recurring cost must be re-verified before activation."
+}

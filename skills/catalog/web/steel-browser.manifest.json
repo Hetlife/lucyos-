@@ -1,0 +1,41 @@
+{
+  "schema_version": 1,
+  "skill_id": "web.steel-browser",
+  "name": "Isolated browser sessions",
+  "version": "0.1.0",
+  "description": "Candidate for isolated company browser workers.",
+  "capabilities": [
+    "isolated_browser",
+    "sessions",
+    "browser_api"
+  ],
+  "executor_classes": [
+    "DET",
+    "A"
+  ],
+  "platforms": [
+    "linux",
+    "macos"
+  ],
+  "requirements": {
+    "network": true,
+    "ai": false,
+    "offline_supported": false
+  },
+  "cost_class": "F1",
+  "enabled": false,
+  "actions": [
+    "isolated_browser",
+    "sessions",
+    "browser_api"
+  ],
+  "permissions": [],
+  "fallback": [],
+  "lifecycle_state": "DISCOVERED",
+  "references": [
+    "https://github.com/steel-dev/steel-browser"
+  ],
+  "implementation_notes": "Candidate for isolated company browser workers.",
+  "priority": "P1",
+  "cost_notes": "Candidate catalog entry only; recurring cost must be re-verified before activation."
+}

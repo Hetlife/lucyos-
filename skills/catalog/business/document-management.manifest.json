@@ -1,0 +1,44 @@
+{
+  "schema_version": 1,
+  "skill_id": "business.document-management",
+  "name": "Document management/archive",
+  "version": "0.1.0",
+  "description": "Immutable originals; company namespaces.",
+  "capabilities": [
+    "archive",
+    "ocr",
+    "tags",
+    "retention",
+    "search"
+  ],
+  "executor_classes": [
+    "DET",
+    "A"
+  ],
+  "platforms": [
+    "any"
+  ],
+  "requirements": {
+    "network": false,
+    "ai": true,
+    "offline_supported": true
+  },
+  "cost_class": "F1",
+  "enabled": false,
+  "actions": [
+    "archive",
+    "ocr",
+    "tags",
+    "retention",
+    "search"
+  ],
+  "permissions": [],
+  "fallback": [],
+  "lifecycle_state": "DISCOVERED",
+  "references": [
+    "https://github.com/paperless-ngx/paperless-ngx"
+  ],
+  "implementation_notes": "Immutable originals; company namespaces.",
+  "priority": "P1",
+  "cost_notes": "Candidate catalog entry only; recurring cost must be re-verified before activation."
+}

@@ -1,0 +1,43 @@
+{
+  "schema_version": 1,
+  "skill_id": "data.file-sync",
+  "name": "File sync/shared workspace",
+  "version": "0.1.0",
+  "description": "Sync is not backup.",
+  "capabilities": [
+    "sync",
+    "checksum",
+    "conflict",
+    "remote_storage"
+  ],
+  "executor_classes": [
+    "DET"
+  ],
+  "platforms": [
+    "any"
+  ],
+  "requirements": {
+    "network": true,
+    "ai": false,
+    "offline_supported": true
+  },
+  "cost_class": "F0",
+  "enabled": false,
+  "actions": [
+    "sync",
+    "checksum",
+    "conflict",
+    "remote_storage"
+  ],
+  "permissions": [],
+  "fallback": [],
+  "lifecycle_state": "DISCOVERED",
+  "references": [
+    "https://github.com/rclone/rclone",
+    "https://github.com/syncthing/syncthing",
+    "https://github.com/nextcloud/server"
+  ],
+  "implementation_notes": "Sync is not backup.",
+  "priority": "P1",
+  "cost_notes": "Candidate catalog entry only; recurring cost must be re-verified before activation."
+}

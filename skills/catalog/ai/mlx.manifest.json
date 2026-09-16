@@ -1,0 +1,38 @@
+{
+  "schema_version": 1,
+  "skill_id": "ai.mlx",
+  "name": "Apple MLX runtime",
+  "version": "0.1.0",
+  "description": "Future Apple-Silicon optimized route.",
+  "capabilities": [
+    "apple_silicon",
+    "local_llm"
+  ],
+  "executor_classes": [
+    "A"
+  ],
+  "platforms": [
+    "macos"
+  ],
+  "requirements": {
+    "network": false,
+    "ai": true,
+    "offline_supported": true
+  },
+  "cost_class": "F0",
+  "enabled": false,
+  "actions": [
+    "apple_silicon",
+    "local_llm"
+  ],
+  "permissions": [],
+  "fallback": [],
+  "lifecycle_state": "DISCOVERED",
+  "references": [
+    "https://github.com/ml-explore/mlx",
+    "https://github.com/ml-explore/mlx-lm"
+  ],
+  "implementation_notes": "Future Apple-Silicon optimized route.",
+  "priority": "P0",
+  "cost_notes": "Candidate catalog entry only; recurring cost must be re-verified before activation."
+}

@@ -1,0 +1,46 @@
+{
+  "schema_version": 1,
+  "skill_id": "business.finance-read",
+  "name": "Finance read / reconciliation / reporting",
+  "version": "0.1.0",
+  "description": "ACTUAL/FORECAST/SIMULATION/PAPER always explicit.",
+  "capabilities": [
+    "statement",
+    "reconcile",
+    "ar",
+    "ap",
+    "cashflow",
+    "budget"
+  ],
+  "executor_classes": [
+    "DET",
+    "A"
+  ],
+  "platforms": [
+    "any"
+  ],
+  "requirements": {
+    "network": false,
+    "ai": true,
+    "offline_supported": true
+  },
+  "cost_class": "F0",
+  "enabled": false,
+  "actions": [
+    "statement",
+    "reconcile",
+    "ar",
+    "ap",
+    "cashflow",
+    "budget"
+  ],
+  "permissions": [],
+  "fallback": [],
+  "lifecycle_state": "DISCOVERED",
+  "references": [
+    "https://github.com/actualbudget/actual"
+  ],
+  "implementation_notes": "ACTUAL/FORECAST/SIMULATION/PAPER always explicit.",
+  "priority": "P1",
+  "cost_notes": "Candidate catalog entry only; recurring cost must be re-verified before activation."
+}

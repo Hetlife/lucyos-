@@ -1,0 +1,42 @@
+{
+  "schema_version": 1,
+  "skill_id": "dev.api-sdk",
+  "name": "API connector SDK",
+  "version": "0.1.0",
+  "description": "Standardize new connectors.",
+  "capabilities": [
+    "rest",
+    "graphql",
+    "oauth",
+    "openapi",
+    "mcp"
+  ],
+  "executor_classes": [
+    "DET",
+    "B"
+  ],
+  "platforms": [
+    "any"
+  ],
+  "requirements": {
+    "network": true,
+    "ai": false,
+    "offline_supported": false
+  },
+  "cost_class": "F0",
+  "enabled": false,
+  "actions": [
+    "rest",
+    "graphql",
+    "oauth",
+    "openapi",
+    "mcp"
+  ],
+  "permissions": [],
+  "fallback": [],
+  "lifecycle_state": "DISCOVERED",
+  "references": [],
+  "implementation_notes": "Standardize new connectors.",
+  "priority": "P1",
+  "cost_notes": "Candidate catalog entry only; recurring cost must be re-verified before activation."
+}

@@ -1,0 +1,42 @@
+{
+  "schema_version": 1,
+  "skill_id": "core.local-preprocessing",
+  "name": "Local-first preprocessing",
+  "version": "0.1.0",
+  "description": "Perform cheap deterministic preprocessing before external AI.",
+  "capabilities": [
+    "parse",
+    "dedupe",
+    "chunk",
+    "classify",
+    "extract"
+  ],
+  "executor_classes": [
+    "DET",
+    "A"
+  ],
+  "platforms": [
+    "any"
+  ],
+  "requirements": {
+    "network": false,
+    "ai": true,
+    "offline_supported": true
+  },
+  "cost_class": "F0",
+  "enabled": false,
+  "actions": [
+    "parse",
+    "dedupe",
+    "chunk",
+    "classify",
+    "extract"
+  ],
+  "permissions": [],
+  "fallback": [],
+  "lifecycle_state": "DISCOVERED",
+  "references": [],
+  "implementation_notes": "Perform cheap deterministic preprocessing before external AI.",
+  "priority": "P0",
+  "cost_notes": "Candidate catalog entry only; recurring cost must be re-verified before activation."
+}

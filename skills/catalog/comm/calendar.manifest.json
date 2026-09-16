@@ -1,0 +1,42 @@
+{
+  "schema_version": 1,
+  "skill_id": "comm.calendar",
+  "name": "Calendar / meetings",
+  "version": "0.1.0",
+  "description": "Do not replace LucyOS scheduler.",
+  "capabilities": [
+    "calendar",
+    "free_busy",
+    "schedule",
+    "ics"
+  ],
+  "executor_classes": [
+    "DET",
+    "D"
+  ],
+  "platforms": [
+    "any"
+  ],
+  "requirements": {
+    "network": true,
+    "ai": false,
+    "offline_supported": false
+  },
+  "cost_class": "E0",
+  "enabled": false,
+  "actions": [
+    "calendar",
+    "free_busy",
+    "schedule",
+    "ics"
+  ],
+  "permissions": [],
+  "fallback": [],
+  "lifecycle_state": "DISCOVERED",
+  "references": [
+    "https://github.com/calcom/cal.com"
+  ],
+  "implementation_notes": "Do not replace LucyOS scheduler.",
+  "priority": "P1",
+  "cost_notes": "Candidate catalog entry only; recurring cost must be re-verified before activation."
+}

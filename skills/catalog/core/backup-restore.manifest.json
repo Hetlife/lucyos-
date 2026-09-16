@@ -1,0 +1,43 @@
+{
+  "schema_version": 1,
+  "skill_id": "core.backup-restore",
+  "name": "Backup / restore / disaster recovery",
+  "version": "0.1.0",
+  "description": "Backup is valid only after restore proof.",
+  "capabilities": [
+    "backup",
+    "restore",
+    "snapshot",
+    "retention"
+  ],
+  "executor_classes": [
+    "DET"
+  ],
+  "platforms": [
+    "any"
+  ],
+  "requirements": {
+    "network": true,
+    "ai": false,
+    "offline_supported": true
+  },
+  "cost_class": "F0",
+  "enabled": false,
+  "actions": [
+    "backup",
+    "restore",
+    "snapshot",
+    "retention"
+  ],
+  "permissions": [],
+  "fallback": [],
+  "lifecycle_state": "DISCOVERED",
+  "references": [
+    "https://github.com/restic/restic",
+    "https://github.com/borgbackup/borg",
+    "https://github.com/rclone/rclone"
+  ],
+  "implementation_notes": "Backup is valid only after restore proof.",
+  "priority": "P0",
+  "cost_notes": "Candidate catalog entry only; recurring cost must be re-verified before activation."
+}

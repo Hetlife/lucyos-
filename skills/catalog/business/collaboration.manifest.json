@@ -1,0 +1,39 @@
+{
+  "schema_version": 1,
+  "skill_id": "business.collaboration",
+  "name": "Company collaboration/files",
+  "version": "0.1.0",
+  "description": "Separate from canonical LucyOS state.",
+  "capabilities": [
+    "share",
+    "permissions",
+    "versioning"
+  ],
+  "executor_classes": [
+    "DET"
+  ],
+  "platforms": [
+    "any"
+  ],
+  "requirements": {
+    "network": true,
+    "ai": false,
+    "offline_supported": false
+  },
+  "cost_class": "F1",
+  "enabled": false,
+  "actions": [
+    "share",
+    "permissions",
+    "versioning"
+  ],
+  "permissions": [],
+  "fallback": [],
+  "lifecycle_state": "DISCOVERED",
+  "references": [
+    "https://github.com/nextcloud/server"
+  ],
+  "implementation_notes": "Separate from canonical LucyOS state.",
+  "priority": "P1",
+  "cost_notes": "Candidate catalog entry only; recurring cost must be re-verified before activation."
+}

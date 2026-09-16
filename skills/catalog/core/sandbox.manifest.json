@@ -1,0 +1,42 @@
+{
+  "schema_version": 1,
+  "skill_id": "core.sandbox",
+  "name": "Sandbox / container isolation",
+  "version": "0.1.0",
+  "description": "Unknown repos never run against canonical state.",
+  "capabilities": [
+    "containers",
+    "network_isolation",
+    "resource_limits"
+  ],
+  "executor_classes": [
+    "DET"
+  ],
+  "platforms": [
+    "linux",
+    "macos"
+  ],
+  "requirements": {
+    "network": false,
+    "ai": false,
+    "offline_supported": true
+  },
+  "cost_class": "F0",
+  "enabled": false,
+  "actions": [
+    "containers",
+    "network_isolation",
+    "resource_limits"
+  ],
+  "permissions": [],
+  "fallback": [],
+  "lifecycle_state": "DISCOVERED",
+  "references": [
+    "https://github.com/abiosoft/colima",
+    "https://github.com/lima-vm/lima",
+    "https://github.com/utmapp/UTM"
+  ],
+  "implementation_notes": "Unknown repos never run against canonical state.",
+  "priority": "P0",
+  "cost_notes": "Candidate catalog entry only; recurring cost must be re-verified before activation."
+}

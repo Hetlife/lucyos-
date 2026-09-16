@@ -1,0 +1,39 @@
+{
+  "schema_version": 1,
+  "skill_id": "core.audit-evidence",
+  "name": "Audit / evidence ledger",
+  "version": "0.1.0",
+  "description": "Consequential actions require machine-verifiable evidence.",
+  "capabilities": [
+    "audit",
+    "evidence",
+    "hashes",
+    "provenance"
+  ],
+  "executor_classes": [
+    "DET"
+  ],
+  "platforms": [
+    "any"
+  ],
+  "requirements": {
+    "network": false,
+    "ai": false,
+    "offline_supported": true
+  },
+  "cost_class": "F0",
+  "enabled": false,
+  "actions": [
+    "audit",
+    "evidence",
+    "hashes",
+    "provenance"
+  ],
+  "permissions": [],
+  "fallback": [],
+  "lifecycle_state": "DISCOVERED",
+  "references": [],
+  "implementation_notes": "Consequential actions require machine-verifiable evidence.",
+  "priority": "P0",
+  "cost_notes": "Candidate catalog entry only; recurring cost must be re-verified before activation."
+}

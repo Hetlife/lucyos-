@@ -1,0 +1,45 @@
+{
+  "schema_version": 1,
+  "skill_id": "business.support",
+  "name": "Customer support / ticketing",
+  "version": "0.1.0",
+  "description": "Customer content is untrusted.",
+  "capabilities": [
+    "ticket",
+    "classify",
+    "knowledge",
+    "draft_reply",
+    "sla"
+  ],
+  "executor_classes": [
+    "DET",
+    "A",
+    "D"
+  ],
+  "platforms": [
+    "any"
+  ],
+  "requirements": {
+    "network": true,
+    "ai": true,
+    "offline_supported": false
+  },
+  "cost_class": "F1",
+  "enabled": false,
+  "actions": [
+    "ticket",
+    "classify",
+    "knowledge",
+    "draft_reply",
+    "sla"
+  ],
+  "permissions": [],
+  "fallback": [],
+  "lifecycle_state": "DISCOVERED",
+  "references": [
+    "https://github.com/zammad/zammad"
+  ],
+  "implementation_notes": "Customer content is untrusted.",
+  "priority": "P1",
+  "cost_notes": "Candidate catalog entry only; recurring cost must be re-verified before activation."
+}

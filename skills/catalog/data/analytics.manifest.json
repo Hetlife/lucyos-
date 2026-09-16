@@ -1,0 +1,45 @@
+{
+  "schema_version": 1,
+  "skill_id": "data.analytics",
+  "name": "Data analytics / SQL",
+  "version": "0.1.0",
+  "description": "Use local deterministic analytics.",
+  "capabilities": [
+    "sql",
+    "csv",
+    "json",
+    "analytics",
+    "schema"
+  ],
+  "executor_classes": [
+    "DET"
+  ],
+  "platforms": [
+    "any"
+  ],
+  "requirements": {
+    "network": false,
+    "ai": false,
+    "offline_supported": true
+  },
+  "cost_class": "F0",
+  "enabled": false,
+  "actions": [
+    "sql",
+    "csv",
+    "json",
+    "analytics",
+    "schema"
+  ],
+  "permissions": [],
+  "fallback": [],
+  "lifecycle_state": "DISCOVERED",
+  "references": [
+    "https://github.com/duckdb/duckdb",
+    "https://github.com/pandas-dev/pandas",
+    "https://github.com/pola-rs/polars"
+  ],
+  "implementation_notes": "Use local deterministic analytics.",
+  "priority": "P1",
+  "cost_notes": "Candidate catalog entry only; recurring cost must be re-verified before activation."
+}

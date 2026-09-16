@@ -1,0 +1,42 @@
+{
+  "schema_version": 1,
+  "skill_id": "risk.trading",
+  "name": "Strategy Factory / trading boundary",
+  "version": "0.1.0",
+  "description": "Paper/sandbox by default; real capital separately gated.",
+  "capabilities": [
+    "backtest",
+    "paper_trade",
+    "risk",
+    "broker_adapter"
+  ],
+  "executor_classes": [
+    "DET",
+    "A",
+    "C",
+    "D"
+  ],
+  "platforms": [
+    "any"
+  ],
+  "requirements": {
+    "network": true,
+    "ai": true,
+    "offline_supported": false
+  },
+  "cost_class": "E1",
+  "enabled": false,
+  "actions": [
+    "backtest",
+    "paper_trade",
+    "risk",
+    "broker_adapter"
+  ],
+  "permissions": [],
+  "fallback": [],
+  "lifecycle_state": "DISCOVERED",
+  "references": [],
+  "implementation_notes": "Paper/sandbox by default; real capital separately gated.",
+  "priority": "P2",
+  "cost_notes": "Candidate catalog entry only; recurring cost must be re-verified before activation."
+}

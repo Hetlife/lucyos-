@@ -1,0 +1,40 @@
+{
+  "schema_version": 1,
+  "skill_id": "business.executive-briefing",
+  "name": "Executive briefing / owner attention router",
+  "version": "0.1.0",
+  "description": "Use canonical facts and only alert actionable items.",
+  "capabilities": [
+    "brief",
+    "kpi",
+    "blockers",
+    "actions"
+  ],
+  "executor_classes": [
+    "DET",
+    "A"
+  ],
+  "platforms": [
+    "any"
+  ],
+  "requirements": {
+    "network": false,
+    "ai": true,
+    "offline_supported": true
+  },
+  "cost_class": "F0",
+  "enabled": false,
+  "actions": [
+    "brief",
+    "kpi",
+    "blockers",
+    "actions"
+  ],
+  "permissions": [],
+  "fallback": [],
+  "lifecycle_state": "DISCOVERED",
+  "references": [],
+  "implementation_notes": "Use canonical facts and only alert actionable items.",
+  "priority": "P1",
+  "cost_notes": "Candidate catalog entry only; recurring cost must be re-verified before activation."
+}

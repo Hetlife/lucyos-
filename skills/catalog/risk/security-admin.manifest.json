@@ -1,0 +1,40 @@
+{
+  "schema_version": 1,
+  "skill_id": "risk.security-admin",
+  "name": "Security / permission administration",
+  "version": "0.1.0",
+  "description": "Never silently broaden privileges.",
+  "capabilities": [
+    "permissions",
+    "roles",
+    "credentials",
+    "revoke"
+  ],
+  "executor_classes": [
+    "DET",
+    "D"
+  ],
+  "platforms": [
+    "any"
+  ],
+  "requirements": {
+    "network": false,
+    "ai": false,
+    "offline_supported": true
+  },
+  "cost_class": "F0",
+  "enabled": false,
+  "actions": [
+    "permissions",
+    "roles",
+    "credentials",
+    "revoke"
+  ],
+  "permissions": [],
+  "fallback": [],
+  "lifecycle_state": "DISCOVERED",
+  "references": [],
+  "implementation_notes": "Never silently broaden privileges.",
+  "priority": "P2",
+  "cost_notes": "Candidate catalog entry only; recurring cost must be re-verified before activation."
+}

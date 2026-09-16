@@ -96,6 +96,9 @@ CREATE TABLE IF NOT EXISTS skills (
     enabled           INTEGER NOT NULL DEFAULT 1,
     health_command    TEXT NOT NULL DEFAULT '',
     test_command      TEXT NOT NULL DEFAULT '',
+    lifecycle_state   TEXT NOT NULL DEFAULT 'ACTIVE',
+    feature_flag      TEXT NOT NULL DEFAULT '',
+    source_manifest   TEXT NOT NULL DEFAULT '',
     updated_at        TEXT NOT NULL
 );
 CREATE INDEX IF NOT EXISTS idx_skills_enabled ON skills(enabled);
@@ -428,6 +431,11 @@ _ADDED_COLUMNS = {
     ],
     # Nullable by design: revenue recorded before stable payer identity was
     # introduced remains unknown rather than being inferred from description.
+    "skills": [
+        ("lifecycle_state", "TEXT NOT NULL DEFAULT 'ACTIVE'"),
+        ("feature_flag", "TEXT NOT NULL DEFAULT ''"),
+        ("source_manifest", "TEXT NOT NULL DEFAULT ''"),
+    ],
     "finance": [
         ("payer_id", "TEXT"),
         # Explicitly nullable.  Old rows and genuinely unattributable money

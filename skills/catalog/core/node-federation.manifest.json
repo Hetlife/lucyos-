@@ -1,0 +1,42 @@
+{
+  "schema_version": 1,
+  "skill_id": "core.node-federation",
+  "name": "Node federation / secure networking",
+  "version": "0.1.0",
+  "description": "Prefer outbound secure connectivity.",
+  "capabilities": [
+    "node_identity",
+    "heartbeat",
+    "dispatch",
+    "secure_tunnel"
+  ],
+  "executor_classes": [
+    "DET"
+  ],
+  "platforms": [
+    "any"
+  ],
+  "requirements": {
+    "network": true,
+    "ai": false,
+    "offline_supported": true
+  },
+  "cost_class": "F0",
+  "enabled": false,
+  "actions": [
+    "node_identity",
+    "heartbeat",
+    "dispatch",
+    "secure_tunnel"
+  ],
+  "permissions": [],
+  "fallback": [],
+  "lifecycle_state": "DISCOVERED",
+  "references": [
+    "https://github.com/tailscale/tailscale",
+    "https://github.com/juanfont/headscale"
+  ],
+  "implementation_notes": "Prefer outbound secure connectivity.",
+  "priority": "P0",
+  "cost_notes": "Candidate catalog entry only; recurring cost must be re-verified before activation."
+}

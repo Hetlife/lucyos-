@@ -1,0 +1,42 @@
+{
+  "schema_version": 1,
+  "skill_id": "core.learnrepo",
+  "name": "LearnRepo dependency intelligence",
+  "version": "0.1.0",
+  "description": "External dependency gate.",
+  "capabilities": [
+    "repo_research",
+    "license",
+    "security",
+    "sandbox",
+    "benchmark"
+  ],
+  "executor_classes": [
+    "DET",
+    "C"
+  ],
+  "platforms": [
+    "any"
+  ],
+  "requirements": {
+    "network": true,
+    "ai": false,
+    "offline_supported": true
+  },
+  "cost_class": "F0",
+  "enabled": false,
+  "actions": [
+    "repo_research",
+    "license",
+    "security",
+    "sandbox",
+    "benchmark"
+  ],
+  "permissions": [],
+  "fallback": [],
+  "lifecycle_state": "DISCOVERED",
+  "references": [],
+  "implementation_notes": "External dependency gate.",
+  "priority": "P0",
+  "cost_notes": "Candidate catalog entry only; recurring cost must be re-verified before activation."
+}

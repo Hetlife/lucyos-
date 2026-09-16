@@ -1,0 +1,46 @@
+{
+  "schema_version": 1,
+  "skill_id": "media.screenshot-vision",
+  "name": "Screenshot / vision",
+  "version": "0.1.0",
+  "description": "Keep screenshots local by default.",
+  "capabilities": [
+    "screenshot",
+    "crop",
+    "compare",
+    "vision",
+    "mask"
+  ],
+  "executor_classes": [
+    "DET",
+    "A"
+  ],
+  "platforms": [
+    "linux",
+    "macos"
+  ],
+  "requirements": {
+    "network": false,
+    "ai": true,
+    "offline_supported": true
+  },
+  "cost_class": "F0",
+  "enabled": false,
+  "actions": [
+    "screenshot",
+    "crop",
+    "compare",
+    "vision",
+    "mask"
+  ],
+  "permissions": [],
+  "fallback": [],
+  "lifecycle_state": "DISCOVERED",
+  "references": [
+    "https://github.com/python-pillow/Pillow",
+    "https://github.com/tesseract-ocr/tesseract"
+  ],
+  "implementation_notes": "Keep screenshots local by default.",
+  "priority": "P1",
+  "cost_notes": "Candidate catalog entry only; recurring cost must be re-verified before activation."
+}

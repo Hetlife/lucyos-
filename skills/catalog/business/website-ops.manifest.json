@@ -1,0 +1,45 @@
+{
+  "schema_version": 1,
+  "skill_id": "business.website-ops",
+  "name": "Website / e-commerce operations",
+  "version": "0.1.0",
+  "description": "Staging first; pricing changes governed.",
+  "capabilities": [
+    "deploy",
+    "cms",
+    "catalog",
+    "orders",
+    "forms",
+    "rollback"
+  ],
+  "executor_classes": [
+    "DET",
+    "B",
+    "D"
+  ],
+  "platforms": [
+    "any"
+  ],
+  "requirements": {
+    "network": true,
+    "ai": false,
+    "offline_supported": false
+  },
+  "cost_class": "F0",
+  "enabled": false,
+  "actions": [
+    "deploy",
+    "cms",
+    "catalog",
+    "orders",
+    "forms",
+    "rollback"
+  ],
+  "permissions": [],
+  "fallback": [],
+  "lifecycle_state": "DISCOVERED",
+  "references": [],
+  "implementation_notes": "Staging first; pricing changes governed.",
+  "priority": "P1",
+  "cost_notes": "Candidate catalog entry only; recurring cost must be re-verified before activation."
+}

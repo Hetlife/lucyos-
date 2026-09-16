@@ -1,0 +1,46 @@
+{
+  "schema_version": 1,
+  "skill_id": "web.browser-kernel",
+  "name": "Playwright browser kernel",
+  "version": "0.1.0",
+  "description": "Deterministic default browser layer.",
+  "capabilities": [
+    "navigate",
+    "click",
+    "forms",
+    "download",
+    "upload",
+    "screenshot"
+  ],
+  "executor_classes": [
+    "DET"
+  ],
+  "platforms": [
+    "linux",
+    "macos"
+  ],
+  "requirements": {
+    "network": true,
+    "ai": false,
+    "offline_supported": false
+  },
+  "cost_class": "F0",
+  "enabled": false,
+  "actions": [
+    "navigate",
+    "click",
+    "forms",
+    "download",
+    "upload",
+    "screenshot"
+  ],
+  "permissions": [],
+  "fallback": [],
+  "lifecycle_state": "DISCOVERED",
+  "references": [
+    "https://github.com/microsoft/playwright"
+  ],
+  "implementation_notes": "Deterministic default browser layer.",
+  "priority": "P1",
+  "cost_notes": "Candidate catalog entry only; recurring cost must be re-verified before activation."
+}

@@ -1,0 +1,43 @@
+{
+  "schema_version": 1,
+  "skill_id": "business.crm",
+  "name": "CRM / relationship operations",
+  "version": "0.1.0",
+  "description": "CRM is business system, not LucyOS authority engine.",
+  "capabilities": [
+    "contacts",
+    "companies",
+    "pipeline",
+    "followup"
+  ],
+  "executor_classes": [
+    "DET",
+    "A"
+  ],
+  "platforms": [
+    "any"
+  ],
+  "requirements": {
+    "network": true,
+    "ai": false,
+    "offline_supported": true
+  },
+  "cost_class": "F1",
+  "enabled": false,
+  "actions": [
+    "contacts",
+    "companies",
+    "pipeline",
+    "followup"
+  ],
+  "permissions": [],
+  "fallback": [],
+  "lifecycle_state": "DISCOVERED",
+  "references": [
+    "https://github.com/twentyhq/twenty",
+    "https://github.com/frappe/crm"
+  ],
+  "implementation_notes": "CRM is business system, not LucyOS authority engine.",
+  "priority": "P1",
+  "cost_notes": "Candidate catalog entry only; recurring cost must be re-verified before activation."
+}

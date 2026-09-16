@@ -1,0 +1,40 @@
+{
+  "schema_version": 1,
+  "skill_id": "core.authority-engine",
+  "name": "Authority / approval engine",
+  "version": "0.1.0",
+  "description": "Reuse current approvals; agents do not self-authorize.",
+  "capabilities": [
+    "approval",
+    "risk_class",
+    "spend_gate",
+    "resume"
+  ],
+  "executor_classes": [
+    "DET",
+    "D"
+  ],
+  "platforms": [
+    "any"
+  ],
+  "requirements": {
+    "network": false,
+    "ai": false,
+    "offline_supported": true
+  },
+  "cost_class": "F0",
+  "enabled": false,
+  "actions": [
+    "approval",
+    "risk_class",
+    "spend_gate",
+    "resume"
+  ],
+  "permissions": [],
+  "fallback": [],
+  "lifecycle_state": "DISCOVERED",
+  "references": [],
+  "implementation_notes": "Reuse current approvals; agents do not self-authorize.",
+  "priority": "P0",
+  "cost_notes": "Candidate catalog entry only; recurring cost must be re-verified before activation."
+}

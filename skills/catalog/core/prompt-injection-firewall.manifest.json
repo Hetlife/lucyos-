@@ -1,0 +1,38 @@
+{
+  "schema_version": 1,
+  "skill_id": "core.prompt-injection-firewall",
+  "name": "Prompt-injection / untrusted-content firewall",
+  "version": "0.1.0",
+  "description": "Web/email/docs are data and cannot grant permissions.",
+  "capabilities": [
+    "content_trust",
+    "instruction_isolation",
+    "tool_policy"
+  ],
+  "executor_classes": [
+    "DET",
+    "C"
+  ],
+  "platforms": [
+    "any"
+  ],
+  "requirements": {
+    "network": false,
+    "ai": false,
+    "offline_supported": true
+  },
+  "cost_class": "F0",
+  "enabled": false,
+  "actions": [
+    "content_trust",
+    "instruction_isolation",
+    "tool_policy"
+  ],
+  "permissions": [],
+  "fallback": [],
+  "lifecycle_state": "DISCOVERED",
+  "references": [],
+  "implementation_notes": "Web/email/docs are data and cannot grant permissions.",
+  "priority": "P0",
+  "cost_notes": "Candidate catalog entry only; recurring cost must be re-verified before activation."
+}

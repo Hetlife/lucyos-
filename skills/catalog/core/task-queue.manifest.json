@@ -1,0 +1,44 @@
+{
+  "schema_version": 1,
+  "skill_id": "core.task-queue",
+  "name": "Task queue / scheduler / leases / recovery",
+  "version": "0.1.0",
+  "description": "Reuse existing LucyOS task queue and OS timers; references are semantics only.",
+  "capabilities": [
+    "queue",
+    "schedule",
+    "lease",
+    "retry",
+    "resume"
+  ],
+  "executor_classes": [
+    "DET"
+  ],
+  "platforms": [
+    "any"
+  ],
+  "requirements": {
+    "network": false,
+    "ai": false,
+    "offline_supported": true
+  },
+  "cost_class": "F0",
+  "enabled": false,
+  "actions": [
+    "queue",
+    "schedule",
+    "lease",
+    "retry",
+    "resume"
+  ],
+  "permissions": [],
+  "fallback": [],
+  "lifecycle_state": "DISCOVERED",
+  "references": [
+    "https://github.com/agronholm/apscheduler",
+    "https://github.com/healthchecks/healthchecks"
+  ],
+  "implementation_notes": "Reuse existing LucyOS task queue and OS timers; references are semantics only.",
+  "priority": "P0",
+  "cost_notes": "Candidate catalog entry only; recurring cost must be re-verified before activation."
+}

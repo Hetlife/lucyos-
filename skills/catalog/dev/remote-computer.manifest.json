@@ -1,0 +1,37 @@
+{
+  "schema_version": 1,
+  "skill_id": "dev.remote-computer",
+  "name": "Remote computer skill",
+  "version": "0.1.0",
+  "description": "Expose only approved capabilities/directories.",
+  "capabilities": [
+    "remote_shell",
+    "remote_files",
+    "remote_gui"
+  ],
+  "executor_classes": [
+    "DET"
+  ],
+  "platforms": [
+    "any"
+  ],
+  "requirements": {
+    "network": true,
+    "ai": false,
+    "offline_supported": false
+  },
+  "cost_class": "F0",
+  "enabled": false,
+  "actions": [
+    "remote_shell",
+    "remote_files",
+    "remote_gui"
+  ],
+  "permissions": [],
+  "fallback": [],
+  "lifecycle_state": "DISCOVERED",
+  "references": [],
+  "implementation_notes": "Expose only approved capabilities/directories.",
+  "priority": "P1",
+  "cost_notes": "Candidate catalog entry only; recurring cost must be re-verified before activation."
+}

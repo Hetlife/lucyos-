@@ -227,6 +227,9 @@ def _main(argv=None) -> int:
     wk.add_argument("--max", type=int, default=5)
     wk.add_argument("--dry-run", action="store_true")
 
+    sk = sub.add_parser("skills", help="inspect or sync the disabled LucyOS skill catalog")
+    sk.add_argument("op", choices=["status", "sync", "list"], nargs="?", default="status")
+
     sub.add_parser("capabilities", help="what this machine can execute right now")
     ms = sub.add_parser("milestones", help="measured progress toward the mission")
     ms.add_argument("--new", action="store_true",
@@ -487,6 +490,20 @@ def _main(argv=None) -> int:
             _print(" ".join(fresh) if fresh else "none")
         else:
             _print(milestones.report())
+    elif cmd == "skills":
+        from . import skills
+        if args.op == "sync":
+            _print(skills.sync_catalog())
+        elif args.op == "list":
+            _print([dict(r) for r in skills.all_skills()])
+        else:
+            rows = skills.all_skills()
+            from collections import Counter
+            _print({"registered": len(rows),
+                    "enabled": sum(bool(r["enabled"]) for r in rows),
+                    "lifecycle": dict(Counter(r["lifecycle_state"] for r in rows)),
+                    "catalog_manifests": len(skills.catalog_manifests()),
+                    "catalog_errors": skills.validate_catalog()})
     elif cmd == "capabilities":
         _print(worker.capability_report())
     elif cmd == "allow-command":

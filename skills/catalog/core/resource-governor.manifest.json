@@ -1,0 +1,39 @@
+{
+  "schema_version": 1,
+  "skill_id": "core.resource-governor",
+  "name": "Resource Governor",
+  "version": "0.1.0",
+  "description": "Reuse current governor.",
+  "capabilities": [
+    "budget",
+    "cost",
+    "downshift",
+    "limits"
+  ],
+  "executor_classes": [
+    "DET"
+  ],
+  "platforms": [
+    "any"
+  ],
+  "requirements": {
+    "network": false,
+    "ai": false,
+    "offline_supported": true
+  },
+  "cost_class": "F0",
+  "enabled": false,
+  "actions": [
+    "budget",
+    "cost",
+    "downshift",
+    "limits"
+  ],
+  "permissions": [],
+  "fallback": [],
+  "lifecycle_state": "DISCOVERED",
+  "references": [],
+  "implementation_notes": "Reuse current governor.",
+  "priority": "P0",
+  "cost_notes": "Candidate catalog entry only; recurring cost must be re-verified before activation."
+}

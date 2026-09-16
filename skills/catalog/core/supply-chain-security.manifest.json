@@ -1,0 +1,45 @@
+{
+  "schema_version": 1,
+  "skill_id": "core.supply-chain-security",
+  "name": "Security / supply-chain firewall",
+  "version": "0.1.0",
+  "description": "Fast baseline plus deeper pre-release scan.",
+  "capabilities": [
+    "secret_scan",
+    "cve",
+    "sbom",
+    "quarantine"
+  ],
+  "executor_classes": [
+    "DET",
+    "C"
+  ],
+  "platforms": [
+    "any"
+  ],
+  "requirements": {
+    "network": true,
+    "ai": false,
+    "offline_supported": true
+  },
+  "cost_class": "F0",
+  "enabled": false,
+  "actions": [
+    "secret_scan",
+    "cve",
+    "sbom",
+    "quarantine"
+  ],
+  "permissions": [],
+  "fallback": [],
+  "lifecycle_state": "DISCOVERED",
+  "references": [
+    "https://github.com/gitleaks/gitleaks",
+    "https://github.com/trufflesecurity/trufflehog",
+    "https://github.com/aquasecurity/trivy",
+    "https://github.com/anchore/syft"
+  ],
+  "implementation_notes": "Fast baseline plus deeper pre-release scan.",
+  "priority": "P0",
+  "cost_notes": "Candidate catalog entry only; recurring cost must be re-verified before activation."
+}

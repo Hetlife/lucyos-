@@ -1,0 +1,40 @@
+{
+  "schema_version": 1,
+  "skill_id": "dev.shell-process",
+  "name": "Shell / terminal / process",
+  "version": "0.1.0",
+  "description": "Allowlist commands; no broad sudo.",
+  "capabilities": [
+    "shell",
+    "process",
+    "timeout",
+    "logs"
+  ],
+  "executor_classes": [
+    "DET"
+  ],
+  "platforms": [
+    "linux",
+    "macos"
+  ],
+  "requirements": {
+    "network": false,
+    "ai": false,
+    "offline_supported": true
+  },
+  "cost_class": "F0",
+  "enabled": false,
+  "actions": [
+    "shell",
+    "process",
+    "timeout",
+    "logs"
+  ],
+  "permissions": [],
+  "fallback": [],
+  "lifecycle_state": "DISCOVERED",
+  "references": [],
+  "implementation_notes": "Allowlist commands; no broad sudo.",
+  "priority": "P1",
+  "cost_notes": "Candidate catalog entry only; recurring cost must be re-verified before activation."
+}

@@ -1,0 +1,44 @@
+{
+  "schema_version": 1,
+  "skill_id": "core.workflow-compiler",
+  "name": "Workflow / SOP compiler",
+  "version": "0.1.0",
+  "description": "Learn once, run cheaply thereafter.",
+  "capabilities": [
+    "record",
+    "compile",
+    "replay",
+    "regression"
+  ],
+  "executor_classes": [
+    "DET",
+    "A",
+    "B"
+  ],
+  "platforms": [
+    "any"
+  ],
+  "requirements": {
+    "network": false,
+    "ai": true,
+    "offline_supported": true
+  },
+  "cost_class": "F0",
+  "enabled": false,
+  "actions": [
+    "record",
+    "compile",
+    "replay",
+    "regression"
+  ],
+  "permissions": [],
+  "fallback": [],
+  "lifecycle_state": "DISCOVERED",
+  "references": [
+    "https://github.com/microsoft/playwright",
+    "https://github.com/browserbase/stagehand"
+  ],
+  "implementation_notes": "Learn once, run cheaply thereafter.",
+  "priority": "P0",
+  "cost_notes": "Candidate catalog entry only; recurring cost must be re-verified before activation."
+}
