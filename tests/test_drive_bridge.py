@@ -1,5 +1,6 @@
 """Drive bridge safety and crash recovery with a deterministic fake remote."""
 import json
+import os
 from pathlib import Path
 from unittest.mock import patch
 
@@ -117,7 +118,9 @@ class DriveTests(AionTest):
         with self.assertRaises(BridgeError):
             self.bridge.stage('reports', link)
         link.unlink()
-        link.hardlink_to(source)
+        # Path.hardlink_to() is 3.10+; os.link() is the 3.9-compatible equivalent
+        # (LucyOS supports Python 3.9+, README.md).
+        os.link(source, link)
         with self.assertRaises(BridgeError):
             self.bridge.stage('reports', link)
 
