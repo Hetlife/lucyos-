@@ -30,18 +30,22 @@ Commit first line `<TASK_ID>: <what changed>`, plus a `Task-ID: <TASK_ID>` trail
 | Class | Items |
 |---|---|
 | **MUST BE FABLE/HIGH MODEL** | FABLE-01 re-freeze after merges · FABLE-02 promote `macos-readiness` to required · FABLE-03 name DC-1 deploy SHA · any change to `.lucy/authority/**`, the CI workflow, or `verify_authority.py` |
-| **READY FOR SONNET NOW** | S-01, S-02, S-05, S-07, S-08, S-09, S-10, S-13, S-14, S-15, S-17, S-18, S-19, S-20 |
-| **READY AFTER AN IN-NIGHT DEPENDENCY** | S-11, S-12 (need S-10 merged into integration; if unmerged → `BLOCKED_DEPENDENCY`, take another task) |
-| **READY FOR LOCAL/DETERMINISTIC** | S-20 (doc/table generation), mechanical parts of S-14 |
+| **READY FOR SONNET NOW** | S-01, S-02, S-05, S-07, S-08, S-09, S-10, S-13, S-14, S-15, S-17, S-18, S-19, S-20, S-21, S-22, S-23, S-24, S-26, S-27, S-28, S-29 |
+| **READY AFTER AN IN-NIGHT DEPENDENCY** | S-11, S-12 (need S-10 merged) · S-25 (needs S-05 merged) — if unmerged → `BLOCKED_DEPENDENCY`, take another task |
+| **READY FOR LOCAL/DETERMINISTIC** | S-20, S-27, S-28 · mechanical parts of S-14 |
 | **WAITING FOR OWNER** | S-03, S-04 (need S-02 merged) · OWNER-01..05 |
 | **WAITING FOR FUTURE HARDWARE** | Mac-mini live validation of C1 · local Linux PC tests (~2 days) · Mark-2 deploy (DC-1) |
 | **DEFERRED** | UI/UX (explicitly out of scope) · heavy Lucy Claw fork · telephony provisioning · SEVAACONNECT salvage · vector/embedding backend (needs evidence FTS is insufficient) |
 
 **Overnight ordering.** Take READY tasks in this order, skipping any that is
-blocked: **S-19, S-10, S-01, S-13, S-14, S-08, S-07, S-18, S-15, S-17, S-05,
-S-09, S-20, S-02.** S-19 is first because it is the only thing standing between
-`macos-readiness` and its first green run, which C1 needs. S-02 is last among
-READY because it is a large salvage merge best reviewed with fresh eyes.
+blocked: **S-21, S-19, S-10, S-01, S-13, S-14, S-08, S-22, S-07, S-18, S-15,
+S-23, S-17, S-05, S-09, S-24, S-26, S-27, S-20, S-28, S-29, S-02.** S-21 is first: the repository is public and a read-only history secret-scan is
+cheap, and if it finds something the owner needs to know tonight, not tomorrow.
+S-19 is next because it is the only thing standing between `macos-readiness`
+and its first green run, which C1 needs; then S-10, which unblocks S-11/S-12.
+S-02 is last among READY because it is a large salvage merge best reviewed with
+fresh eyes. S-21…S-29 were swept from older repo queues — see
+"Appended: survivors of the older repo queues".
 
 ---
 
@@ -244,6 +248,183 @@ READY because it is a large salvage merge best reviewed with fresh eyes.
 - FORBIDDEN: `.lucy/authority/**` (constitutional — the script *renders* to stdout and the test compares; **Fable** applies the result later). Do not write into the authority directory.
 - ACTION: script reads `HIGH_MODEL_BASELINE.json` and prints the markdown table of protected/constitutional paths. Test asserts every `protected_paths` entry appears in the current `PROTECTED_PATHS.md`, failing loudly when the two drift.
 - ACCEPTANCE: the drift test passes today and would fail if a path were added to the baseline alone.
+
+---
+
+# Appended: survivors of the older repo queues
+
+Swept 2026-09-16 from every other task list in the repo and on its branches:
+`docs/architect/05_LOW_MODEL_TASK_QUEUE.md` (LQ-01…LQ-20, on
+`claude/lucyos-architecture-audit-4o4q83`), `deploy/queues/M-A_structured_api.md`,
+`deploy/queues/M-A.4_assessment.md`, and the SEVAA queues on
+`claude/fable-deploy-setup-mc5nr6`. Each item was **checked against the live
+tree**, not taken on trust. Survivors below, in the order they should be done;
+everything else is discarded with its reason in the next section.
+
+These run **after** S-01…S-20, except **S-21, which should be pulled forward** —
+the repository is public and a history secret-scan is cheap and read-only.
+
+## S-21 — Read-only git-history secret scan (was LQ-04)
+
+- STATUS: READY · PRIORITY P0 · MODEL B · BUDGET ≤ 30k
+- WHY: the repo is **public** by current owner decision. `./aion scan .` only
+  sees the working tree; a secret committed and later deleted still lives in
+  history and is still public. Never verified.
+- ALLOWED: `scripts/scan_history.py` (new), `tests/test_scan_history.py` (new)
+- FORBIDDEN: rewriting history; deleting/force-pushing anything; printing a
+  matched secret value into logs or the report (report path + commit + rule only);
+  committing any found secret as a test fixture.
+- ACTION: walk `git rev-list --all` blobs, run them through the existing
+  `aion_core.security` patterns, report `commit / path / rule` with values
+  redacted. Read-only — the script must not mutate the repo.
+- ACCEPTANCE: clean run on the current history, or a redacted finding list;
+  a synthetic planted secret in a temp repo is detected (proves it works);
+  no secret value ever appears in output.
+- ESCALATE: a real credential is found → **stop, report to the owner privately,
+  do not commit the finding**. Rotation is owner-only.
+
+## S-22 — Remove Desktop Commander from the repo (was LQ-11)
+
+- STATUS: READY · PRIORITY P1 · MODEL B · BUDGET ≤ 15k
+- WHY: `systemd/mark2-desktop-commander.service` is still present — a broad
+  remote-control surface shipped in a public repo. Verified still there.
+- ALLOWED: `systemd/mark2-desktop-commander.service` (deletion; override
+  granted), `docs/` references, `tests/test_launchd_units.py` if S-05 landed
+- FORBIDDEN: touching any other unit; deleting anything still referenced by a
+  live install path without saying so in the PR.
+- ACTION: remove the unit and its references; note in the PR what an operator
+  who relied on it must do instead.
+- ACCEPTANCE: no reference survives (`grep -ri "desktop.commander"` clean);
+  suite green; if S-05 landed, its unit-parity test still passes.
+
+## S-23 — `aion export` / `aion import` (was LQ-09)
+
+- STATUS: READY · PRIORITY P1 · MODEL B · BUDGET ≤ 50k
+- WHY: directly serves the coming **Mac migration** — today there is no
+  supported way to move a shared brain between hosts. Verified absent.
+- ALLOWED: `aion_core/portability.py` (new), `aion_core/cli.py`, `tests/test_portability_export.py` (new)
+- FORBIDDEN: including `private_state/` or any secret in an export (**hard
+  requirement**); absolute paths in the archive; a second backup system —
+  reuse `aion_core/backup.py` primitives.
+- ACTION: `export` writes a portable archive of canonical state with a manifest
+  (schema version, content hashes, source host); `import` verifies the manifest
+  and refuses a schema it does not understand rather than guessing.
+- ACCEPTANCE: export → import into a fresh `AION_HOME` reproduces task and
+  memory counts exactly; a tampered manifest hash is refused; a test asserts
+  **no secret and no absolute path** is present in the archive; round-trip works
+  with the source `AION_HOME` deleted between steps.
+
+## S-24 — Encrypted backup artifact + documented off-host drill (was LQ-02)
+
+- STATUS: READY · PRIORITY P1 · MODEL B · BUDGET ≤ 45k
+- WHY: backups exist and restore-verify, but they are **local and unencrypted**.
+  One lost machine loses everything. Verified: no restic, no encryption.
+- ALLOWED: `aion_core/backup.py`, `docs/OPERATIONS.md`, `tests/test_backup_encryption.py` (new)
+- FORBIDDEN: installing restic or any dependency (LucyOS is stdlib-only —
+  document the off-host procedure instead of automating it tonight); storing or
+  requesting a passphrase in git/logs/chat; **weakening the existing restore
+  verification**; uploading anything anywhere.
+- ACTION: add optional symmetric encryption of the backup artifact using a
+  passphrase read from the existing secret store (absent → backup proceeds
+  unencrypted and *says so* in its output, never silently). Document the
+  off-host copy drill for an operator; automate nothing that needs credentials.
+- ACCEPTANCE: encrypted backup round-trips through `backup.verify()`; wrong
+  passphrase fails cleanly with a clear error, never a corrupt "success"; with
+  no passphrase configured, existing behaviour is byte-identical (regression
+  test); no secret in the artifact filename or logs.
+
+## S-25 — Non-root service identity, cross-platform (was LQ-10)
+
+- STATUS: **BLOCKED_DEPENDENCY** until S-05 lands (needs `deploy/launchd/`) · PRIORITY P1 · MODEL B · BUDGET ≤ 35k
+- WHY: no unit sets `User=` — verified. Services would run as the invoking user,
+  root in a typical install. Now also a C1 concern: the fix must be one portable
+  approach, not a Linux-only one.
+- ALLOWED: `systemd/*.service` (override granted), `deploy/launchd/*.plist`,
+  `scripts/install_services.sh`, `docs/OPERATIONS.md`, `tests/test_service_identity.py` (new)
+- FORBIDDEN: creating or modifying an OS account from any script (owner action —
+  document it); a platform branch inside `aion_core/` (C1); hard-coded usernames.
+- ACTION: add `User=`/`Group=` placeholders to systemd units and the launchd
+  `UserName` equivalent, substituted by the installer like `@REPO@`/`@AION_HOME@`;
+  document the owner step that creates the account.
+- ACCEPTANCE: every long-running unit declares a non-root identity placeholder;
+  a test asserts no unit runs as root by default; install script still idempotent.
+
+## S-26 — Hash-chained audit export (was LQ-17)
+
+- STATUS: READY · PRIORITY P2 · MODEL B · BUDGET ≤ 35k
+- WHY: `events` is the audit trail but nothing makes tampering detectable.
+- ALLOWED: `aion_core/reports.py`, `aion_core/cli.py`, `tests/test_audit_chain.py` (new)
+- FORBIDDEN: altering the `events` schema or any existing row (append-only
+  export, not a rewrite); a second log store.
+- ACTION: export events with each record carrying the hash of the previous one;
+  add verification that detects insertion, deletion or modification.
+- ACCEPTANCE: an untouched export verifies; modifying, inserting or deleting any
+  record fails verification — all three proven separately.
+
+## S-27 — Routing telemetry report (was LQ-15)
+
+- STATUS: READY · PRIORITY P2 · MODEL A or B · BUDGET ≤ 25k
+- WHY: `model_usage` is populated but there is no report, so routing/spend
+  decisions rest on impressions rather than data. Verified table exists.
+- ALLOWED: `aion_core/reports.py`, `aion_core/cli.py`, `tests/test_routing_report.py` (new)
+- FORBIDDEN: any model/API call to produce the report (deterministic SQL only);
+  a new table.
+- ACCEPTANCE: report over seeded rows matches hand-computed totals; empty data
+  yields an honest "no usage recorded", never a fabricated zero-cost claim.
+
+## S-28 — Sanitized runtime inventory script (was LQ-05)
+
+- STATUS: READY · PRIORITY P2 · MODEL A or B · BUDGET ≤ 20k
+- WHY: Mac + second Linux box are imminent; capturing what a host actually
+  provides, with nothing sensitive in it, makes those migrations evidence-based.
+- ALLOWED: `scripts/runtime_inventory.py` (new), `tests/test_runtime_inventory.py` (new)
+- FORBIDDEN: emitting hostnames, usernames, absolute home paths, IPs, env values
+  or secrets; any network call; a platform branch outside `aion_core/host` (call
+  the adapter from S-10 where a platform fact is needed).
+- ACCEPTANCE: output passes `security.redact` unchanged (i.e. contains nothing
+  secret-shaped); a test asserts no username/home path leaks; runs on Linux and macOS.
+
+## S-29 — Salvage `experiments.py` / `money_path.py` (was M-A.4)
+
+- STATUS: READY · PRIORITY P2 · MODEL B · BUDGET ≤ 30k
+- WHY: `deploy/queues/M-A.4_assessment.md` already proved these two modules
+  apply cleanly in isolation (their *tests* were the conflict surface, not the
+  logic). Verified: both files are still absent from the tree.
+- ALLOWED: `aion_core/experiments.py`, `aion_core/money_path.py` (both new, via
+  `git checkout origin/claude/fable-deploy-setup-mc5nr6 -- <path>`),
+  `tests/test_experiments.py`, `tests/test_money_path.py`, `aion_core/cli.py`
+- FORBIDDEN: cherry-picking the whole source commit `45403ba` (10 files conflict
+  — the assessment documents exactly why); pulling in SEVAA/phone-interface code
+  (owner deferred SEVAACONNECT); new tables outside `db.py`.
+- ACTION: check out only the two modules, then port their tests to the current
+  test base rather than importing the old fixtures wholesale.
+- ACCEPTANCE: both modules import; their tests pass against the current tree;
+  anti-dup green; nothing SEVAA-related enters the diff.
+- ESCALATE: either module turns out to need a schema change — that is a Fable
+  decision, not a salvage.
+
+---
+
+## Discarded from the older queues, with reasons
+
+Recorded so nobody re-derives them later and thinks they were forgotten.
+
+| Item | Disposition |
+|---|---|
+| LQ-01 argv execution boundary | **DONE** — implemented on `claude/lucyos-architecture-audit-4o4q83`; lands via S-02 |
+| LQ-03 GitHub Actions CI | **DONE** — workflow exists and is green on both branches |
+| LQ-19 curl/bash path constraints | **FOLDED** into LQ-01 by its own author |
+| LQ-08 canonical authority policy doc + git guard | **SUPERSEDED** by `.lucy/authority/**` + `scripts/verify_authority.py` |
+| LQ-14 capability manifest schema/validator/clamping | **SUPERSEDED** by Q002/Q005 (`skills/manifest.schema.json`, already in the Q006 lineage) |
+| LQ-20 policy root + boot hash check + `aion policy accept` | **SUPERSEDED** by `verify_authority.py self` / `deploy` hash verification |
+| LQ-13 documents/sources/claims/evidence + FTS5 · LQ-18 document intake skeleton | **FOLDED** into S-14 and contract C3, which cover provenance, tiering and FTS-before-vector. The claims/evidence *linkage* idea is preserved there via `entity_refs`. |
+| LQ-06 approval object v2 | **NOT SONNET** — `approvals.py` is protected and this redesigns an authority object. Moved to **FABLE-04**. |
+| LQ-07 agent registry cleanup | **DISCARDED** — stale; the registry was reshaped by Q001/Q005 and the original complaint no longer describes the code |
+| LQ-12 inference-node qualification runbook | **WAITING FOR HARDWARE** — revisit when the Mac mini (24 GB) and the second Linux box exist |
+| LQ-16 Telegram fallback adapter | **DEFERRED** — a new external service; owner said not tonight |
+| `deploy/queues/M-A_structured_api.md` | **DONE** — `/api/v1/snapshot`, `/api/v1/money`, `/api/v1/projects` are live in `bridges/http_server.py` via `aion_core/api.py`. The file is a completed milestone record, not an open queue. |
+| SEVAA queues (`PROJECTS/sevaa-sales-os/AION_TASK_QUEUE.md`, `AGENT_TASKS.json`, `deploy/fable/FABLE_TASK_QUEUE.md` on `claude/fable-deploy-setup-mc5nr6`) | **DEFERRED** — owner deferred SEVAACONNECT until consolidation is stable |
+| `TOMORROW.md` | **NOT A SONNET QUEUE** — owner-facing install runbook. Left alone, but it predates this cycle and should be refreshed by the owner/Fable after the Mac migration. |
 
 ---
 

@@ -113,10 +113,26 @@ stands (see next section).
 
 ## Tasks ready for Sonnet tonight
 
-Ordered: **S-19, S-10, S-01, S-13, S-14, S-08, S-07, S-18, S-15, S-17, S-05, S-09, S-20, S-02.**
+**28 tasks, 23 READY.** Ordered: **S-21, S-19, S-10, S-01, S-13, S-14, S-08,
+S-22, S-07, S-18, S-15, S-23, S-17, S-05, S-09, S-24, S-26, S-27, S-20, S-28,
+S-29, S-02.**
 
-S-19 first — it is the only thing between `macos-readiness` and its first green
-run, which C1's acceptance needs. S-10 second — it unblocks S-11 and S-12.
+S-21 first — the repo is public and a read-only git-history secret scan is cheap;
+if it finds something you need to know tonight, not tomorrow. Then S-19, the only
+thing between `macos-readiness` and its first green run (C1's acceptance needs
+it), then S-10, which unblocks S-11/S-12.
+
+**Older queues swept and reconciled.** S-21…S-29 are the survivors of
+`docs/architect/05_LOW_MODEL_TASK_QUEUE.md` (LQ-01…LQ-20),
+`deploy/queues/M-A*.md` and the SEVAA queues, each re-checked against the live
+tree rather than taken on trust. Notable findings: the M-A structured-API
+milestone is **already done** (`/api/v1/*` is live) so its queue file is a
+completed record, not open work; but Desktop Commander is **still shipped** in a
+public repo (S-22), there is **no** off-host or encrypted backup (S-24), **no**
+`export`/`import` for the coming Mac migration (S-23), **no** service runs as
+non-root (S-25), and the git history has **never** been secret-scanned (S-21).
+Six items were discarded as done or superseded and three deferred — all with
+reasons recorded in the queue's "Discarded" table so nobody re-derives them.
 
 Blocked overnight by design: **S-03, S-04** (need S-02 merged by the owner),
 **S-11, S-12** (need S-10 merged). Sonnet must take another independent task
