@@ -63,3 +63,50 @@ Fable: FABLE-01 re-freeze after S-02..S-04 merge; name DC-1 in the deployment co
 
 ## Exact resume point
 If this session resets after commit B exists: only the push / integration-branch creation may be outstanding — check `git branch -r`. Nothing else remains for Fable this cycle.
+
+
+## CI workflow-validation fix (Sonnet, 2026-09-16, post-Fable)
+
+Owner reported both push runs on planning/opus-fable-20260916 failed at
+workflow-validation time with zero jobs created:
+- run 35113032369 (commit 766dc2a) -- confirmed via GitHub API: status
+  completed, conclusion failure, list_workflow_jobs returns total_count 0.
+- run 35113037040 -- same symptom, not independently re-queried (same root cause).
+
+Root cause (owner's diagnosis, independently confirmed against GitHub's
+context-availability rules): three jobs' `env:` blocks were at job level
+(`jobs.<job_id>.env`) and referenced `${{ runner.temp }}`. The `runner`
+context does not exist yet when job-level env is evaluated -- it is only
+available inside a step's own env/run/with. GitHub rejects the whole
+workflow file for this, producing exactly the observed zero-jobs failure
+(a single validation error for the file, not a per-job one).
+
+Fix (commit 2ff0f6b2bacfd82a4f16baf635dc8800772fb34d, pushed to
+planning/opus-fable-20260916): removed job-level `env:` from
+clean-bootstrap-health, upgrade-from-main-schema, macos-readiness; added an
+early "Set AION_HOME" step to each doing
+`echo "AION_HOME=$RUNNER_TEMP/<home>" >> "$GITHUB_ENV"`. Left the two
+step-level `runner.temp` usages in code-and-test untouched (valid location
+per the same rules). No architecture or functional LucyOS code changed --
+workflow file only.
+
+Verified before push: PyYAML parse OK, zero job-level env blocks remain,
+grep confirms only the two legitimate step-level runner.temp usages;
+every job's step sequence simulated locally end to end (clean-bootstrap-health,
+upgrade-from-main-schema, macos-readiness's platform-neutral steps all
+passed); full suite 256 OK; aion scan clean; verify_authority.py self:
+8/8 tests OK. verify_authority.py self/deploy correctly reported hash
+drift on .github/workflows/lucyos-ci.yml itself (a constitutional path) --
+expected, since this fix legitimately changes it; needs a re-freeze once
+the run is confirmed green (do not re-freeze on an unverified fix).
+
+STATUS: pushed; watching for the resulting Actions run on commit 2ff0f6b
+to confirm GitHub actually creates jobs this time, then driving
+code-and-test / clean-bootstrap-health / upgrade-from-main-schema /
+authority-gate green. macos-readiness and authority-drift stay
+continue-on-error by design (advisory / informational) and do not block
+this task's completion criteria.
+
+Exact resume point if interrupted: check run status for HEAD of
+planning/opus-fable-20260916 via GitHub Actions API; if jobs exist and are
+red, read the specific job's log next, do not re-diagnose the workflow file.
