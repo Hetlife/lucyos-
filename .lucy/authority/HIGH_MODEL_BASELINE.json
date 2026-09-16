@@ -5,7 +5,7 @@
   "contract": ".lucy/handoffs/2026-09-16/03_HIGH_TO_LOW_MODEL_AUTHORITY_CONTRACT.md",
   "execution_package": ".lucy/authority/LUCYOS_FABLE_ARCHITECT_EXECUTION_PACKAGE.md",
   "integration_branch": "integration/consolidation-20260916",
-  "fable_freeze_sha": "3846457568a6a1b555b2a88a883f33b071bca3b8",
+  "fable_freeze_sha": "47cec6d1481e848e60921d769138bd8a130792ac",
   "verifier": "scripts/verify_authority.py",
   "how_verified": "In CI on pull requests the verifier and this baseline are read from the BASE branch (never from the branch under test). On pushes and on Mark-2 the deployed tree is checked against protected_file_hashes and against the blobs at fable_freeze_sha.",
   "protected_paths": [
@@ -153,7 +153,7 @@
     "any real financial, legal or trading commitment"
   ],
   "protected_file_hashes": {
-    ".github/workflows/lucyos-ci.yml": "e960145a470ce8585a23f7577a57bf6044623d6eba481fa97e623b7d09ec2778",
+    ".github/workflows/lucyos-ci.yml": "45654d82c0364300552f39e195b183e9e7ee5921a41e95971fafedf9b78b70f5",
     ".gitignore": "05c1c9035454f11e94b0d5cb578ce99ae3e3b575604920308dcc58941fb7ec46",
     ".lucy/authority/LUCYOS_FABLE_ARCHITECT_EXECUTION_PACKAGE.md": "3d078e3a19e341e5b0508a2f87f3525b1bbde8435719b2a8b4308b57605517f8",
     ".lucy/authority/LUCYOS_PLATFORM_AND_DATA_CONTRACTS.md": "38e966acf6b4ae8b6b4ee68c41017453f3b20561445cc9c8604de037ea2f3ed2",
