@@ -42,8 +42,18 @@ DEFAULT_ALLOWED = [
     "ollama ", "curl -s http://localhost", "bash scripts/", "./aion ",
 ]
 # Never runnable, even if a prefix above would otherwise match.
+# NOTE (architect audit 2026-09-16): this is a substring blocklist in front of
+# ``subprocess.run(..., shell=True)``.  It closes the obvious holes (command
+# substitution, piping into an interpreter, home-directory wipes) but a prefix
+# allowlist plus a blocklist is not a capability boundary.  The full fix —
+# parse with shlex, allowlist argv[0], refuse shell control operators, run
+# without a shell — is specified as task LQ-01 in docs/architect.
 FORBIDDEN = ["rm -rf /", "mkfs", "dd if=", ":(){", "shutdown", "reboot",
-             "chmod 777 /", "curl | sh", "| sh", "> /dev/sd", "sudo "]
+             "chmod 777 /", "curl | sh", "| sh", "|sh", "| bash", "|bash",
+             "> /dev/sd", "> /dev/", "sudo ", "doas ", "$(", "`", ";",
+             "rm -rf ~", "rm -rf $HOME", "rm -rf .", "rm -rf *", "rm -fr ",
+             "| python", "|python", "| perl", "| node", "eval ", "exec ",
+             "nohup ", "crontab", "systemctl ", "ssh ", "scp ", "wget "]
 
 TIMEOUT_S = 300
 CLASS_B_TIMEOUT_S = 900

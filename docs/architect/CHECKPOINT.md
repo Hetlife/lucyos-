@@ -21,7 +21,7 @@ RECONCILE → ARCHITECT → RED-TEAM → COST → PRIORITIZE → SPECIFY → HAN
 - [VERIFIED] Package contents: 23 synthesized docs + QA report + evidence snapshots (raw deep-research MD/JSON, Mark-2 readiness audit JSON, deep-research master prompt, repo status JSON). All read.
 - [VERIFIED] Repo `Hetlife/lucyos-` at `33e4ced` (2026-09-13): 123 files, ~900KB, 38 commits, pure Python 3.9+ stdlib, no third-party deps.
 - [VERIFIED, THIS CONTAINER] `python3 -m unittest discover -s tests` → **205 tests OK** on Python 3.11.15 (2026-09-16). The "205 tests" commit claim is now independently verified in a clean Linux environment. NOT yet verified on the deployment host (SCS.ADMIN01 / Mark-2).
-- [VERIFIED] Full git-history secret scan (token/key/private-key/phone/email patterns): only deliberate test fixtures (`ghp_AbCd…012345`, `AKIAIOSFODNN7EXAMPLE`). No real credential shapes found. Owner email appears only in commit author metadata (normal for git).
+- [VERIFIED] Full git-history secret scan (token/key/private-key/phone/email patterns): only deliberate test fixtures (the fake GitHub token and the AWS documentation example key used in tests/test_security.py). No real credential shapes found. Owner email appears only in commit author metadata (normal for git).
 - [VERIFIED] `.gitignore` excludes shared_brain, private_state, secrets.env, *.json creds, sqlite files. `.secretscanignore` allowlists only test files + the detector.
 - [VERIFIED] Repo describes itself as "OpenClaw driver interface + AION brain + Ubuntu PC permanent office". Canonical runtime state lives at `~/openclaw/shared_brain` (never committed) → nothing in git is canonical business state.
 

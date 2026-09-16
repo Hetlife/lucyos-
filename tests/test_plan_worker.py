@@ -401,3 +401,23 @@ class TestHandoffAndMilestones(AionTest):
         self.assertIn("M0", milestones.newly_reached())
         self.assertNotIn("M0", milestones.newly_reached())
         self.assertIn("M0", milestones.reached())
+
+
+class TestCommandBlocklistHardening(unittest.TestCase):
+    """Architect audit 2026-09-16: obvious shell escapes must be refused even
+    when the command starts with an allowlisted prefix."""
+
+    def test_command_substitution_is_refused(self):
+        for cmd in ("echo $(cat ~/.ssh/id_ed25519)", "echo `id`",
+                    "ls ; rm -rf ~/openclaw", "cat x | bash", "cat x |sh",
+                    "echo hi > /dev/null; sudo id", "ls && rm -rf ~",
+                    "python3 x.py | python", "echo a; ssh evil", "cp a b; wget http://x"):
+            with self.subTest(cmd=cmd):
+                with self.assertRaises(worker.Refused):
+                    worker.check_command(cmd)
+
+    def test_plain_allowlisted_commands_still_pass(self):
+        for cmd in ("echo ok", "ls -la", "git status", "python3 -m unittest -q",
+                    "mkdir -p work/t && echo ok > work/t/marker"):
+            with self.subTest(cmd=cmd):
+                worker.check_command(cmd)
