@@ -230,6 +230,10 @@ def _main(argv=None) -> int:
     sk = sub.add_parser("skills", help="inspect or sync the disabled LucyOS skill catalog")
     sk.add_argument("op", choices=["status", "sync", "list"], nargs="?", default="status")
 
+    ar = sub.add_parser("architecture-check", help="deterministically audit a skill integration proposal")
+    ar.add_argument("path", help="JSON proposal file")
+    ar.add_argument("--record", action="store_true", help="record result as LearnRepo ARCHITECTURE evidence")
+
     sub.add_parser("capabilities", help="what this machine can execute right now")
     ms = sub.add_parser("milestones", help="measured progress toward the mission")
     ms.add_argument("--new", action="store_true",
@@ -504,6 +508,10 @@ def _main(argv=None) -> int:
                     "lifecycle": dict(Counter(r["lifecycle_state"] for r in rows)),
                     "catalog_manifests": len(skills.catalog_manifests()),
                     "catalog_errors": skills.validate_catalog()})
+    elif cmd == "architecture-check":
+        from . import architecture
+        proposal = architecture.load_proposal(args.path)
+        _print(architecture.audit_and_record(proposal) if args.record else architecture.audit(proposal))
     elif cmd == "capabilities":
         _print(worker.capability_report())
     elif cmd == "allow-command":
