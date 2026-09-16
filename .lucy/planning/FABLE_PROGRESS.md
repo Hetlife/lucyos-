@@ -40,12 +40,20 @@ verifier), reconcile the three collisions, and hand Sonnet a bounded queue. No m
 
 ## Completed
 - Checkpoint created.
+- `scripts/verify_authority.py` (strict / anti-dup / self / deploy / freeze) + `tests/test_authority_verifier.py` (8 tests, all pass, incl. "branch cannot grant itself an override").
+- `.github/workflows/lucyos-ci.yml`: code-and-test (3.9/3.11/3.13), clean-bootstrap-health, upgrade-from-main-schema, authority-gate (verifier read from BASE), authority-drift (informational), macos-readiness (advisory until FABLE-02).
+- `scripts/ci_health_gate.py`: asserts the 8 checks a clean runner can honestly satisfy (raw `aion health` exits 1 on secret_store).
+- `.lucy/authority/HIGH_MODEL_BASELINE.json`, `PROTECTED_PATHS.md`, `LUCYOS_FABLE_ARCHITECT_EXECUTION_PACKAGE.md`.
+- `.lucy/execution/SONNET_TASK_QUEUE.md` (S-01..S-05, S-07..S-09; FABLE-01/02; OWNER-01..04).
+- `.lucy/deployment/MARK2_DEPLOYMENT_CONTRACT.md` (DC-0 rehearsal = freeze sha; DC-1 unnamed until FABLE-01).
+- Full suite 256 OK; scan clean; verifier self OK.
 
 ## Current task
-Write `scripts/verify_authority.py`, `.github/workflows/lucyos-ci.yml`, baseline JSON, protected-paths doc.
+Freeze ritual: commit A (all files, sha PENDING) → commit B (fable_freeze_sha = A) → push → create `integration/consolidation-20260916` from B.
 
-## Next action
-Local test of verifier (strict/self/anti-dup), then execution package, Sonnet queue, Mark-2 contract, freeze commits, integration branch.
+## Next action (after this session)
+Owner: OWNER-01 (branch protection), OWNER-02 (private). Then Sonnet starts S-01 (independent) and S-02.
+Fable: FABLE-01 re-freeze after S-02..S-04 merge; name DC-1 in the deployment contract.
 
 ## Exact resume point
-If this session resets: everything above is decided. Resume at "Current task"; do not re-audit.
+If this session resets after commit B exists: only the push / integration-branch creation may be outstanding — check `git branch -r`. Nothing else remains for Fable this cycle.

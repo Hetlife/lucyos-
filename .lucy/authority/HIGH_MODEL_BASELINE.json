@@ -1,0 +1,172 @@
+{
+  "schema_version": 1,
+  "created_at": "2026-09-16",
+  "created_by": "Fable (highest-capability architect), cycle 2026-09-16",
+  "contract": ".lucy/handoffs/2026-09-16/03_HIGH_TO_LOW_MODEL_AUTHORITY_CONTRACT.md",
+  "execution_package": ".lucy/authority/LUCYOS_FABLE_ARCHITECT_EXECUTION_PACKAGE.md",
+  "integration_branch": "integration/consolidation-20260916",
+  "fable_freeze_sha": "PENDING",
+  "verifier": "scripts/verify_authority.py",
+  "how_verified": "In CI on pull requests the verifier and this baseline are read from the BASE branch (never from the branch under test). On pushes and on Mark-2 the deployed tree is checked against protected_file_hashes and against the blobs at fable_freeze_sha.",
+  "protected_paths": [
+    ".lucy/authority/**",
+    ".lucy/deployment/**",
+    ".lucy/handoffs/**",
+    ".github/workflows/lucyos-ci.yml",
+    "scripts/verify_authority.py",
+    "scripts/ci_health_gate.py",
+    "aion_core/approvals.py",
+    "aion_core/security.py",
+    "aion_core/governor.py",
+    "aion_core/architecture.py",
+    "aion_core/agents.py",
+    "aion_core/db.py",
+    "aion_core/resume.py",
+    "aion_core/worker.py",
+    "aion_core/router.py",
+    "aion_core/config.py",
+    ".secretscanignore",
+    ".gitignore",
+    "aion",
+    "systemd/**",
+    "deploy/**"
+  ],
+  "constitutional_paths_no_override_possible": [
+    ".lucy/authority/**",
+    ".github/workflows/lucyos-ci.yml",
+    "scripts/verify_authority.py"
+  ],
+  "aion_core_modules": [
+    "__init__",
+    "agents",
+    "api",
+    "approvals",
+    "architecture",
+    "autonomy",
+    "backup",
+    "bootstrap",
+    "cli",
+    "config",
+    "context",
+    "db",
+    "deliveries",
+    "errors",
+    "fable",
+    "governor",
+    "handoff",
+    "health",
+    "learnrepo",
+    "memory",
+    "metrics",
+    "milestones",
+    "notebook",
+    "owner_setup",
+    "packets",
+    "plan",
+    "recall",
+    "reports",
+    "resume",
+    "router",
+    "security",
+    "seed",
+    "sessions",
+    "skills",
+    "tasks",
+    "util",
+    "worker",
+    "resource_governor",
+    "research_registry"
+  ],
+  "sqlite_connect_allowed": [
+    "aion_core/db.py",
+    "aion_core/backup.py",
+    "bridges/drive_bridge.py"
+  ],
+  "service_unit_dirs": [
+    "systemd/",
+    "deploy/launchd/"
+  ],
+  "task_overrides": {
+    "S-02": [
+      "aion_core/worker.py"
+    ],
+    "S-03": [
+      "aion_core/db.py",
+      "aion_core/worker.py",
+      "aion_core/resume.py",
+      "aion_core/router.py",
+      ".secretscanignore"
+    ],
+    "S-04": [
+      "aion_core/worker.py"
+    ],
+    "S-05": [
+      "deploy/launchd/**"
+    ],
+    "S-08": [
+      "aion_core/security.py"
+    ]
+  },
+  "allowed_executor_scope": {
+    "SONNET": "Implement exactly one task from .lucy/execution/SONNET_TASK_QUEUE.md per branch named task/<TASK_ID>-<slug>; edit only that task's ALLOWED paths; add tests; run the full suite and ./aion scan .; open a PR against the integration branch; never merge.",
+    "LOCAL_MODEL": "Mechanical drafts (docstrings, test scaffolds, repetitive edits) inside a Sonnet task, reviewed by Sonnet before commit. No direct commits.",
+    "CODEX_MARK2": "Deploy only the exact SHA named in .lucy/deployment/MARK2_DEPLOYMENT_CONTRACT.md; run `scripts/verify_authority.py deploy` before switching services; return evidence; no architecture changes.",
+    "OPUS": "Adversarial review and audit; may propose, never merge; may not edit protected paths.",
+    "FABLE": "Architecture, policy, protected paths, this baseline; changes land only through an owner-merged PR (the authority-gate will fail by design and the owner merges with admin bypass after reading the diff)."
+  },
+  "escalation_rules": [
+    "A task that cannot be completed without touching a path outside its ALLOWED list stops, commits partial work on its task branch, marks BLOCKED_HIGH_MODEL_DECISION in the PR description with the exact path and reason, and does not widen scope.",
+    "Any authority-gate or anti-dup failure on a Sonnet PR is a stop, not a thing to work around: do not edit the verifier, the workflow, the baseline, or .secretscanignore to pass.",
+    "A test that fails after the change is a defect in the change until proven otherwise; never skip, disable or quarantine it.",
+    "If the integration branch moves and the task branch conflicts, merge the integration branch into the task branch (never rebase shared history) and re-run the gates.",
+    "Anything touching money, credentials, repository settings, service exposure beyond localhost, or deletion of production state is owner-only regardless of task text."
+  ],
+  "owner_only_actions": [
+    "merge into main",
+    "enable/modify branch protection and required checks",
+    "change repository visibility (decision this cycle: PRIVATE)",
+    "create/rotate/delete credentials or rclone remotes",
+    "delete branches or tags",
+    "deploy to Mark-2 or expose any service beyond loopback",
+    "turn on resource_governor.enforce_admission in production",
+    "any real financial, legal or trading commitment"
+  ],
+  "protected_file_hashes": {
+    ".github/workflows/lucyos-ci.yml": "a932f7153ee2b882b14c9fbd1b056d755f0a41e7c6c3727c807c8ec828f71aa7",
+    ".gitignore": "05c1c9035454f11e94b0d5cb578ce99ae3e3b575604920308dcc58941fb7ec46",
+    ".lucy/authority/LUCYOS_FABLE_ARCHITECT_EXECUTION_PACKAGE.md": "0c3e591ca0e9d4f53b89468e2aa399a62ad2e18efa5a2e0ba1abf9cb8e8a477c",
+    ".lucy/authority/PROTECTED_PATHS.md": "5ba69dd64a84b1ea0b4401b631302664b22202950859103b1c83fd735b48f0b4",
+    ".lucy/deployment/MARK2_DEPLOYMENT_CONTRACT.md": "d12b57b237904756b038c3021a068ad6ec6ce26e25055291a2e4e18abeadb327",
+    ".lucy/handoffs/2026-09-16/00_READ_ME_FIRST.md": "cf44299ab88df19ccafa29b384b86b72e2ca792880506e54d5203e3cca2194c7",
+    ".lucy/handoffs/2026-09-16/01_OPUS_READINESS_ARCHITECT_BRIEF_PROMPT.txt": "f811a7af8ee6c44b82aef8c10369a110a6e2252d0ef966515e0404a57f9bdf49",
+    ".lucy/handoffs/2026-09-16/02_FABLE_ARCHITECT_EXECUTION_PROMPT.txt": "9a566e9b3339a7c46f2b1a2cdde44c5b09e12c91df41dcf2a28bce4da61a19e1",
+    ".lucy/handoffs/2026-09-16/03_HIGH_TO_LOW_MODEL_AUTHORITY_CONTRACT.md": "68df8014364f6c56fedf6d5df4029b2dd6d8dc4ee0fe9880fabac5149cbc29a2",
+    ".lucy/handoffs/2026-09-16/04_HANDOFF_POINTERS.json": "beb8407f3dafbd4afc197ab91d6f665eb58c067a09589992ffd32097c0283e87",
+    ".secretscanignore": "cc96d8613b276b9f737bae4c7ede24eeff202efefeb92cc981a6ac25d4f3d0a2",
+    "aion": "5784a0cc29ad119345c03f524df0675b3978446ec31daf2bbe49bc13e1ae37d9",
+    "aion_core/agents.py": "74771d5f8fcabb1387b8fb592124fe5bc09842f51266a382bd23fff870325c89",
+    "aion_core/approvals.py": "03042465ceca323106f8f2c31cadff4637a54dd706f3c8447fb29015a6aea8be",
+    "aion_core/architecture.py": "32abb45511d475f944e784f2ce4dafb2a391d910136d38067beebaf8bce03235",
+    "aion_core/config.py": "9e68a04fc1f5aefb506b2d33956ad060d1589eb0f466693df0a2a411e2420f8e",
+    "aion_core/db.py": "438faddc912e2a34a6161ac36d144f1a5d8ebd87000b687056b57782d7672b52",
+    "aion_core/governor.py": "9f69cac28e9e3ee3390ca59a31d56c73ba855fb378dc3b0fe2301f8d370de934",
+    "aion_core/resume.py": "1882539898599343c37b6503ab083da72034c926cffd418d236bc5f370e97828",
+    "aion_core/router.py": "f7b75d2f8ff0b324d54ea70812b6818519bc09e02b7747538b5e6a5791e68ce0",
+    "aion_core/security.py": "8d6bd624064892ca7a1e34aca1e70769608a24670479bbff790441058f18b454",
+    "aion_core/worker.py": "dd8d9b6688b234366b2dc7ff71aa39bcf5047df0c2b5c0bad1cc2d6c348c9ac8",
+    "deploy/queues/M-A.4_assessment.md": "23c20480259b4f351a2866cf7042baec1ffaff9fe7297dba37668e3aea356a2a",
+    "deploy/queues/M-A_structured_api.md": "9a462d9fd45da1c5e5615de2a4df69607fb352b29638b74b1151182ec39da548",
+    "scripts/ci_health_gate.py": "cd624bdee561d2b09652a82c17f8deb1fd6fa207493ac3e422888f327186214b",
+    "scripts/verify_authority.py": "17e1a2561173370b7c0d67a6d82082c76746c567ac128df215574daa28700a5a",
+    "systemd/README.md": "d49dc407bbf69feec618e1f80e553bb93fdd47da26712df5331068f86a618704",
+    "systemd/aion-bridge.service": "e66c81f3543e1cd1a9c6be1b4c1eeec734ba0c851aeec3ae698f3af8b9f28218",
+    "systemd/aion-interface.service": "77d20a952d55ad54a089702f7a191ba2a04c8bc72b644267a2f75962bf28b517",
+    "systemd/aion-maintenance.service": "e56d4052c066b27352002e9bb365f6adec17caa45427a8ede7e444651b40a32e",
+    "systemd/aion-maintenance.timer": "05880a17ef35aac46d9efa472e1e36b4fa4c58f51ac05fe088de025c4299bc94",
+    "systemd/aion-work.service": "4ebb8252cdfa56fc8c4d0df1be6eaa500b03ae009fb40080019b482170f1ef4b",
+    "systemd/aion-work.timer": "ae1996d4ae0276d1b81db03be11b3938c31e8511bb8885d8c4c12db789358a24",
+    "systemd/mark2-desktop-commander.service": "0d3043ccf07261a78840a0420e1c4b01a5f2b9487a8e2b8cbcba72130f533c4c",
+    "systemd/mark2-drive.service": "db6d25ead0e96afc03faa0d1d65e8e670ac48a2a676694bcdf683b7ddbe154f3",
+    "systemd/mark2-drive.timer": "a79c642874ffd6bdbcc70794b7f784d238b1674736c2e7f4d21de2a7f5ba41c1"
+  }
+}

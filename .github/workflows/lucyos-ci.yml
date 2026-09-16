@@ -1,0 +1,203 @@
+name: LucyOS CI
+
+# Adopted from the owner's Drive draft (MARK2_SHARED/.../lucyos-ci.yml) and extended
+# with the three gates the Opus audit found missing: an upgrade-from-old-schema
+# check, the deterministic authority gate, and a macOS readiness job.
+#
+# Branch protection must require these check names: `code-and-test`,
+# `clean-bootstrap-health`, `upgrade-from-main-schema`, `authority-gate`.
+# `macos-readiness` becomes required after its first green run (task S-06).
+
+on:
+  push:
+  pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: lucyos-ci-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+env:
+  PYTHONDONTWRITEBYTECODE: "1"
+
+jobs:
+  code-and-test:
+    name: code-and-test (py${{ matrix.python-version }})
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    strategy:
+      fail-fast: false
+      matrix:
+        python-version: ["3.9", "3.11", "3.13"]
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - uses: actions/setup-python@v5
+        with:
+          python-version: ${{ matrix.python-version }}
+      - name: Compile sources
+        run: python -m compileall -q aion_core bridges tests scripts
+      - name: Secret scan
+        env:
+          AION_HOME: ${{ runner.temp }}/lucyos-scan-home
+        run: ./aion scan .
+      - name: Full unit suite
+        env:
+          AION_HOME: ${{ runner.temp }}/lucyos-test-home
+        run: python -m unittest discover -s tests -t . -q
+
+  clean-bootstrap-health:
+    name: clean-bootstrap-health
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    env:
+      AION_HOME: ${{ runner.temp }}/lucyos-clean-home
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+      - name: Initialize clean LucyOS state
+        run: |
+          ./aion init
+          ./aion seed
+      - name: Required health checks (first proof)
+        run: python scripts/ci_health_gate.py
+      - name: Task / plan / approval flow smoke
+        run: |
+          python - <<'PY'
+          from aion_core import db, tasks, approvals, sessions, skills
+          db.connect()
+          sid = sessions.start("ci-smoke")
+          t = tasks.create("ci smoke task"); tasks.update(t, status="READY")
+          a = approvals.create("ci smoke approval", why="ci", cost="none",
+                               reversibility="none", prepared="ci", resumes="ci")
+          approvals.decide(a, "APPROVED", "owner")
+          assert dict(approvals.get(a))["status"] == "APPROVED"
+          assert tasks.get(t)["status"] == "READY"
+          assert skills.validate_registry() == [], skills.validate_registry()
+          print("flow ok", sid, t, a)
+          PY
+      - name: Backup + real restore verification
+        run: |
+          ./aion backup
+          ./aion backup --verify-only
+      - name: Fresh-process checkpoint/resume
+        run: ./aion boot
+      - name: Idempotent re-init
+        run: ./aion init
+      - name: Required health checks (second proof)
+        run: python scripts/ci_health_gate.py
+
+  upgrade-from-main-schema:
+    name: upgrade-from-main-schema
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    env:
+      AION_HOME: ${{ runner.temp }}/lucyos-upgrade-home
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+          fetch-depth: 0
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+      - name: Create state with the current main schema
+        run: |
+          git fetch origin main --depth=1
+          mkdir -p "$RUNNER_TEMP/old-tree"
+          git archive origin/main | tar -x -C "$RUNNER_TEMP/old-tree"
+          cd "$RUNNER_TEMP/old-tree" && ./aion init && ./aion seed
+      - name: Boot the branch under test on that older state
+        run: |
+          ./aion boot
+          python - <<'PY'
+          from aion_core import db, skills
+          c = db.connect()
+          assert c.execute("pragma integrity_check").fetchone()[0] == "ok"
+          errs = skills.validate_registry()
+          assert errs == [], f"registry unhealthy after upgrade: {errs}"
+          print("upgrade ok:", len(c.execute("select name from sqlite_master where type='table'").fetchall()), "tables")
+          PY
+      - name: Required health checks after upgrade
+        run: python scripts/ci_health_gate.py
+
+  authority-gate:
+    name: authority-gate
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+          fetch-depth: 0
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+      - name: Protected paths + anti-duplication (pull request, verifier taken from BASE)
+        if: github.event_name == 'pull_request'
+        env:
+          BASE: ${{ github.base_ref }}
+          HEAD_REF: ${{ github.head_ref }}
+        run: |
+          git fetch origin "$BASE" --depth=200
+          # The verifier and baseline are read from the base branch so the branch
+          # under test cannot rewrite the rule it is being checked against.
+          git show "origin/$BASE:scripts/verify_authority.py" > "$RUNNER_TEMP/verify_authority.py"
+          python "$RUNNER_TEMP/verify_authority.py" strict --base "origin/$BASE" --branch "$HEAD_REF"
+          python "$RUNNER_TEMP/verify_authority.py" anti-dup --base "origin/$BASE"
+      - name: No pull request context — strict gate not applicable
+        if: github.event_name != 'pull_request'
+        run: echo "authority-gate is enforced on pull requests; see authority-drift for push-time drift"
+
+  authority-drift:
+    # Informational on purpose. Protected files legitimately change when the owner
+    # merges a task override or a Fable PR; the hashes then lag until Fable
+    # re-freezes (task FABLE-01). Making this required would turn CI red on the
+    # first approved merge. The deploy-time check that matters is run by Codex on
+    # Mark-2 against the exact SHA Fable names in the deployment contract.
+    name: authority-drift (informational)
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    continue-on-error: true
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+          fetch-depth: 0
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+      - run: python scripts/verify_authority.py self
+      - run: python scripts/verify_authority.py deploy
+
+  macos-readiness:
+    name: macos-readiness (advisory until first green; see S-06)
+    runs-on: macos-latest
+    timeout-minutes: 15
+    continue-on-error: true
+    env:
+      AION_HOME: ${{ runner.temp }}/lucyos-mac-home
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - name: Compile sources
+        run: python -m compileall -q aion_core bridges tests scripts
+      - name: Full unit suite on macOS
+        run: python -m unittest discover -s tests -t . -q
+      - name: Clean init + boot on macOS
+        run: |
+          ./aion init
+          ./aion boot
+          python scripts/ci_health_gate.py
