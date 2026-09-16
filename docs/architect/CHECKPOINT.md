@@ -1,8 +1,8 @@
 # LucyOS Architect Session — CHECKPOINT / PROGRESS
 
-Last updated: 2026-09-16 (session 2: LQ-01 executed)
+Last updated: 2026-09-16 (session 4: smallest-fix skill written, tested, pushed)
 Branch: `claude/lucyos-architecture-audit-4o4q83` (pushed)
-Status: ARCHITECTURE + EXECUTION PACKAGE COMPLETE. LQ-01 (argv execution boundary) DONE. Remaining Phase 0/1 tasks open.
+Status: ARCHITECTURE + EXECUTION PACKAGE COMPLETE. LQ-01 (argv execution boundary) DONE. learnrepo skill prepared (awaiting merge approval). smallest-fix skill built and pushed per explicit owner instruction. Remaining Phase 0/1 tasks open.
 
 > RESUME RULE: a new AI must NOT reread the research ZIP. Read this file, then
 > `LUCYOS_ARCHITECT_EXECUTION_PACKAGE.md`, then take the next task from
@@ -80,6 +80,25 @@ Session 3 — **`learnrepo` skill built (PREPARED, NOT MERGED).**
   recorded containment blocks; static screen verified not to execute candidate code.
 - BLOCKERS: none technical. Merge to `main` requires owner approval (RED band).
 - NEXT_ACTION: owner decides OD-19 (merge learnrepo) — see §13.
+
+Session 4 — **`smallest-fix` skill: written, tested, pushed (owner explicitly instructed push).**
+- STATUS: DONE and pushed. This is NOT a learnrepo-gated action — it is original LucyOS-authored
+  code, and the owner explicitly said "write independent LucyOS native version AND PUSH IT AFTER
+  TESTING" after reviewing the learnrepo investigation of DietrichGebert/ponytail (which itself
+  recommended "prototype", not merge -- see investigation `better-programmer-repo-eval`).
+- WHAT: `.claude/skills/smallest-fix/` — a "write the smallest correct thing" coding-discipline
+  skill, independently worded (not derived from ponytail's text/branding), backed by
+  `scripts/check_reinvention.py`, an AST-based (never regex-over-text) checker that flags code
+  reimplementing something `aion_core/util.py` already provides (UTC timestamps, id generation,
+  sha256 hashing, atomic writes, JSON read/write).
+- FILES_CHANGED: `.claude/skills/smallest-fix/{SKILL.md,CHANGELOG.md,scripts/check_reinvention.py}`,
+  `tests/test_smallest_fix_skill.py` (new, 28 tests).
+- TESTS: full suite **286 OK** (258 → 286); official skill validator "Skill is valid!"; `./aion scan .` clean.
+- EVIDENCE: a real duplicate-finding bug (chained `hashlib.sha256(x).hexdigest()` reported twice) was
+  found by testing against a synthetic fixture, fixed, and a regression test added. Self-check confirms
+  `aion_core/util.py` is always exempt and the script never executes the file it scans.
+- BLOCKERS: none.
+- NEXT_ACTION: none required; available for use (`python3 .claude/skills/smallest-fix/scripts/check_reinvention.py <path>`).
 
 ## 11. REMAINING WORK (ordered; ids in EXECUTION_PACKAGE §9 / LOW_MODEL_TASK_QUEUE)
 
