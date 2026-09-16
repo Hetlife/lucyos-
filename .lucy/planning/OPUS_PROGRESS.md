@@ -105,19 +105,88 @@ Any integration order will require a real merge on the execution path.
 
 ---
 
-## UNRESOLVED / IN PROGRESS
+## COMPLETED CHECKS (continued)
 
-- C5 capability matrix against live code (session logging, checkpoint/resume,
-  approvals, evidence gates, skills registry, anti-duplication guard, backup,
-  local inference) — IN PROGRESS
-- C6 model-hierarchy deterministic enforcement — NOT STARTED
-- C7 CI presence and clean-machine acceptance gates — NOT STARTED
-- C8 Drive / OpenClaw / Mark-2 / Mac readiness — NOT STARTED
-- C9 repository visibility recheck — NOT STARTED
+### C5 — Q006 test suite (DONE)
+`python3 -m unittest discover -s tests -t . -q` at `2b59aea` → **Ran 248 tests … OK**.
+The 248-test claim in `00_READ_ME_FIRST.md` is RECONFIRMED on this exact commit.
+
+### C6 — Skill-registry case migration (DONE, DEGRADED, root cause HIGH)
+Reproduced from a clean `AION_HOME`: injecting `cost_class='f0'` yields
+`['ai.cloud:invalid-cost']`, and re-running `ensure_defaults()` does **not** heal
+it. Root cause: `register()` uppercases on write (`skills.py:115-118`) and
+manifest validation is case-insensitive (`skills.py:270`), but
+`validate_registry()` is case-sensitive (`skills.py:203`) while the compatibility
+migration (`skills.py:163-164`) only maps the word labels none/free/local/external.
+Only pre-Q005 rows can carry lowercase — i.e. the live Mark-2 database.
+**Invisible to CI because every test starts from a clean DB. LucyOS has no migration test.**
+
+### C7 — The prepared Drive patch is too narrow (DONE)
+Read `LUCYOS_STEP1_F0_MIGRATION_FIX.patch` from Drive. It adds `'f0'` to the IN
+list plus a regression test. Injected three values it would not heal:
+`['ai.cloud:invalid-cost', 'core.health:invalid-data', 'core.state:invalid-risk']`.
+`risk_class`/`data_class`/`priority` have no normalization at all. Fix the bug
+class, not the instance.
+
+### C8 — Kernel capabilities verified live (DONE)
+On a clean `AION_HOME`: `health.run_all()` (14 honest checks),
+`backup.create()` + `backup.verify()` → `{'ok': True, 'integrity': 'ok'}` (a real
+extract-and-open restore test), `sessions.start()` → `SES-A2475EE4`,
+`tasks.create()/update()`, `resume.boot()`, `approvals.create()` → `A-101` →
+`decide()` → `APPROVED`. The kernel works and must be preserved.
+
+### C9 — Model-hierarchy enforcement (DONE, P0: NOT ENFORCED)
+Four verifications: (a) `architecture.py` is a self-declaration form that never
+inspects code; (b) its only caller is the manual CLI `aion architecture-check`
+(`cli.py:511-514`); (c) no CI exists on any branch; (d) GitHub API reports
+`"protected": false` for all 18 branches including `main`.
+Empirical proof: a second governor and a second `aion_core/learnrepo.py` both
+landed without the guard firing — it was never asked.
+
+### C10 — CI and repository posture (DONE, P0)
+No `.github/` tree on `main`, Q006, `feature/resource-governor`, or
+`claude/fable-deploy-setup`. The historical claim was narrower than reality.
+Repo metadata re-verified today: `"private": false`, `"visibility": "public"`,
+`allow_forking: true`. Secret hygiene itself is good (`./aion scan .` clean,
+comprehensive `.gitignore`, no tracked secret files) — but nothing runs the
+scanner automatically.
+
+### C11 — Drive context (DONE)
+Drive **reads verified live** from this session. Located `MARK2_SHARED`,
+`LUCYOS_OPUS_FABLE_PLANNING_2026-09-16` (created today, matches the pointer),
+and downloaded two files. `lucyos-ci.yml` is a genuinely good clean-machine
+workflow (3.9/3.11/3.14 matrix, compileall, secret scan, full suite, then
+init→seed→health→backup→verify-only→fresh-process boot→second health) that has
+never been committed. Drive is being used to deliver repository content —
+that boundary should be corrected. Uploads unverified from here.
+
+### C12 — Deployment surface (DONE)
+9 systemd units (incl. `mark2-drive.*`, `mark2-desktop-commander`). Mac support
+is effectively ABSENT: exactly one darwin-aware line repo-wide
+(`learnrepo.py:555` returning `"launchd"`), no plists, no Mac install path.
+
+---
+
+## DELIVERABLE STATUS
+
+`.lucy/planning/LUCYOS_OPUS_TO_FABLE_ARCHITECT_BRIEF.md` — **COMPLETE**, all 15
+required sections present, decision-grade.
+
+## UNRESOLVED (carried into the brief, §14)
+
+1. Is the repository intentionally public? (blocks P0-3)
+2. Mark-2 live state — not reachable from this environment.
+3. Drive upload failure — needs a Mark-2 rclone check; only reads verifiable here.
+4. OpenClaw — classified UNKNOWN; refused to infer function from filenames.
+5. `claude/fable-deploy-setup-mc5nr6` / SEVAACONNECT scope — owner decision.
+6. Mac mini — real target or aspiration.
+7. Who may push to `main` today.
 
 ## EXACT RESUME POINT
 
-Branch map (C1–C4) is complete and evidence-backed. Resume at **C5**: run the
-Q006 test suite locally, then classify each capability in the audit list with
-ABSENT/DESIGNED/IMPLEMENTED/TESTED/CI_VERIFIED/DEPLOYED/LIVE_VERIFIED/
-DEGRADED/BROKEN/UNKNOWN, citing a file path or a command result for each.
+Opus audit phase is **complete**. Nothing further should be implemented by this
+role. Next actor is **Fable**, starting at brief §15 (`FABLE START HERE`), whose
+first decision is the enforcement substrate (P0-2), not architecture.
+
+No functional code was modified by this audit. Only `.lucy/planning/` artifacts
+were added.
