@@ -10,7 +10,7 @@ from pathlib import Path
 from . import (agents, approvals, backup, bootstrap, config, db, errors, fable, health,
                memory, metrics, notebook, owner_setup, packets, reports, resume, router,
                security, seed, sessions, tasks, util, plan, worker, governor, handoff,
-               milestones, deliveries, autonomy)
+               milestones, deliveries, autonomy, learnrepo)
 
 
 def _print(text):
@@ -106,6 +106,10 @@ def _main(argv=None) -> int:
 
     hc = sub.add_parser("health")
     hc.add_argument("--deep", action="store_true")
+
+    lr = sub.add_parser("learnrepo-run", help="run due deterministic LearnRepo health jobs")
+    lr.add_argument("--mode", choices=["nightly", "daily", "weekly", "monthly", "quarterly"], default="nightly")
+    sub.add_parser("learnrepo-status", help="show LearnRepo queue/health state")
 
     rt = sub.add_parser("route", help="decide which model class should do a task")
     rt.add_argument("kind")
@@ -336,6 +340,10 @@ def _main(argv=None) -> int:
             print(f"{'OK  ' if c['ok'] else 'FAIL'} {c['name']}: {c['detail']}")
         print("healthy" if r["healthy"] else "FAILING: " + ", ".join(r["failing"]))
         return 0 if r["healthy"] else 1
+    elif cmd == "learnrepo-run":
+        _print(learnrepo.run_due(mode=args.mode))
+    elif cmd == "learnrepo-status":
+        _print(learnrepo.status())
     elif cmd == "route":
         _print(agents.route(args.kind, args.complexity, args.stakes, args.ambiguity))
     elif cmd == "usage":

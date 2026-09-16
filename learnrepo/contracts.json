@@ -1,0 +1,23 @@
+{
+  "schema_version": 1,
+  "contracts": [
+    {
+      "contract_id": "LR-CONTRACT-MODULE",
+      "producer": "LearnRepo",
+      "input": "aion_core/learnrepo.py",
+      "consumer": "AION CLI",
+      "expected_output": "importable module",
+      "validation_command": "python3 -m py_compile aion_core/learnrepo.py",
+      "severity_if_broken": "HIGH"
+    },
+    {
+      "contract_id": "LR-CONTRACT-REFERENCES",
+      "producer": "LearnRepo",
+      "input": "learnrepo/references",
+      "consumer": "LearnRepo health",
+      "expected_output": "exactly two approved reference notes",
+      "validation_command": "python3 -c \"assert len(list(__import__('pathlib').Path('learnrepo/references').glob('*.md'))) == 2\"",
+      "severity_if_broken": "MEDIUM"
+    }
+  ]
+}

@@ -125,8 +125,22 @@ def check_backup() -> dict:
             "detail": f"latest {latest.name} ({round(latest.stat().st_size / 1024, 1)} KB)"}
 
 
+def check_learnrepo() -> dict:
+    try:
+        from . import learnrepo
+        learnrepo.ensure_defaults()
+        latest = learnrepo.latest_summary()
+        bad = latest.get("status") in {"FAIL", "MISSED", "QUARANTINED"}
+        detail = (f"latest={latest.get('status', 'not-run')}, ai_calls={latest.get('ai_calls', 0)}, "
+                  f"escalations={latest.get('api_escalations', 0)}")
+        return {"name": "learnrepo", "ok": not bad, "detail": detail}
+    except Exception as exc:
+        return {"name": "learnrepo", "ok": False, "detail": str(exc)}
+
+
+
 CHECKS = [check_db, check_shared_brain, check_disk, check_inbox, check_tasks, check_errors,
-          check_budget, check_git, check_ollama, check_network, check_secrets, check_backup]
+          check_budget, check_git, check_ollama, check_network, check_secrets, check_backup, check_learnrepo]
 
 
 def run_all(deep: bool = False) -> dict:

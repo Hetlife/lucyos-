@@ -271,6 +271,75 @@ CREATE TABLE IF NOT EXISTS idempotency (
     scope     TEXT NOT NULL,
     result    TEXT NOT NULL DEFAULT ''
 );
+
+CREATE TABLE IF NOT EXISTS learnrepo_tasks (
+    task_type TEXT PRIMARY KEY,
+    description TEXT NOT NULL DEFAULT '',
+    health_level INTEGER NOT NULL DEFAULT 0,
+    requires_network INTEGER NOT NULL DEFAULT 0,
+    requires_ai INTEGER NOT NULL DEFAULT 0,
+    safe_repair TEXT NOT NULL DEFAULT ''
+);
+
+CREATE TABLE IF NOT EXISTS learnrepo_schedules (
+    schedule_id TEXT PRIMARY KEY,
+    task_type TEXT NOT NULL REFERENCES learnrepo_tasks(task_type),
+    schedule_class TEXT NOT NULL,
+    next_run_at TEXT,
+    last_run_at TEXT,
+    grace_seconds INTEGER NOT NULL DEFAULT 1200,
+    enabled INTEGER NOT NULL DEFAULT 1,
+    change_sensitive INTEGER NOT NULL DEFAULT 1,
+    change_score INTEGER NOT NULL DEFAULT 0,
+    lease_owner TEXT,
+    lease_until TEXT
+);
+CREATE INDEX IF NOT EXISTS idx_learnrepo_schedules_due ON learnrepo_schedules(enabled, next_run_at);
+
+CREATE TABLE IF NOT EXISTS learnrepo_runs (
+    run_id TEXT PRIMARY KEY,
+    schedule_id TEXT NOT NULL REFERENCES learnrepo_schedules(schedule_id),
+    task_type TEXT NOT NULL,
+    expected_at TEXT NOT NULL,
+    started_at TEXT,
+    completed_at TEXT,
+    duration_ms INTEGER,
+    status TEXT NOT NULL DEFAULT 'SCHEDULED',
+    grace_seconds INTEGER NOT NULL DEFAULT 1200,
+    result_json TEXT NOT NULL DEFAULT '',
+    error TEXT NOT NULL DEFAULT '',
+    evidence_path TEXT NOT NULL DEFAULT '',
+    lease_owner TEXT,
+    lease_until TEXT
+);
+CREATE INDEX IF NOT EXISTS idx_learnrepo_runs_status ON learnrepo_runs(status);
+
+CREATE TABLE IF NOT EXISTS learnrepo_contracts (
+    contract_id TEXT PRIMARY KEY,
+    producer TEXT NOT NULL,
+    input_name TEXT NOT NULL,
+    schema_version TEXT NOT NULL,
+    consumer TEXT NOT NULL,
+    expected_output TEXT NOT NULL,
+    validation_command TEXT NOT NULL,
+    severity_if_broken TEXT NOT NULL DEFAULT 'MEDIUM'
+);
+
+CREATE TABLE IF NOT EXISTS learnrepo_escalations (
+    fingerprint TEXT PRIMARY KEY,
+    escalation_id TEXT NOT NULL UNIQUE,
+    source TEXT NOT NULL,
+    run_id TEXT NOT NULL,
+    severity TEXT NOT NULL,
+    health_level INTEGER NOT NULL,
+    trigger TEXT NOT NULL,
+    evidence_json TEXT NOT NULL,
+    first_seen TEXT NOT NULL,
+    last_seen TEXT NOT NULL,
+    occurrence_count INTEGER NOT NULL DEFAULT 1,
+    owner_approval_required INTEGER NOT NULL DEFAULT 0,
+    task_id TEXT
+);
 """
 
 _FTS = """
