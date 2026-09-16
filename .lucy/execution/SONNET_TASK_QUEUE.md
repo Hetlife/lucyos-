@@ -23,6 +23,17 @@ python3 scripts/verify_authority.py anti-dup --base origin/integration/consolida
 
 Commit first line `<TASK_ID>: <what changed>`, plus a `Task-ID: <TASK_ID>` trailer.
 
+**Required skill for every task.** Invoke `smallest-fix`
+(`.claude/skills/smallest-fix/`) before writing code, and again whenever a diff
+outgrows its task. It is LucyOS's own skill, acquired through the LearnRepo
+process, and it applies the model-routing instinct — cheapest capable path
+first — to code changes. Its hard limit is binding: it never removes
+validation, error handling, security checks, evidence or tests to shrink a
+diff. Where it and a task's ACCEPTANCE criteria appear to conflict, ACCEPTANCE
+wins and you escalate. Use `learnrepo` (`.claude/skills/learnrepo/`) before
+even considering a third-party dependency — LucyOS is standard-library only, so
+"this needs a package" is an escalation, never a `pip install`.
+
 ---
 
 ## Classification (master-prompt requirement)

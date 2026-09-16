@@ -166,6 +166,23 @@ The new **Cross-platform portability guard** step was confirmed to have actually
 executed and passed inside `code-and-test (py3.9)` on both runs — checked at step
 level, because a required gate that silently skips is worse than no gate.
 
+## Skills available to Sonnet from task one
+
+`.claude/skills/` was **absent from the integration base** — both skills lived
+only on `claude/lucyos-architecture-audit-4o4q83`, so a task branch cut from
+integration would not have had them until S-02 merged. Brought forward now
+(additive dev tooling, no runtime code):
+
+- **`smallest-fix`** — LucyOS's own skill, acquired through the LearnRepo
+  process. Now **mandatory** before writing code for any task, and again if a
+  diff outgrows its task. Binding limit: it never strips validation, error
+  handling, security checks, evidence or tests to shrink a diff. Where it
+  conflicts with a task's ACCEPTANCE criteria, ACCEPTANCE wins and Sonnet escalates.
+- **`learnrepo`** — required before considering any third-party dependency.
+  LucyOS is standard-library only, so "this needs a package" is an escalation.
+
+Wired into both the night-loop prompt (STEP 3) and the queue header.
+
 ## Blockers
 
 1. **Branch protection is still absent** (OWNER-01). Every authority guarantee is

@@ -75,6 +75,26 @@ Before changing code, run the task's VERIFIED START STATE plus the standard base
 If the start state no longer matches, STOP that task and mark `BLOCKED_START_STATE_DRIFT`; do not guess.
 
 STEP 3 — IMPLEMENT ONLY THE WORK ORDER
+
+MANDATORY: invoke the `smallest-fix` skill before writing code for a task, and
+again if a diff starts growing past what the task needs. It lives in this repo
+at `.claude/skills/smallest-fix/` and is LucyOS's own capability, acquired and
+independently authored through the LearnRepo process. It applies the routing
+instinct LucyOS already uses for models (cheapest capable path first) to code:
+the cheapest capable CHANGE first. It exists to stop unearned abstractions,
+duplicate helpers and speculative config from entering the tree.
+
+Read its one hard limit and obey it: `smallest-fix` NEVER strips validation,
+error handling, security checks, evidence requirements or tests to make a diff
+smaller. Those are the job, not overhead. A smaller diff that drops a test is
+not a smaller fix, it is a worse one. If the skill and a task's ACCEPTANCE
+criteria ever seem to conflict, the ACCEPTANCE criteria win and you escalate.
+
+Also available: `.claude/skills/learnrepo/` — required before adopting ANY new
+third-party dependency, package or reference implementation. LucyOS is standard
+library only; if a task seems to need a dependency, that is an escalation, not
+a pip install.
+
 - Touch only files/paths explicitly allowed by the task.
 - Make the smallest maintainable change that satisfies acceptance criteria.
 - Preserve working architecture before replacing anything.
