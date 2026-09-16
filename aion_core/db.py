@@ -103,6 +103,21 @@ CREATE TABLE IF NOT EXISTS skills (
 );
 CREATE INDEX IF NOT EXISTS idx_skills_enabled ON skills(enabled);
 
+CREATE TABLE IF NOT EXISTS learnrepo_skill_reviews (
+    review_id       TEXT PRIMARY KEY,
+    skill_id        TEXT NOT NULL,
+    candidate_id    TEXT NOT NULL,
+    candidate_url   TEXT NOT NULL DEFAULT '',
+    candidate_role  TEXT NOT NULL DEFAULT 'primary',
+    stage           TEXT NOT NULL,
+    verdict         TEXT NOT NULL DEFAULT 'PASS',
+    evidence_json   TEXT NOT NULL DEFAULT '{}',
+    created_at      TEXT NOT NULL,
+    updated_at      TEXT NOT NULL,
+    UNIQUE(skill_id, candidate_id, stage)
+);
+CREATE INDEX IF NOT EXISTS idx_learnrepo_skill_reviews_skill ON learnrepo_skill_reviews(skill_id, stage);
+
 CREATE TABLE IF NOT EXISTS approvals (
     approval_id     TEXT PRIMARY KEY,
     created_at      TEXT NOT NULL,
