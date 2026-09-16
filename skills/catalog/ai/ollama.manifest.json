@@ -1,0 +1,38 @@
+{
+  "schema_version": 1,
+  "skill_id": "ai.ollama",
+  "name": "Ollama local model runtime",
+  "version": "0.1.0",
+  "description": "Primary simple local model server.",
+  "capabilities": [
+    "local_llm",
+    "model_server"
+  ],
+  "executor_classes": [
+    "A"
+  ],
+  "platforms": [
+    "linux",
+    "macos"
+  ],
+  "requirements": {
+    "network": false,
+    "ai": true,
+    "offline_supported": true
+  },
+  "cost_class": "F0",
+  "enabled": false,
+  "actions": [
+    "local_llm",
+    "model_server"
+  ],
+  "permissions": [],
+  "fallback": [],
+  "lifecycle_state": "DISCOVERED",
+  "references": [
+    "https://github.com/ollama/ollama"
+  ],
+  "implementation_notes": "Primary simple local model server.",
+  "priority": "P0",
+  "cost_notes": "Candidate catalog entry only; recurring cost must be re-verified before activation."
+}

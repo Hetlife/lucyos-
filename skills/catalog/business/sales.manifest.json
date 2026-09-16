@@ -1,0 +1,42 @@
+{
+  "schema_version": 1,
+  "skill_id": "business.sales",
+  "name": "Sales / lead research / outreach",
+  "version": "0.1.0",
+  "description": "No bulk spam; source provenance required.",
+  "capabilities": [
+    "lead_research",
+    "qualification",
+    "draft_outreach",
+    "followup"
+  ],
+  "executor_classes": [
+    "DET",
+    "A",
+    "B",
+    "D"
+  ],
+  "platforms": [
+    "any"
+  ],
+  "requirements": {
+    "network": true,
+    "ai": true,
+    "offline_supported": false
+  },
+  "cost_class": "F0",
+  "enabled": false,
+  "actions": [
+    "lead_research",
+    "qualification",
+    "draft_outreach",
+    "followup"
+  ],
+  "permissions": [],
+  "fallback": [],
+  "lifecycle_state": "DISCOVERED",
+  "references": [],
+  "implementation_notes": "No bulk spam; source provenance required.",
+  "priority": "P1",
+  "cost_notes": "Candidate catalog entry only; recurring cost must be re-verified before activation."
+}

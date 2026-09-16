@@ -1,0 +1,42 @@
+{
+  "schema_version": 1,
+  "skill_id": "core.model-gateway",
+  "name": "Model/API gateway and failover",
+  "version": "0.1.0",
+  "description": "No provider may be a global SPOF.",
+  "capabilities": [
+    "provider_routing",
+    "fallback",
+    "circuit_breaker",
+    "cost"
+  ],
+  "executor_classes": [
+    "DET",
+    "A",
+    "B",
+    "C"
+  ],
+  "platforms": [
+    "any"
+  ],
+  "requirements": {
+    "network": true,
+    "ai": true,
+    "offline_supported": true
+  },
+  "cost_class": "F0",
+  "enabled": false,
+  "actions": [
+    "provider_routing",
+    "fallback",
+    "circuit_breaker",
+    "cost"
+  ],
+  "permissions": [],
+  "fallback": [],
+  "lifecycle_state": "DISCOVERED",
+  "references": [],
+  "implementation_notes": "No provider may be a global SPOF.",
+  "priority": "P0",
+  "cost_notes": "Candidate catalog entry only; recurring cost must be re-verified before activation."
+}

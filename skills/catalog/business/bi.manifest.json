@@ -1,0 +1,41 @@
+{
+  "schema_version": 1,
+  "skill_id": "business.bi",
+  "name": "Business intelligence / dashboards",
+  "version": "0.1.0",
+  "description": "Read-only to canonical sources.",
+  "capabilities": [
+    "kpi",
+    "dashboard",
+    "report",
+    "sql"
+  ],
+  "executor_classes": [
+    "DET"
+  ],
+  "platforms": [
+    "any"
+  ],
+  "requirements": {
+    "network": false,
+    "ai": false,
+    "offline_supported": true
+  },
+  "cost_class": "F1",
+  "enabled": false,
+  "actions": [
+    "kpi",
+    "dashboard",
+    "report",
+    "sql"
+  ],
+  "permissions": [],
+  "fallback": [],
+  "lifecycle_state": "DISCOVERED",
+  "references": [
+    "https://github.com/apache/superset"
+  ],
+  "implementation_notes": "Read-only to canonical sources.",
+  "priority": "P1",
+  "cost_notes": "Candidate catalog entry only; recurring cost must be re-verified before activation."
+}

@@ -1,0 +1,42 @@
+{
+  "schema_version": 1,
+  "skill_id": "core.context-compiler",
+  "name": "Context compiler / token optimizer",
+  "version": "0.1.0",
+  "description": "Prefer exact lines/diffs before embeddings.",
+  "capabilities": [
+    "retrieval",
+    "delta_context",
+    "summaries",
+    "token_budget"
+  ],
+  "executor_classes": [
+    "DET",
+    "A"
+  ],
+  "platforms": [
+    "any"
+  ],
+  "requirements": {
+    "network": false,
+    "ai": true,
+    "offline_supported": true
+  },
+  "cost_class": "F0",
+  "enabled": false,
+  "actions": [
+    "retrieval",
+    "delta_context",
+    "summaries",
+    "token_budget"
+  ],
+  "permissions": [],
+  "fallback": [],
+  "lifecycle_state": "DISCOVERED",
+  "references": [
+    "https://github.com/asg017/sqlite-vec"
+  ],
+  "implementation_notes": "Prefer exact lines/diffs before embeddings.",
+  "priority": "P0",
+  "cost_notes": "Candidate catalog entry only; recurring cost must be re-verified before activation."
+}

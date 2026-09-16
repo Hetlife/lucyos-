@@ -1,0 +1,41 @@
+{
+  "schema_version": 1,
+  "skill_id": "dev.desktop-gui",
+  "name": "Desktop / GUI automation",
+  "version": "0.1.0",
+  "description": "Prefer API/browser over GUI.",
+  "capabilities": [
+    "keyboard",
+    "mouse",
+    "window",
+    "accessibility"
+  ],
+  "executor_classes": [
+    "DET",
+    "A"
+  ],
+  "platforms": [
+    "linux",
+    "macos"
+  ],
+  "requirements": {
+    "network": false,
+    "ai": true,
+    "offline_supported": true
+  },
+  "cost_class": "F0",
+  "enabled": false,
+  "actions": [
+    "keyboard",
+    "mouse",
+    "window",
+    "accessibility"
+  ],
+  "permissions": [],
+  "fallback": [],
+  "lifecycle_state": "DISCOVERED",
+  "references": [],
+  "implementation_notes": "Prefer API/browser over GUI.",
+  "priority": "P2",
+  "cost_notes": "Candidate catalog entry only; recurring cost must be re-verified before activation."
+}

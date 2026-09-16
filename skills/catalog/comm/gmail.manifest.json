@@ -1,0 +1,48 @@
+{
+  "schema_version": 1,
+  "skill_id": "comm.gmail",
+  "name": "Gmail/email",
+  "version": "0.1.0",
+  "description": "Least OAuth scopes; send authority is separate.",
+  "capabilities": [
+    "read",
+    "search",
+    "thread",
+    "draft",
+    "send",
+    "attachments"
+  ],
+  "executor_classes": [
+    "DET",
+    "A",
+    "D"
+  ],
+  "platforms": [
+    "any"
+  ],
+  "requirements": {
+    "network": true,
+    "ai": false,
+    "offline_supported": false
+  },
+  "cost_class": "E0",
+  "enabled": false,
+  "actions": [
+    "read",
+    "search",
+    "thread",
+    "draft",
+    "send",
+    "attachments"
+  ],
+  "permissions": [],
+  "fallback": [],
+  "lifecycle_state": "DISCOVERED",
+  "references": [
+    "https://github.com/googleapis/google-api-python-client",
+    "https://github.com/googleapis/google-auth-library-python"
+  ],
+  "implementation_notes": "Least OAuth scopes; send authority is separate.",
+  "priority": "P1",
+  "cost_notes": "Candidate catalog entry only; recurring cost must be re-verified before activation."
+}

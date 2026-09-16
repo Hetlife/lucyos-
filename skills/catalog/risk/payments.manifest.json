@@ -1,0 +1,40 @@
+{
+  "schema_version": 1,
+  "skill_id": "risk.payments",
+  "name": "Payments / banking prepare-only",
+  "version": "0.1.0",
+  "description": "Default PREPARE_ONLY; no CVV/OTP storage.",
+  "capabilities": [
+    "beneficiary",
+    "payment_draft",
+    "duplicate_guard",
+    "receipt"
+  ],
+  "executor_classes": [
+    "DET",
+    "D"
+  ],
+  "platforms": [
+    "any"
+  ],
+  "requirements": {
+    "network": true,
+    "ai": false,
+    "offline_supported": false
+  },
+  "cost_class": "E1",
+  "enabled": false,
+  "actions": [
+    "beneficiary",
+    "payment_draft",
+    "duplicate_guard",
+    "receipt"
+  ],
+  "permissions": [],
+  "fallback": [],
+  "lifecycle_state": "DISCOVERED",
+  "references": [],
+  "implementation_notes": "Default PREPARE_ONLY; no CVV/OTP storage.",
+  "priority": "P2",
+  "cost_notes": "Candidate catalog entry only; recurring cost must be re-verified before activation."
+}

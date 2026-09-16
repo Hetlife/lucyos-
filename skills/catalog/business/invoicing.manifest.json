@@ -1,0 +1,40 @@
+{
+  "schema_version": 1,
+  "skill_id": "business.invoicing",
+  "name": "Invoices / billing / receivables",
+  "version": "0.1.0",
+  "description": "Invoice issued != revenue paid.",
+  "capabilities": [
+    "invoice",
+    "due_date",
+    "ledger",
+    "reminder"
+  ],
+  "executor_classes": [
+    "DET",
+    "D"
+  ],
+  "platforms": [
+    "any"
+  ],
+  "requirements": {
+    "network": false,
+    "ai": false,
+    "offline_supported": true
+  },
+  "cost_class": "F0",
+  "enabled": false,
+  "actions": [
+    "invoice",
+    "due_date",
+    "ledger",
+    "reminder"
+  ],
+  "permissions": [],
+  "fallback": [],
+  "lifecycle_state": "DISCOVERED",
+  "references": [],
+  "implementation_notes": "Invoice issued != revenue paid.",
+  "priority": "P1",
+  "cost_notes": "Candidate catalog entry only; recurring cost must be re-verified before activation."
+}

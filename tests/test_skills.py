@@ -103,3 +103,56 @@ class TestSkillManifest(AionTest):
         repo = Path(__file__).resolve().parent.parent
         data = skills.load_manifest(repo / "skills" / "example.manifest.json")
         self.assertEqual(skills.validate_manifest(data), [])
+
+
+class TestSkillCatalogLifecycle(AionTest):
+    def test_catalog_valid_and_complete(self):
+        self.assertEqual(skills.validate_catalog(), [])
+        self.assertGreaterEqual(len(skills.catalog_manifests()), 100)
+
+    def test_catalog_sync_learns_candidates_disabled(self):
+        skills.sync_catalog()
+        row = skills.get("web.browser-kernel")
+        self.assertIsNotNone(row)
+        self.assertEqual(row["lifecycle_state"], "DISCOVERED")
+        self.assertEqual(row["enabled"], 0)
+        self.assertTrue(row["source_manifest"].endswith("web/browser-kernel.manifest.json"))
+
+    def test_catalog_sync_is_idempotent_and_does_not_disable_existing_core(self):
+        first = skills.sync_catalog()
+        before = db.connect().execute("SELECT COUNT(*) FROM skills").fetchone()[0]
+        result = skills.sync_catalog()
+        after = db.connect().execute("SELECT COUNT(*) FROM skills").fetchone()[0]
+        self.assertGreater(first["added"], 0)
+        self.assertEqual(before, after)
+        self.assertEqual(result["added"], 0)
+        self.assertEqual(skills.get("core.learnrepo")["enabled"], 1)
+
+    def test_discovered_skill_cannot_be_enabled_directly(self):
+        skills.sync_catalog()
+        with self.assertRaises(skills.SkillError):
+            skills.set_enabled("web.browser-kernel", True)
+
+    def test_lifecycle_cannot_skip_security_pipeline(self):
+        skills.sync_catalog()
+        with self.assertRaises(skills.SkillError):
+            skills.set_lifecycle("web.browser-kernel", "ACTIVE")
+        skills.set_lifecycle("web.browser-kernel", "RESEARCHED")
+        self.assertEqual(skills.get("web.browser-kernel")["lifecycle_state"], "RESEARCHED")
+
+    def test_activation_requires_tested_state(self):
+        sid = "test.lifecycle"
+        skills.register(skill_id=sid, name="Lifecycle", enabled=0, lifecycle_state="INSTALLED_DISABLED")
+        with self.assertRaises(skills.SkillError):
+            skills.activate(sid)
+        skills.set_lifecycle(sid, "TESTED")
+        skills.activate(sid)
+        row = skills.get(sid)
+        self.assertEqual(row["lifecycle_state"], "ACTIVE")
+        self.assertEqual(row["enabled"], 1)
+
+    def test_catalog_learning_makes_zero_model_calls(self):
+        before = db.connect().execute("SELECT COUNT(*) FROM model_usage").fetchone()[0]
+        skills.sync_catalog()
+        after = db.connect().execute("SELECT COUNT(*) FROM model_usage").fetchone()[0]
+        self.assertEqual(before, after)

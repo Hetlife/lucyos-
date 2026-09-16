@@ -1,0 +1,45 @@
+{
+  "schema_version": 1,
+  "skill_id": "dev.git-github",
+  "name": "Git / GitHub / software engineering",
+  "version": "0.1.0",
+  "description": "Protected merges remain policy-gated.",
+  "capabilities": [
+    "git",
+    "pr",
+    "issues",
+    "ci",
+    "tests",
+    "rollback"
+  ],
+  "executor_classes": [
+    "DET",
+    "B",
+    "C"
+  ],
+  "platforms": [
+    "any"
+  ],
+  "requirements": {
+    "network": true,
+    "ai": false,
+    "offline_supported": true
+  },
+  "cost_class": "F0",
+  "enabled": false,
+  "actions": [
+    "git",
+    "pr",
+    "issues",
+    "ci",
+    "tests",
+    "rollback"
+  ],
+  "permissions": [],
+  "fallback": [],
+  "lifecycle_state": "DISCOVERED",
+  "references": [],
+  "implementation_notes": "Protected merges remain policy-gated.",
+  "priority": "P1",
+  "cost_notes": "Candidate catalog entry only; recurring cost must be re-verified before activation."
+}

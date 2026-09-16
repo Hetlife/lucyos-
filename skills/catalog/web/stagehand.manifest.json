@@ -1,0 +1,40 @@
+{
+  "schema_version": 1,
+  "skill_id": "web.stagehand",
+  "name": "Hybrid browser recovery reference",
+  "version": "0.1.0",
+  "description": "Reference/optional adapter; avoid overlapping frameworks by default.",
+  "capabilities": [
+    "self_heal",
+    "action_cache",
+    "hybrid_browser"
+  ],
+  "executor_classes": [
+    "A",
+    "B"
+  ],
+  "platforms": [
+    "any"
+  ],
+  "requirements": {
+    "network": true,
+    "ai": true,
+    "offline_supported": false
+  },
+  "cost_class": "F0",
+  "enabled": false,
+  "actions": [
+    "self_heal",
+    "action_cache",
+    "hybrid_browser"
+  ],
+  "permissions": [],
+  "fallback": [],
+  "lifecycle_state": "DISCOVERED",
+  "references": [
+    "https://github.com/browserbase/stagehand"
+  ],
+  "implementation_notes": "Reference/optional adapter; avoid overlapping frameworks by default.",
+  "priority": "P1",
+  "cost_notes": "Candidate catalog entry only; recurring cost must be re-verified before activation."
+}

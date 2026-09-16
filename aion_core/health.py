@@ -144,9 +144,13 @@ def check_skill_registry() -> dict:
         skills.ensure_defaults()
         rows = skills.all_skills()
         invalid = skills.validate_registry()
-        return {"name": "skill_registry", "ok": not invalid,
-                "detail": (f"{len(rows)} registered, {sum(bool(r['enabled']) for r in rows)} enabled"
-                           if not invalid else f"invalid: {', '.join(invalid[:4])}")}
+        catalog_errors = skills.validate_catalog()
+        problems = invalid + catalog_errors
+        discovered = sum(r["lifecycle_state"] == "DISCOVERED" for r in rows)
+        return {"name": "skill_registry", "ok": not problems,
+                "detail": (f"{len(rows)} registered, {sum(bool(r['enabled']) for r in rows)} enabled, "
+                           f"{discovered} discovered candidates, {len(skills.catalog_manifests())} catalog manifests"
+                           if not problems else f"invalid: {', '.join(problems[:4])}")}
     except Exception as exc:
         return {"name": "skill_registry", "ok": False, "detail": str(exc)}
 

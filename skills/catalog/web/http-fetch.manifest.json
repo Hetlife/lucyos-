@@ -1,0 +1,41 @@
+{
+  "schema_version": 1,
+  "skill_id": "web.http-fetch",
+  "name": "HTTP fetch/cache",
+  "version": "0.1.0",
+  "description": "Use before browser when possible.",
+  "capabilities": [
+    "http",
+    "fetch",
+    "cache",
+    "etag"
+  ],
+  "executor_classes": [
+    "DET"
+  ],
+  "platforms": [
+    "any"
+  ],
+  "requirements": {
+    "network": true,
+    "ai": false,
+    "offline_supported": false
+  },
+  "cost_class": "F0",
+  "enabled": false,
+  "actions": [
+    "http",
+    "fetch",
+    "cache",
+    "etag"
+  ],
+  "permissions": [],
+  "fallback": [],
+  "lifecycle_state": "DISCOVERED",
+  "references": [
+    "https://github.com/encode/httpx"
+  ],
+  "implementation_notes": "Use before browser when possible.",
+  "priority": "P1",
+  "cost_notes": "Candidate catalog entry only; recurring cost must be re-verified before activation."
+}

@@ -1,0 +1,43 @@
+{
+  "schema_version": 1,
+  "skill_id": "core.memory",
+  "name": "Memory / local knowledge retrieval",
+  "version": "0.1.0",
+  "description": "Start with SQLite/FTS; Qdrant only if scale justifies it.",
+  "capabilities": [
+    "memory",
+    "fts",
+    "provenance",
+    "retrieval"
+  ],
+  "executor_classes": [
+    "DET",
+    "A"
+  ],
+  "platforms": [
+    "any"
+  ],
+  "requirements": {
+    "network": false,
+    "ai": true,
+    "offline_supported": true
+  },
+  "cost_class": "F0",
+  "enabled": false,
+  "actions": [
+    "memory",
+    "fts",
+    "provenance",
+    "retrieval"
+  ],
+  "permissions": [],
+  "fallback": [],
+  "lifecycle_state": "DISCOVERED",
+  "references": [
+    "https://github.com/asg017/sqlite-vec",
+    "https://github.com/qdrant/qdrant"
+  ],
+  "implementation_notes": "Start with SQLite/FTS; Qdrant only if scale justifies it.",
+  "priority": "P0",
+  "cost_notes": "Candidate catalog entry only; recurring cost must be re-verified before activation."
+}

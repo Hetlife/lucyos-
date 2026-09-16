@@ -1,0 +1,41 @@
+{
+  "schema_version": 1,
+  "skill_id": "business.proposal-builder",
+  "name": "Proposal / quotation builder",
+  "version": "0.1.0",
+  "description": "Validate totals and terms.",
+  "capabilities": [
+    "proposal",
+    "quote",
+    "template",
+    "pricing"
+  ],
+  "executor_classes": [
+    "DET",
+    "A",
+    "D"
+  ],
+  "platforms": [
+    "any"
+  ],
+  "requirements": {
+    "network": false,
+    "ai": true,
+    "offline_supported": true
+  },
+  "cost_class": "F0",
+  "enabled": false,
+  "actions": [
+    "proposal",
+    "quote",
+    "template",
+    "pricing"
+  ],
+  "permissions": [],
+  "fallback": [],
+  "lifecycle_state": "DISCOVERED",
+  "references": [],
+  "implementation_notes": "Validate totals and terms.",
+  "priority": "P1",
+  "cost_notes": "Candidate catalog entry only; recurring cost must be re-verified before activation."
+}

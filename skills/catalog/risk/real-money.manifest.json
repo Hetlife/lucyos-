@@ -1,0 +1,39 @@
+{
+  "schema_version": 1,
+  "skill_id": "risk.real-money",
+  "name": "Real-money financial execution",
+  "version": "0.1.0",
+  "description": "Explicit owner authority required.",
+  "capabilities": [
+    "transfer",
+    "payment",
+    "withdrawal",
+    "deposit"
+  ],
+  "executor_classes": [
+    "D"
+  ],
+  "platforms": [
+    "any"
+  ],
+  "requirements": {
+    "network": true,
+    "ai": false,
+    "offline_supported": false
+  },
+  "cost_class": "E1",
+  "enabled": false,
+  "actions": [
+    "transfer",
+    "payment",
+    "withdrawal",
+    "deposit"
+  ],
+  "permissions": [],
+  "fallback": [],
+  "lifecycle_state": "DISCOVERED",
+  "references": [],
+  "implementation_notes": "Explicit owner authority required.",
+  "priority": "P2",
+  "cost_notes": "Candidate catalog entry only; recurring cost must be re-verified before activation."
+}

@@ -1,0 +1,39 @@
+{
+  "schema_version": 1,
+  "skill_id": "risk.destructive",
+  "name": "Destructive / irreversible operations",
+  "version": "0.1.0",
+  "description": "Require explicit approval and recovery/compensation where possible.",
+  "capabilities": [
+    "delete",
+    "destroy",
+    "purge",
+    "ownership_change"
+  ],
+  "executor_classes": [
+    "D"
+  ],
+  "platforms": [
+    "any"
+  ],
+  "requirements": {
+    "network": false,
+    "ai": false,
+    "offline_supported": true
+  },
+  "cost_class": "F0",
+  "enabled": false,
+  "actions": [
+    "delete",
+    "destroy",
+    "purge",
+    "ownership_change"
+  ],
+  "permissions": [],
+  "fallback": [],
+  "lifecycle_state": "DISCOVERED",
+  "references": [],
+  "implementation_notes": "Require explicit approval and recovery/compensation where possible.",
+  "priority": "P2",
+  "cost_notes": "Candidate catalog entry only; recurring cost must be re-verified before activation."
+}

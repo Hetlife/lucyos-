@@ -15,6 +15,25 @@ _SKILL_ID = re.compile(r"^[a-z0-9][a-z0-9_.-]{2,79}$")
 _EXECUTOR_CLASSES = {"DET", "A", "B", "C", "D"}
 
 MANIFEST_SCHEMA_VERSION = 1
+LIFECYCLE_STATES = {"DISCOVERED", "RESEARCHED", "LICENSE_OK", "SECURITY_REVIEWED", "SANDBOXED", "BENCHMARKED", "ARCHITECTURE_APPROVED", "OWNER_APPROVED", "INSTALLED_DISABLED", "TESTED", "ACTIVE", "DEGRADED", "QUARANTINED", "DEPRECATED", "REJECTED", "ROLLED_BACK"}
+LIFECYCLE_TRANSITIONS = {
+    "DISCOVERED": {"RESEARCHED", "REJECTED", "QUARANTINED"},
+    "RESEARCHED": {"LICENSE_OK", "REJECTED", "QUARANTINED"},
+    "LICENSE_OK": {"SECURITY_REVIEWED", "REJECTED", "QUARANTINED"},
+    "SECURITY_REVIEWED": {"SANDBOXED", "REJECTED", "QUARANTINED"},
+    "SANDBOXED": {"BENCHMARKED", "REJECTED", "QUARANTINED"},
+    "BENCHMARKED": {"ARCHITECTURE_APPROVED", "REJECTED", "QUARANTINED"},
+    "ARCHITECTURE_APPROVED": {"OWNER_APPROVED", "INSTALLED_DISABLED", "REJECTED", "QUARANTINED"},
+    "OWNER_APPROVED": {"INSTALLED_DISABLED", "REJECTED", "QUARANTINED"},
+    "INSTALLED_DISABLED": {"TESTED", "ROLLED_BACK", "QUARANTINED"},
+    "TESTED": {"ACTIVE", "INSTALLED_DISABLED", "ROLLED_BACK", "QUARANTINED"},
+    "ACTIVE": {"DEGRADED", "DEPRECATED", "QUARANTINED", "ROLLED_BACK"},
+    "DEGRADED": {"ACTIVE", "QUARANTINED", "ROLLED_BACK", "DEPRECATED"},
+    "QUARANTINED": {"RESEARCHED", "REJECTED", "ROLLED_BACK"},
+    "DEPRECATED": {"ROLLED_BACK"},
+    "REJECTED": set(),
+    "ROLLED_BACK": {"RESEARCHED"},
+}
 MANIFEST_REQUIRED = {
     "schema_version", "skill_id", "name", "version", "capabilities",
     "executor_classes", "platforms", "requirements", "cost_class",
@@ -23,7 +42,8 @@ MANIFEST_OPTIONAL = {
     "description", "enabled", "health_command", "test_command", "actions",
     "permissions", "input_schema", "output_schema", "risk_class", "data_class",
     "fallback", "evidence", "timeout_seconds", "retry", "idempotency",
-    "approval_rule", "rollback", "feature_flag",
+    "approval_rule", "rollback", "feature_flag", "lifecycle_state", "references",
+    "implementation_notes", "priority", "cost_notes",
 }
 
 DEFAULT_SKILLS = [
@@ -74,7 +94,8 @@ def register(*, skill_id: str, name: str, description: str = "", version: str = 
              capabilities: str = "", executor_classes: str = "DET", platforms: str = "any",
              network_required: int = 0, ai_required: int = 0, offline_supported: int = 1,
              cost_class: str = "none", enabled: int = 1, health_command: str = "",
-             test_command: str = "") -> str:
+             test_command: str = "", lifecycle_state: str = "ACTIVE", feature_flag: str = "",
+             source_manifest: str = "") -> str:
     skill_id = skill_id.strip().lower()
     if not _SKILL_ID.match(skill_id):
         raise SkillError(f"invalid skill_id {skill_id!r}")
@@ -82,25 +103,31 @@ def register(*, skill_id: str, name: str, description: str = "", version: str = 
     invalid = set(classes.split(",")) - _EXECUTOR_CLASSES if classes else {""}
     if invalid:
         raise SkillError(f"invalid executor class(es): {sorted(invalid)}")
+    lifecycle_state = lifecycle_state.strip().upper()
+    if lifecycle_state not in LIFECYCLE_STATES:
+        raise SkillError(f"invalid lifecycle state {lifecycle_state!r}")
     now = util.now()
     values = (
         skill_id, security.redact(name), security.redact(description), version,
         security.redact(_clean_csv(capabilities)), classes, _clean_csv(platforms.lower()) or "any",
         int(bool(network_required)), int(bool(ai_required)), int(bool(offline_supported)),
         cost_class.strip().lower() or "none", int(bool(enabled)),
-        security.redact(health_command), security.redact(test_command), now,
+        security.redact(health_command), security.redact(test_command), lifecycle_state,
+        security.redact(feature_flag), security.redact(source_manifest), now,
     )
     conn = db.connect()
     conn.execute(
         "INSERT INTO skills(skill_id,name,description,version,capabilities,executor_classes,platforms,"
-        "network_required,ai_required,offline_supported,cost_class,enabled,health_command,test_command,updated_at) "
-        "VALUES(?,?,?,?,?,?,?,?,?,?,?,?,?,?,?) ON CONFLICT(skill_id) DO UPDATE SET "
+        "network_required,ai_required,offline_supported,cost_class,enabled,health_command,test_command,"
+        "lifecycle_state,feature_flag,source_manifest,updated_at) "
+        "VALUES(?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?) ON CONFLICT(skill_id) DO UPDATE SET "
         "name=excluded.name,description=excluded.description,version=excluded.version,"
         "capabilities=excluded.capabilities,executor_classes=excluded.executor_classes,"
         "platforms=excluded.platforms,network_required=excluded.network_required,"
         "ai_required=excluded.ai_required,offline_supported=excluded.offline_supported,"
         "cost_class=excluded.cost_class,enabled=excluded.enabled,health_command=excluded.health_command,"
-        "test_command=excluded.test_command,updated_at=excluded.updated_at",
+        "test_command=excluded.test_command,lifecycle_state=excluded.lifecycle_state,"
+        "feature_flag=excluded.feature_flag,source_manifest=excluded.source_manifest,updated_at=excluded.updated_at",
         values,
     )
     conn.commit()
@@ -129,8 +156,11 @@ def all_skills(*, enabled_only: bool = False) -> list:
 
 
 def set_enabled(skill_id: str, enabled: bool) -> None:
-    if get(skill_id) is None:
+    row = get(skill_id)
+    if row is None:
         raise SkillError(f"unknown skill {skill_id}")
+    if enabled and row["lifecycle_state"] != "ACTIVE":
+        raise SkillError(f"cannot enable {skill_id}: lifecycle is {row['lifecycle_state']}, not ACTIVE")
     conn = db.connect()
     conn.execute("UPDATE skills SET enabled=?, updated_at=? WHERE skill_id=?",
                  (int(bool(enabled)), util.now(), skill_id.lower()))
@@ -175,7 +205,8 @@ def report(runtime: dict) -> list[dict]:
             "enabled": bool(row["enabled"]), "available": available,
             "executor_classes": row["executor_classes"], "network_required": bool(row["network_required"]),
             "ai_required": bool(row["ai_required"]), "offline_supported": bool(row["offline_supported"]),
-            "cost_class": row["cost_class"], "reason": reason,
+            "cost_class": row["cost_class"], "lifecycle_state": row["lifecycle_state"],
+            "feature_flag": row["feature_flag"], "reason": reason,
         })
     return out
 
@@ -231,6 +262,10 @@ def validate_manifest(data: dict) -> list[str]:
         errors.append("manifest:invalid-timeout")
     if "enabled" in data and not isinstance(data["enabled"], bool):
         errors.append("manifest:invalid-enabled")
+    if "lifecycle_state" in data and data["lifecycle_state"] not in LIFECYCLE_STATES:
+        errors.append("manifest:invalid-lifecycle-state")
+    if "references" in data and (not isinstance(data["references"], list) or not all(isinstance(x, str) for x in data["references"])):
+        errors.append("manifest:invalid-references")
     return errors
 
 
@@ -252,7 +287,8 @@ def register_manifest(data: dict) -> str:
         network_required=req["network"], ai_required=req["ai"],
         offline_supported=req["offline_supported"], cost_class=data["cost_class"],
         enabled=data.get("enabled", True), health_command=data.get("health_command", ""),
-        test_command=data.get("test_command", ""),
+        test_command=data.get("test_command", ""), lifecycle_state=data.get("lifecycle_state", "DISCOVERED"),
+        feature_flag=data.get("feature_flag", ""),
     )
 
 
@@ -266,3 +302,95 @@ def load_manifest(path) -> dict:
     if errors:
         raise SkillError("; ".join(errors))
     return data
+
+
+def set_lifecycle(skill_id: str, state: str, *, force: bool = False) -> None:
+    state = state.strip().upper()
+    if state not in LIFECYCLE_STATES:
+        raise SkillError(f"invalid lifecycle state {state!r}")
+    row = get(skill_id)
+    if row is None:
+        raise SkillError(f"unknown skill {skill_id}")
+    current = row["lifecycle_state"]
+    if state == current:
+        return
+    if not force and state not in LIFECYCLE_TRANSITIONS.get(current, set()):
+        raise SkillError(f"invalid lifecycle transition {current}->{state}")
+    enabled = 0 if state != "ACTIVE" else row["enabled"]
+    conn = db.connect()
+    conn.execute("UPDATE skills SET lifecycle_state=?, enabled=?, updated_at=? WHERE skill_id=?",
+                 (state, enabled, util.now(), skill_id.lower()))
+    conn.commit()
+    db.log_event("aion", "skill.lifecycle", skill_id, f"{current}->{state}")
+
+
+def activate(skill_id: str) -> None:
+    row = get(skill_id)
+    if row is None:
+        raise SkillError(f"unknown skill {skill_id}")
+    if row["lifecycle_state"] != "TESTED":
+        raise SkillError(f"cannot activate {skill_id}: lifecycle is {row['lifecycle_state']}, expected TESTED")
+    set_lifecycle(skill_id, "ACTIVE")
+    set_enabled(skill_id, True)
+
+
+def catalog_root():
+    from pathlib import Path
+    return Path(__file__).resolve().parent.parent / "skills" / "catalog"
+
+
+def catalog_manifests() -> list:
+    root = catalog_root()
+    if not root.exists():
+        return []
+    return sorted(p for p in root.rglob("*.manifest.json") if p.is_file())
+
+
+def validate_catalog() -> list[str]:
+    errors = []
+    seen = set()
+    for path in catalog_manifests():
+        try:
+            data = load_manifest(path)
+        except Exception as exc:
+            errors.append(f"{path.relative_to(catalog_root())}:{exc}")
+            continue
+        sid = data["skill_id"]
+        if sid in seen:
+            errors.append(f"{sid}:duplicate")
+        seen.add(sid)
+        if data.get("enabled", False):
+            errors.append(f"{sid}:catalog-entry-must-start-disabled")
+        if data.get("lifecycle_state", "DISCOVERED") != "DISCOVERED":
+            errors.append(f"{sid}:catalog-entry-must-start-discovered")
+    return errors
+
+
+def sync_catalog() -> dict:
+    """Learn the on-disk candidate catalog into canonical SQLite, disabled.
+
+    Existing rows are never overwritten. This is catalog ingestion only: it
+    installs no dependency, imports no plugin and activates no capability.
+    """
+    errors = validate_catalog()
+    if errors:
+        raise SkillError("catalog invalid: " + "; ".join(errors[:8]))
+    added = skipped = 0
+    root = catalog_root()
+    for path in catalog_manifests():
+        data = load_manifest(path)
+        if get(data["skill_id"]) is not None:
+            skipped += 1
+            continue
+        data = dict(data)
+        data["enabled"] = False
+        data["lifecycle_state"] = "DISCOVERED"
+        sid = register_manifest(data)
+        conn = db.connect()
+        conn.execute("UPDATE skills SET source_manifest=?, feature_flag=? WHERE skill_id=?",
+                     (str(path.relative_to(root.parent.parent)), data.get("feature_flag", ""), sid))
+        conn.commit()
+        added += 1
+    if added:
+        db.log_event("aion", "skill.catalog.sync", "catalog", f"{added} added, {skipped} existing")
+    return {"catalog": len(catalog_manifests()), "added": added, "skipped": skipped, "errors": []}

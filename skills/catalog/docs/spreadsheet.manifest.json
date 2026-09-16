@@ -1,0 +1,42 @@
+{
+  "schema_version": 1,
+  "skill_id": "docs.spreadsheet",
+  "name": "XLSX/CSV business data",
+  "version": "0.1.0",
+  "description": "Use code for arithmetic; targeted workbook edits.",
+  "capabilities": [
+    "xlsx",
+    "csv",
+    "formulas",
+    "reconcile"
+  ],
+  "executor_classes": [
+    "DET"
+  ],
+  "platforms": [
+    "any"
+  ],
+  "requirements": {
+    "network": false,
+    "ai": false,
+    "offline_supported": true
+  },
+  "cost_class": "F0",
+  "enabled": false,
+  "actions": [
+    "xlsx",
+    "csv",
+    "formulas",
+    "reconcile"
+  ],
+  "permissions": [],
+  "fallback": [],
+  "lifecycle_state": "DISCOVERED",
+  "references": [
+    "https://github.com/pandas-dev/pandas",
+    "https://github.com/duckdb/duckdb"
+  ],
+  "implementation_notes": "Use code for arithmetic; targeted workbook edits.",
+  "priority": "P1",
+  "cost_notes": "Candidate catalog entry only; recurring cost must be re-verified before activation."
+}

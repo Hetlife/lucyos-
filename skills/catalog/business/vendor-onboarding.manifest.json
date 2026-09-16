@@ -1,0 +1,41 @@
+{
+  "schema_version": 1,
+  "skill_id": "business.vendor-onboarding",
+  "name": "Vendor onboarding",
+  "version": "0.1.0",
+  "description": "Do not create external accounts or accept terms silently.",
+  "capabilities": [
+    "vendor",
+    "documents",
+    "compliance",
+    "account_setup"
+  ],
+  "executor_classes": [
+    "DET",
+    "A",
+    "D"
+  ],
+  "platforms": [
+    "any"
+  ],
+  "requirements": {
+    "network": true,
+    "ai": true,
+    "offline_supported": false
+  },
+  "cost_class": "F0",
+  "enabled": false,
+  "actions": [
+    "vendor",
+    "documents",
+    "compliance",
+    "account_setup"
+  ],
+  "permissions": [],
+  "fallback": [],
+  "lifecycle_state": "DISCOVERED",
+  "references": [],
+  "implementation_notes": "Do not create external accounts or accept terms silently.",
+  "priority": "P1",
+  "cost_notes": "Candidate catalog entry only; recurring cost must be re-verified before activation."
+}

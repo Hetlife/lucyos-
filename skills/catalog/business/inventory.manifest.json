@@ -1,0 +1,43 @@
+{
+  "schema_version": 1,
+  "skill_id": "business.inventory",
+  "name": "Inventory / assets / warehouse",
+  "version": "0.1.0",
+  "description": "Event-source adjustments.",
+  "capabilities": [
+    "sku",
+    "stock",
+    "serial",
+    "location",
+    "reorder"
+  ],
+  "executor_classes": [
+    "DET"
+  ],
+  "platforms": [
+    "any"
+  ],
+  "requirements": {
+    "network": false,
+    "ai": false,
+    "offline_supported": true
+  },
+  "cost_class": "F0",
+  "enabled": false,
+  "actions": [
+    "sku",
+    "stock",
+    "serial",
+    "location",
+    "reorder"
+  ],
+  "permissions": [],
+  "fallback": [],
+  "lifecycle_state": "DISCOVERED",
+  "references": [
+    "https://github.com/frappe/erpnext"
+  ],
+  "implementation_notes": "Event-source adjustments.",
+  "priority": "P1",
+  "cost_notes": "Candidate catalog entry only; recurring cost must be re-verified before activation."
+}

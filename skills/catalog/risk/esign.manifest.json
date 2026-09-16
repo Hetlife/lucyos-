@@ -1,0 +1,40 @@
+{
+  "schema_version": 1,
+  "skill_id": "risk.esign",
+  "name": "E-signature package",
+  "version": "0.1.0",
+  "description": "Never sign as owner without explicit authority.",
+  "capabilities": [
+    "signature_package",
+    "status",
+    "archive"
+  ],
+  "executor_classes": [
+    "DET",
+    "D"
+  ],
+  "platforms": [
+    "any"
+  ],
+  "requirements": {
+    "network": true,
+    "ai": false,
+    "offline_supported": false
+  },
+  "cost_class": "E2",
+  "enabled": false,
+  "actions": [
+    "signature_package",
+    "status",
+    "archive"
+  ],
+  "permissions": [],
+  "fallback": [],
+  "lifecycle_state": "DISCOVERED",
+  "references": [
+    "https://github.com/documenso/documenso"
+  ],
+  "implementation_notes": "Never sign as owner without explicit authority.",
+  "priority": "P2",
+  "cost_notes": "Candidate catalog entry only; recurring cost must be re-verified before activation."
+}

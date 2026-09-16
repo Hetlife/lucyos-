@@ -1,0 +1,38 @@
+{
+  "schema_version": 1,
+  "skill_id": "core.safe-mode",
+  "name": "Safe mode / emergency stop",
+  "version": "0.1.0",
+  "description": "Block consequential writes while preserving local read/health/backup.",
+  "capabilities": [
+    "pause",
+    "read_only",
+    "block_writes"
+  ],
+  "executor_classes": [
+    "DET",
+    "D"
+  ],
+  "platforms": [
+    "any"
+  ],
+  "requirements": {
+    "network": false,
+    "ai": false,
+    "offline_supported": true
+  },
+  "cost_class": "F0",
+  "enabled": false,
+  "actions": [
+    "pause",
+    "read_only",
+    "block_writes"
+  ],
+  "permissions": [],
+  "fallback": [],
+  "lifecycle_state": "DISCOVERED",
+  "references": [],
+  "implementation_notes": "Block consequential writes while preserving local read/health/backup.",
+  "priority": "P0",
+  "cost_notes": "Candidate catalog entry only; recurring cost must be re-verified before activation."
+}

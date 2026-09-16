@@ -1,0 +1,38 @@
+{
+  "schema_version": 1,
+  "skill_id": "media.text-to-speech",
+  "name": "Text-to-speech",
+  "version": "0.1.0",
+  "description": "Model/voice licenses need separate review.",
+  "capabilities": [
+    "tts",
+    "voice_output"
+  ],
+  "executor_classes": [
+    "A"
+  ],
+  "platforms": [
+    "linux",
+    "macos"
+  ],
+  "requirements": {
+    "network": false,
+    "ai": true,
+    "offline_supported": true
+  },
+  "cost_class": "F0",
+  "enabled": false,
+  "actions": [
+    "tts",
+    "voice_output"
+  ],
+  "permissions": [],
+  "fallback": [],
+  "lifecycle_state": "DISCOVERED",
+  "references": [
+    "https://github.com/coqui-ai/TTS"
+  ],
+  "implementation_notes": "Model/voice licenses need separate review.",
+  "priority": "P1",
+  "cost_notes": "Candidate catalog entry only; recurring cost must be re-verified before activation."
+}

@@ -1,0 +1,41 @@
+{
+  "schema_version": 1,
+  "skill_id": "media.audio-video",
+  "name": "Audio/video processing",
+  "version": "0.1.0",
+  "description": "Use lawful/authorized media only.",
+  "capabilities": [
+    "transcode",
+    "compress",
+    "thumbnail",
+    "extract_audio"
+  ],
+  "executor_classes": [
+    "DET"
+  ],
+  "platforms": [
+    "any"
+  ],
+  "requirements": {
+    "network": false,
+    "ai": false,
+    "offline_supported": true
+  },
+  "cost_class": "F0",
+  "enabled": false,
+  "actions": [
+    "transcode",
+    "compress",
+    "thumbnail",
+    "extract_audio"
+  ],
+  "permissions": [],
+  "fallback": [],
+  "lifecycle_state": "DISCOVERED",
+  "references": [
+    "https://github.com/FFmpeg/FFmpeg"
+  ],
+  "implementation_notes": "Use lawful/authorized media only.",
+  "priority": "P1",
+  "cost_notes": "Candidate catalog entry only; recurring cost must be re-verified before activation."
+}

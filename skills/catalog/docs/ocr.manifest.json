@@ -1,0 +1,41 @@
+{
+  "schema_version": 1,
+  "skill_id": "docs.ocr",
+  "name": "OCR / scanned documents",
+  "version": "0.1.0",
+  "description": "Keep original immutable.",
+  "capabilities": [
+    "ocr",
+    "deskew",
+    "text_layer"
+  ],
+  "executor_classes": [
+    "DET",
+    "A"
+  ],
+  "platforms": [
+    "any"
+  ],
+  "requirements": {
+    "network": false,
+    "ai": true,
+    "offline_supported": true
+  },
+  "cost_class": "F0",
+  "enabled": false,
+  "actions": [
+    "ocr",
+    "deskew",
+    "text_layer"
+  ],
+  "permissions": [],
+  "fallback": [],
+  "lifecycle_state": "DISCOVERED",
+  "references": [
+    "https://github.com/ocrmypdf/OCRmyPDF",
+    "https://github.com/tesseract-ocr/tesseract"
+  ],
+  "implementation_notes": "Keep original immutable.",
+  "priority": "P1",
+  "cost_notes": "Candidate catalog entry only; recurring cost must be re-verified before activation."
+}

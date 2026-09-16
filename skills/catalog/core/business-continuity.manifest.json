@@ -1,0 +1,39 @@
+{
+  "schema_version": 1,
+  "skill_id": "core.business-continuity",
+  "name": "Business continuity / provider failover",
+  "version": "0.1.0",
+  "description": "One provider/key/node failure cannot stop unrelated work.",
+  "capabilities": [
+    "failover",
+    "checkpoint",
+    "circuit_breaker",
+    "degraded_mode"
+  ],
+  "executor_classes": [
+    "DET"
+  ],
+  "platforms": [
+    "any"
+  ],
+  "requirements": {
+    "network": false,
+    "ai": false,
+    "offline_supported": true
+  },
+  "cost_class": "F0",
+  "enabled": false,
+  "actions": [
+    "failover",
+    "checkpoint",
+    "circuit_breaker",
+    "degraded_mode"
+  ],
+  "permissions": [],
+  "fallback": [],
+  "lifecycle_state": "DISCOVERED",
+  "references": [],
+  "implementation_notes": "One provider/key/node failure cannot stop unrelated work.",
+  "priority": "P0",
+  "cost_notes": "Candidate catalog entry only; recurring cost must be re-verified before activation."
+}

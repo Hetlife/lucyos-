@@ -1,0 +1,39 @@
+{
+  "schema_version": 1,
+  "skill_id": "dev.webhooks",
+  "name": "Webhook receiver",
+  "version": "0.1.0",
+  "description": "Verify signatures and queue events.",
+  "capabilities": [
+    "webhook",
+    "signature",
+    "replay_protection",
+    "enqueue"
+  ],
+  "executor_classes": [
+    "DET"
+  ],
+  "platforms": [
+    "any"
+  ],
+  "requirements": {
+    "network": true,
+    "ai": false,
+    "offline_supported": false
+  },
+  "cost_class": "F0",
+  "enabled": false,
+  "actions": [
+    "webhook",
+    "signature",
+    "replay_protection",
+    "enqueue"
+  ],
+  "permissions": [],
+  "fallback": [],
+  "lifecycle_state": "DISCOVERED",
+  "references": [],
+  "implementation_notes": "Verify signatures and queue events.",
+  "priority": "P1",
+  "cost_notes": "Candidate catalog entry only; recurring cost must be re-verified before activation."
+}

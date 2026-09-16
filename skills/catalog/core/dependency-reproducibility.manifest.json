@@ -1,0 +1,43 @@
+{
+  "schema_version": 1,
+  "skill_id": "core.dependency-reproducibility",
+  "name": "Package/dependency reproducibility",
+  "version": "0.1.0",
+  "description": "No blind upgrades.",
+  "capabilities": [
+    "lockfiles",
+    "checksums",
+    "rollback",
+    "pinning"
+  ],
+  "executor_classes": [
+    "DET"
+  ],
+  "platforms": [
+    "linux",
+    "macos"
+  ],
+  "requirements": {
+    "network": true,
+    "ai": false,
+    "offline_supported": true
+  },
+  "cost_class": "F0",
+  "enabled": false,
+  "actions": [
+    "lockfiles",
+    "checksums",
+    "rollback",
+    "pinning"
+  ],
+  "permissions": [],
+  "fallback": [],
+  "lifecycle_state": "DISCOVERED",
+  "references": [
+    "https://github.com/astral-sh/uv",
+    "https://github.com/Homebrew/brew"
+  ],
+  "implementation_notes": "No blind upgrades.",
+  "priority": "P0",
+  "cost_notes": "Candidate catalog entry only; recurring cost must be re-verified before activation."
+}

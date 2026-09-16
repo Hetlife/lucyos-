@@ -1,0 +1,32 @@
+LUCYOS SKILL SYSTEM — Q003 CATALOG + LIFECYCLE
+Date: 2026-09-16
+
+PURPOSE
+Let LucyOS learn the complete planned skill catalog now without installing or activating unreviewed dependencies.
+
+WHAT CHANGED
+- 104 candidate skill manifests are organized under skills/catalog by domain.
+- All catalog entries start lifecycle_state=DISCOVERED and enabled=false.
+- Bootstrap deterministically syncs missing catalog entries into the existing canonical SQLite skill registry.
+- Existing registered skills are never overwritten by catalog sync.
+- Lifecycle transition rules prevent DISCOVERED candidates from jumping directly to ACTIVE.
+- Activation requires TESTED state.
+- Registry health validates every catalog manifest and reports discovered-candidate count.
+- No plugin import, package install, account creation, API call, browser session or model call is performed by catalog ingestion.
+
+DOMAINS
+core, ai, web, media, docs, comm, dev, data, business, risk.
+
+SAFETY
+Catalog entries are knowledge/configuration only. Repository links are references for LearnRepo research; they are not trusted dependencies.
+Each external dependency still requires the later LearnRepo -> license -> security -> sandbox -> benchmark -> Architecture Audit -> test pipeline.
+Consequential skills remain disabled until their own implementation work item reaches TESTED and satisfies approval policy.
+
+TOKEN/COST
+Catalog validation and sync are deterministic local operations. Healthy path requires zero AI/API calls and zero recurring vendor cost.
+
+ROLLBACK
+Remove skills/catalog and revert the Q003 lifecycle/catalog commit. Existing active defaults are preserved because catalog sync never overwrites them.
+
+NEXT
+Do not bulk-install the catalog. Continue with Q004/Q005/Q006 foundation gates, then implement concrete skills one at a time by value/risk order.

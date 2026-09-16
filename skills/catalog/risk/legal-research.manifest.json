@@ -1,0 +1,42 @@
+{
+  "schema_version": 1,
+  "skill_id": "risk.legal-research",
+  "name": "Legal / regulatory research escalation",
+  "version": "0.1.0",
+  "description": "Authoritative sources first.",
+  "capabilities": [
+    "statute",
+    "judgment",
+    "gazette",
+    "regulator",
+    "citation"
+  ],
+  "executor_classes": [
+    "C",
+    "D"
+  ],
+  "platforms": [
+    "any"
+  ],
+  "requirements": {
+    "network": true,
+    "ai": true,
+    "offline_supported": false
+  },
+  "cost_class": "E1",
+  "enabled": false,
+  "actions": [
+    "statute",
+    "judgment",
+    "gazette",
+    "regulator",
+    "citation"
+  ],
+  "permissions": [],
+  "fallback": [],
+  "lifecycle_state": "DISCOVERED",
+  "references": [],
+  "implementation_notes": "Authoritative sources first.",
+  "priority": "P2",
+  "cost_notes": "Candidate catalog entry only; recurring cost must be re-verified before activation."
+}

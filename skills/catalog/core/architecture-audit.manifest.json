@@ -1,0 +1,38 @@
+{
+  "schema_version": 1,
+  "skill_id": "core.architecture-audit",
+  "name": "Architecture Audit",
+  "version": "0.1.0",
+  "description": "Inspect before and after material integrations.",
+  "capabilities": [
+    "architecture",
+    "duplication_check",
+    "trust_boundaries"
+  ],
+  "executor_classes": [
+    "C",
+    "DET"
+  ],
+  "platforms": [
+    "any"
+  ],
+  "requirements": {
+    "network": false,
+    "ai": true,
+    "offline_supported": true
+  },
+  "cost_class": "F0",
+  "enabled": false,
+  "actions": [
+    "architecture",
+    "duplication_check",
+    "trust_boundaries"
+  ],
+  "permissions": [],
+  "fallback": [],
+  "lifecycle_state": "DISCOVERED",
+  "references": [],
+  "implementation_notes": "Inspect before and after material integrations.",
+  "priority": "P0",
+  "cost_notes": "Candidate catalog entry only; recurring cost must be re-verified before activation."
+}
