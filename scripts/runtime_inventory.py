@@ -62,23 +62,11 @@ def collect() -> dict:
         "disk_total_gb": round(disk.total / 1e9, 2),
         "disk_free_gb": round(disk.free / 1e9, 2),
         "sqlite_version": sqlite3.sqlite_version,
-        "has_fts5": _has_fts5(),
         "has_gzip_tar_support": _has_gzip_tar_support(),
         "tooling": _tool_presence(),
     }
     inventory.update(_host_adapter_facts())
     return inventory
-
-
-def _has_fts5() -> bool:
-    conn = sqlite3.connect(":memory:")
-    try:
-        conn.execute("CREATE VIRTUAL TABLE t USING fts5(x)")
-        return True
-    except sqlite3.OperationalError:
-        return False
-    finally:
-        conn.close()
 
 
 def _has_gzip_tar_support() -> bool:
