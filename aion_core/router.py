@@ -28,7 +28,7 @@ HELP = """AION commands
 status · today · money · tasks · blockers · errors · agents
 approve <ID> · reject <ID> (same as deny)
 pause · resume · safe mode · safe mode off
-deep check · why <ID> · report · help
+deep check · why <ID> · report · help · capacity (AI usage left)
 
 Anything else is read as ordinary language and matched to the nearest command.
 Never send secrets here."""
@@ -39,6 +39,8 @@ INTENTS = [
     ("deny", re.compile(r"(?i)\b(deny|denied|reject|rejected|no to|cancel)\b\s*(?P<id>[A-Za-z]+-[A-Za-z0-9]{1,12})")),
     ("why", re.compile(r"(?i)\bwhy\b.*?(?P<id>[A-Za-z]+-[A-Za-z0-9]{1,12})")),
     ("deep_check", re.compile(r"(?i)\b(deep check|deepcheck|full check|verify everything|deep verify)\b")),
+    ("capacity", re.compile(r"(?i)\b(claude|codex|chatgpt|ai|model) (usage|capacity|quota|limit)|"
+                            r"how (much|close).*(usage|capacity|limit|reset)|usage left|capacity left\b")),
     ("safe_mode_off", re.compile(r"(?i)\b(safe mode off|exit safe mode|unsafe mode|leave safe mode)\b")),
     ("safe_mode", re.compile(r"(?i)\b(safe mode|safemode|lock down|lockdown)\b")),
     ("pause", re.compile(r"(?i)\b(pause|hold everything|stop automation|freeze)\b")),
@@ -107,6 +109,7 @@ def handle(message: str, *, sender: str = "owner") -> str:
             "resume": lambda: _resume(sender),
             "safe_mode": lambda: _safe_mode(True, sender),
             "safe_mode_off": lambda: _safe_mode(False, sender),
+            "capacity": _capacity,
         }[name]()
 
     # Unrecognised: record it as an inbox item rather than guessing an action.
@@ -168,6 +171,15 @@ def _safe_mode(on: bool, sender: str) -> str:
         return ("SAFE MODE ON. No spending, no outbound messages, no external writes. "
                 "Local analysis, testing and reporting continue.")
     return "Safe mode off. Normal tiered autonomy restored (Tier 3 still needs your approval)."
+
+
+def _capacity() -> str:
+    """Answers 'how much Claude/Codex usage is left' honestly (directive section 19)."""
+    try:
+        from . import resource_governor
+        return security.redact(resource_governor.observability.render())
+    except Exception as exc:
+        return f"Could not read AI capacity right now ({exc}). Nothing was assumed or invented."
 
 
 def _deep_check() -> str:

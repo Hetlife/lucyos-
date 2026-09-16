@@ -42,11 +42,26 @@ def status() -> str:
         f"Approvals waiting: {', '.join(r['approval_id'] for r in pend) or 'none'}",
         f"Unresolved errors: {len(open_errs)}",
         f"Next action: {nxt['title'] if nxt else _nothing_runnable(counts)}",
+        _resource_governor_line(),
     ]
     alert = governor.pending_alert()
     if alert:
         lines += ["", f"⚠ {alert}"]
     return _clean("\n".join(lines))
+
+
+def _resource_governor_line() -> str:
+    """AI-capacity summary for `status`.  Never allowed to break the report."""
+    try:
+        from . import resource_governor
+        if not resource_governor.flags.flag("resource_governor.enabled"):
+            return "AI capacity: resource governor disabled"
+        snap = resource_governor.observability.snapshot()
+        waiting = len(snap["waiting_for_resource"])
+        return (f"AI capacity: {snap['overall_state']}"
+                + (f" · {waiting} task(s) waiting for resource" if waiting else ""))
+    except Exception:
+        return "AI capacity: unknown (resource governor check failed)"
 
 
 def _nothing_runnable(counts: dict) -> str:

@@ -8,9 +8,9 @@ import sys
 from pathlib import Path
 
 from . import (agents, approvals, backup, bootstrap, config, db, errors, fable, health,
-               memory, metrics, notebook, owner_setup, packets, reports, resume, router,
-               security, seed, sessions, tasks, util, plan, worker, governor, handoff,
-               milestones, deliveries, autonomy)
+               learnrepo, memory, metrics, notebook, owner_setup, packets, reports, resume,
+               resource_governor, router, security, seed, sessions, tasks, util, plan, worker,
+               governor, handoff, milestones, deliveries, autonomy)
 
 
 def _print(text):
@@ -239,6 +239,19 @@ def _main(argv=None) -> int:
 
     ctx = sub.add_parser("context", help="build a task-specific context packet")
     ctx.add_argument("task_id")
+
+    rg = sub.add_parser("resource-governor", help="AI capacity governor: status, checks, resume")
+    rg.add_argument("op", choices=["status", "check", "resume", "flags", "ledger", "learnrepo"])
+    rg.add_argument("target", nargs="?", help="task id (check/resume) or learnrepo sub-op")
+    rg.add_argument("--force", action="store_true")
+    rg.add_argument("--set", nargs=2, metavar=("NAME", "VALUE"))
+    rg.add_argument("--group-by", default="model")
+    rg.add_argument("--period", choices=["day", "week"])
+    rg.add_argument("--capability", default=resource_governor.capability_gate.CAPABILITY)
+    rg.add_argument("--candidate")
+    rg.add_argument("--notes", default="")
+    rg.add_argument("--stage")
+    rg.add_argument("--evidence", default="")
 
     args = p.parse_args(argv)
     cmd = args.cmd
@@ -492,6 +505,46 @@ def _main(argv=None) -> int:
     elif cmd == "context":
         from . import context
         _print(context.build(args.task_id))
+    elif cmd == "resource-governor":
+        if args.op == "status":
+            _print(resource_governor.observability.render())
+        elif args.op == "check":
+            if not args.target:
+                raise CliError("usage: aion resource-governor check <TASK_ID>")
+            row = tasks.get(args.target)
+            if row is None:
+                raise CliError(f"no such task {args.target}")
+            _print(resource_governor.admission.evaluate(row))
+        elif args.op == "resume":
+            if args.target:
+                _print(resource_governor.checkpoint.resume_task(args.target, force=args.force))
+            else:
+                _print(resource_governor.checkpoint.resume_all(force=args.force))
+        elif args.op == "flags":
+            if args.set:
+                name, value = args.set
+                resource_governor.flags.set_flag(name, value.lower() in ("1", "on", "true"))
+            _print(resource_governor.flags.all_flags())
+        elif args.op == "ledger":
+            _print(resource_governor.ledger.by_group(args.group_by, period=args.period))
+        elif args.op == "learnrepo":
+            if args.target == "register":
+                if not args.candidate:
+                    raise CliError("usage: aion resource-governor learnrepo register "
+                                   "--candidate <name> [--notes ...]")
+                _print(learnrepo.register(args.capability, args.candidate, notes=args.notes))
+            elif args.target == "advance":
+                if not args.candidate or not args.stage:
+                    raise CliError("usage: aion resource-governor learnrepo advance "
+                                   "--candidate <name> --stage <STAGE>")
+                match = next((r for r in learnrepo.list_targets(args.capability)
+                             if r["candidate"] == args.candidate), None)
+                if not match:
+                    raise CliError(f"no research target for {args.capability}/{args.candidate}")
+                learnrepo.advance(match["target_id"], args.stage, evidence=args.evidence)
+                _print(f"{match['target_id']} -> {args.stage}")
+            else:
+                _print([dict(r) for r in learnrepo.list_targets()])
     return 0
 
 

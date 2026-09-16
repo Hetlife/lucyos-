@@ -139,6 +139,11 @@ def ensure() -> int:
         touched += 1
     agents.seed_defaults()
     _write_gitignore(root)
+    try:
+        from . import resource_governor
+        resource_governor.seed_learnrepo_targets()
+    except Exception:
+        pass  # LearnRepo seeding is a nice-to-have; never block bootstrap on it
     return touched
 
 

@@ -125,8 +125,29 @@ def check_backup() -> dict:
             "detail": f"latest {latest.name} ({round(latest.stat().st_size / 1024, 1)} KB)"}
 
 
+def check_resource_governor() -> dict:
+    """Observability only — this check must never itself fail health.
+
+    A degraded or UNKNOWN capacity reading is expected and safe; the only
+    thing that would make this `ok=False` is the check machinery crashing,
+    which is reported so it gets fixed, not hidden.
+    """
+    try:
+        from . import resource_governor
+        if not resource_governor.flags.flag("resource_governor.enabled"):
+            return {"name": "resource_governor", "ok": True, "detail": "disabled"}
+        snap = resource_governor.observability.snapshot()
+        return {"name": "resource_governor", "ok": True,
+                "detail": f"overall {snap['overall_state']}, "
+                          f"{len(snap['waiting_for_resource'])} task(s) waiting for resource"}
+    except Exception as exc:
+        return {"name": "resource_governor", "ok": False,
+                "detail": f"check crashed (subsystem itself is non-blocking): {exc}"}
+
+
 CHECKS = [check_db, check_shared_brain, check_disk, check_inbox, check_tasks, check_errors,
-          check_budget, check_git, check_ollama, check_network, check_secrets, check_backup]
+          check_budget, check_git, check_ollama, check_network, check_secrets, check_backup,
+          check_resource_governor]
 
 
 def run_all(deep: bool = False) -> dict:

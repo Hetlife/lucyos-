@@ -254,6 +254,16 @@ def _work_locked(max_tasks: int, session_id: str | None, summary: dict) -> dict:
                              last_error="held by safe mode")
                 continue
 
+            rg_note = _resource_governor_gate(task, cls)
+            if rg_note is not None:
+                if rg_note.get("skip"):
+                    summary["skipped"].append(rg_note["skip"])
+                    continue
+                if rg_note.get("class_override"):
+                    cls = rg_note["class_override"]
+                if rg_note.get("note"):
+                    summary.setdefault("resource_governor_notes", []).append(rg_note["note"])
+
             summary["attempted"] += 1
             result = _execute(task, cls, dry_run=False, session_id=session_id)
             summary["results"].append(result)
@@ -277,6 +287,24 @@ def _work_locked(max_tasks: int, session_id: str | None, summary: dict) -> dict:
                          resume_point="inspect `aion errors`")
         raise
     return summary
+
+
+def _resource_governor_gate(task, cls: str) -> dict | None:
+    """Flag-gated hook: off by default, so this never changes existing behaviour
+    unless an owner has explicitly turned on `resource_governor.enforce_admission`.
+    """
+    try:
+        from . import resource_governor
+        if not resource_governor.flags.flag("resource_governor.enforce_admission"):
+            return None
+        decision = resource_governor.admission.evaluate(dict(task, model_class=cls))
+        outcome = resource_governor.admission.apply(task, decision)
+    except Exception as exc:  # noqa: BLE001 - the governor must never break the worker loop
+        db.log_event("resource_governor", "worker_hook_error", task["task_id"], str(exc)[:200])
+        return None
+    if outcome["proceed"]:
+        return {"class_override": outcome.get("class_override"), "note": outcome.get("note")}
+    return {"skip": outcome["skip"]}
 
 
 def _next_resume_point() -> str:

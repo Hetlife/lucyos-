@@ -271,6 +271,48 @@ CREATE TABLE IF NOT EXISTS idempotency (
     scope     TEXT NOT NULL,
     result    TEXT NOT NULL DEFAULT ''
 );
+
+-- Resource Governor: normalized provider telemetry snapshots.  A row is only
+-- ever written from a real read (or a deliberate LOCAL_ESTIMATE); missing
+-- values stay NULL rather than being invented.  History here drives burn-rate
+-- and the local usage ledger.
+CREATE TABLE IF NOT EXISTS resource_snapshots (
+    id                  INTEGER PRIMARY KEY AUTOINCREMENT,
+    at                  TEXT NOT NULL,
+    day                 TEXT NOT NULL,
+    provider            TEXT NOT NULL,
+    model               TEXT,
+    context_used_tokens INTEGER,
+    context_limit_tokens INTEGER,
+    context_used_pct    REAL,
+    quota_window        TEXT,
+    quota_used_pct      REAL,
+    quota_remaining_pct REAL,
+    quota_reset_at      TEXT,
+    input_tokens        INTEGER,
+    output_tokens       INTEGER,
+    cache_read_tokens   INTEGER,
+    cache_write_tokens  INTEGER,
+    confidence          TEXT NOT NULL,
+    source              TEXT NOT NULL,
+    state               TEXT NOT NULL
+);
+CREATE INDEX IF NOT EXISTS idx_resource_snapshots_provider_at ON resource_snapshots(provider, at);
+
+-- LearnRepo / Talent Hunter research registry.  A row here is a candidate
+-- under review; nothing here can affect scheduling, credentials, checkpoints
+-- or execution until its stage reaches APPROVED by an explicit owner action.
+CREATE TABLE IF NOT EXISTS research_targets (
+    target_id  TEXT PRIMARY KEY,
+    at         TEXT NOT NULL,
+    capability TEXT NOT NULL,
+    candidate  TEXT NOT NULL,
+    notes      TEXT NOT NULL DEFAULT '',
+    stage      TEXT NOT NULL DEFAULT 'RESEARCH',
+    updated_at TEXT NOT NULL,
+    evidence   TEXT NOT NULL DEFAULT ''
+);
+CREATE UNIQUE INDEX IF NOT EXISTS idx_research_targets_unique ON research_targets(capability, candidate);
 """
 
 _FTS = """
@@ -346,6 +388,12 @@ _ADDED_COLUMNS = {
         # must stay unlinked rather than acquiring guessed identities.
         ("delivery_id", "TEXT"),
         ("cost_category", "TEXT"),
+    ],
+    # Separates subscription usage (no per-token price) from metered API spend
+    # and free local compute, so the ledger never invents a cost for something
+    # that has none.  Existing rows default to API_USAGE, their original meaning.
+    "model_usage": [
+        ("usage_kind", "TEXT NOT NULL DEFAULT 'API_USAGE'"),
     ],
 }
 

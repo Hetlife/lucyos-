@@ -150,6 +150,13 @@ def boot() -> dict:
     steps.append({"step": "budget", "detail": budget["governor"]
                   + (f" — {shift['message']}" if shift["changed"] else "")})
 
+    try:
+        from . import resource_governor
+        rg = resource_governor.hook_boot()
+    except Exception as exc:
+        rg = {"enabled": False, "error": str(exc)[:200]}
+    steps.append({"step": "resource_governor", "detail": rg})
+
     prev = load()
     nxt = tasks.next_task()
     bottleneck = identify_bottleneck(health, pending, open_errs, nxt)
