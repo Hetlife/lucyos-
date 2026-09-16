@@ -66,6 +66,13 @@ def check_errors() -> dict:
     return {"name": "errors", "ok": open_n == 0, "detail": f"{open_n} unresolved"}
 
 
+def check_openclaw() -> dict:
+    from bridges import openclaw_check
+    result = openclaw_check.check()
+    return {"name": "openclaw", "ok": True, "required": False,
+            "detail": f"{result['state']}: {result['detail']}"}
+
+
 def check_budget() -> dict:
     b = metrics.budget_status()
     ok = not (b["day_over"] or b["month_over"])
@@ -157,7 +164,8 @@ def check_skill_registry() -> dict:
 
 
 CHECKS = [check_db, check_shared_brain, check_disk, check_inbox, check_tasks, check_errors,
-          check_budget, check_git, check_ollama, check_network, check_secrets, check_backup, check_learnrepo, check_skill_registry]
+          check_budget, check_git, check_ollama, check_network, check_secrets, check_backup,
+          check_learnrepo, check_skill_registry, check_openclaw]
 
 
 def run_all(deep: bool = False) -> dict:
