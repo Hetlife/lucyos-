@@ -11,7 +11,7 @@ PLAN = {
     "objective": "prove the plan pipeline works",
     "steps": [
         {"id": "a", "title": "make a marker file", "kind": "file_write", "model_class": "DET",
-         "exec_command": "mkdir -p work/t && echo ok > work/t/marker",
+         "exec_command": "python3 scripts/touch_marker.py work/t/marker",
          "validation_command": "test -f work/t/marker", "success_criteria": "marker exists"},
         {"id": "b", "title": "classify things", "kind": "classify", "model_class": "A",
          "depends_on": ["a"], "prompt": "classify these", "success_criteria": "verdicts exist"},
@@ -167,7 +167,7 @@ class TestWorkerLoop(AionTest):
         do_work.return_value = {"ok": True, "output": "implemented",
                                 "how": "test model", "model": "test-model"}
         t = tasks.create("validated model work", model_class="A", kind="code",
-                         validation_command="python3 -c 'raise SystemExit(0)'")
+                         validation_command="test -d .")
 
         result = worker.work(max_tasks=1)
 
@@ -411,13 +411,60 @@ class TestCommandBlocklistHardening(unittest.TestCase):
         for cmd in ("echo $(cat ~/.ssh/id_ed25519)", "echo `id`",
                     "ls ; rm -rf ~/openclaw", "cat x | bash", "cat x |sh",
                     "echo hi > /dev/null; sudo id", "ls && rm -rf ~",
-                    "python3 x.py | python", "echo a; ssh evil", "cp a b; wget http://x"):
+                    "python3 x.py | python", "echo a; ssh evil", "cp a b; wget http://x",
+                    "mkdir -p work/t && echo ok > work/t/marker"):
             with self.subTest(cmd=cmd):
                 with self.assertRaises(worker.Refused):
                     worker.check_command(cmd)
 
     def test_plain_allowlisted_commands_still_pass(self):
-        for cmd in ("echo ok", "ls -la", "git status", "python3 -m unittest -q",
-                    "mkdir -p work/t && echo ok > work/t/marker"):
+        for cmd in ("echo ok", "echo hi", "ls -la", "git status", "python3 -m unittest -q",
+                    "python3 scripts/touch_marker.py work/t/marker"):
             with self.subTest(cmd=cmd):
                 worker.check_command(cmd)
+
+
+class TestArgvExecutionBoundary(unittest.TestCase):
+    """LQ-01: the boundary is argv-based, not a shell-string prefix check."""
+
+    def test_per_binary_constraints_are_enforced(self):
+        for cmd in ("python3 -c 'x'", "python3 -", "bash scripts/../x.sh",
+                    "curl -s http://localhost.evil/", "git push", "sed -i s/a/b/ f"):
+            with self.subTest(cmd=cmd):
+                with self.assertRaises(worker.Refused):
+                    worker.check_command(cmd)
+
+    def test_localhost_curl_and_allowed_git_subcommands_pass(self):
+        for cmd in ("curl -s http://localhost:11434/api/tags",
+                    "curl -s http://127.0.0.1:8787/api/status",
+                    "git status", "git diff", "git log", "git add .", "git commit -m x",
+                    "sed -n 1,5p file.txt"):
+            with self.subTest(cmd=cmd):
+                worker.check_command(cmd)
+
+    def test_rm_is_never_allowed_even_if_extended(self):
+        worker.allow_command("rm")
+        with self.assertRaises(worker.Refused):
+            worker.check_command("rm -rf work")
+
+    def test_allow_command_refuses_once_policy_is_locked(self):
+        from aion_core import db
+        db.set_meta("policy_locked", "1")
+        try:
+            with self.assertRaises(worker.Refused):
+                worker.allow_command("make")
+        finally:
+            db.set_meta("policy_locked", "0")
+
+    @patch("aion_core.worker.subprocess.run")
+    def test_run_command_never_uses_a_shell(self, mock_run):
+        mock_run.return_value.returncode = 0
+        mock_run.return_value.stdout = "hi\n"
+        mock_run.return_value.stderr = ""
+
+        worker.run_command("echo hi")
+
+        call_args, call_kwargs = mock_run.call_args
+        self.assertIsInstance(call_args[0], list)
+        self.assertEqual(call_args[0], ["echo", "hi"])
+        self.assertFalse(call_kwargs.get("shell", False))
