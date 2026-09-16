@@ -13,7 +13,6 @@ Token discipline:
 """
 from __future__ import annotations
 
-from datetime import datetime, timedelta, timezone
 from pathlib import Path
 
 from . import config, db, security, util
@@ -140,7 +139,7 @@ def _write_index() -> Path:
 
 def compact_old(keep_days: int = KEEP_DAYS) -> int:
     """Replace old session logs with their summary line to keep context cheap."""
-    cutoff = (datetime.now(timezone.utc) - timedelta(days=keep_days)).isoformat()
+    cutoff = util.ago(days=keep_days)
     rows = db.connect().execute(
         "SELECT session_id, log_path, outcome, resume_point, started_at FROM sessions "
         "WHERE status!='OPEN' AND started_at < ?", (cutoff,)).fetchall()

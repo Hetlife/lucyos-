@@ -1,6 +1,6 @@
 # LucyOS Architect Session — CHECKPOINT / PROGRESS
 
-Last updated: 2026-09-16 (session 4: smallest-fix skill written, tested, pushed)
+Last updated: 2026-09-16 (session 5: applied smallest-fix's own findings to the repo)
 Branch: `claude/lucyos-architecture-audit-4o4q83` (pushed)
 Status: ARCHITECTURE + EXECUTION PACKAGE COMPLETE. LQ-01 (argv execution boundary) DONE. learnrepo skill prepared (awaiting merge approval). smallest-fix skill built and pushed per explicit owner instruction. Remaining Phase 0/1 tasks open.
 
@@ -99,6 +99,27 @@ Session 4 — **`smallest-fix` skill: written, tested, pushed (owner explicitly 
   `aion_core/util.py` is always exempt and the script never executes the file it scans.
 - BLOCKERS: none.
 - NEXT_ACTION: none required; available for use (`python3 .claude/skills/smallest-fix/scripts/check_reinvention.py <path>`).
+
+Session 5 — **Fixed the 7 leads smallest-fix found in the real codebase (owner instructed: "write it test it push it").**
+- STATUS: DONE and pushed.
+- WHAT: `aion_core/util.py` gained two new helpers — `ago(**timedelta_kwargs)` (now() minus a
+  timedelta, same microsecond-free format) and `sha256_bytes(data)` (sha256_text now delegates to
+  it). Four call sites that had each independently reimplemented one of these were switched over:
+  `aion_core/sessions.py::compact_old()`, `aion_core/tasks.py::release_stale()`,
+  `bridges/drive_bridge.py::now()/digest()`, `bridges/whatsapp_bridge.py` (webhook message-id hash).
+- REAL BUG FIXED, not just tidying: `sessions.py`'s hand-rolled cutoff kept microseconds while
+  `tasks.py`'s stripped them and rows stamped by `util.now()` never carry them — an ISO-string
+  comparison mismatch right at the cutoff second. `ago()` fixes both call sites identically.
+- TWO LEADS DELIBERATELY LEFT, with reasons recorded in the commit: `drive_bridge.py:446`'s
+  `strftime('%Y%m%dT%H%M%S%fZ')` needs microseconds for a unique test filename (not what `util.now()`
+  produces); `drive_bridge.py`'s `atomic()` does file+directory `fsync()` beyond what
+  `util.atomic_write()` guarantees, which the Drive bridge's resumable-transfer design needs.
+- FILES_CHANGED: `aion_core/{util,sessions,tasks}.py`, `bridges/{drive_bridge,whatsapp_bridge}.py`,
+  `tests/test_util.py` (new, 9 tests).
+- TESTS: full suite **295 OK** (286 → 295). `check_reinvention.py` re-scan of aion_core+bridges:
+  7 findings → 2 (both the deliberate leave-aloves above). No unused imports left behind (checked).
+- BLOCKERS: none.
+- NEXT_ACTION: none required.
 
 ## 11. REMAINING WORK (ordered; ids in EXECUTION_PACKAGE §9 / LOW_MODEL_TASK_QUEUE)
 

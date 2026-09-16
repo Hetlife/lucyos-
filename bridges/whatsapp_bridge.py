@@ -129,7 +129,7 @@ class Handler(BaseHTTPRequestHandler):
 
         message = str(payload.get("message", "")).strip()
         sender = str(payload.get("from", "owner"))[:64]
-        message_id = str(payload.get("id", "")) or hashlib.sha256(raw).hexdigest()[:16]
+        message_id = str(payload.get("id", "")) or util.sha256_bytes(raw)[:16]
         if not message:
             return self._send(400, {"error": "empty message"})
         if db.seen(f"wa:{message_id}", "whatsapp_webhook"):
