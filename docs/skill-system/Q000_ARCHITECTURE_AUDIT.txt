@@ -1,0 +1,169 @@
+LUCYOS SKILL SYSTEM — Q000 ARCHITECTURE AUDIT
+Date: 2026-09-16
+Base: feature/learnrepo-queue-health @ 75459ad250724e05cfd554279a5f6d2da4bbf727
+Scope: inspect current LucyOS before implementing Skill System work. No runtime behavior or dependency changes in Q000.
+
+STATUS
+Q000 architecture audit: COMPLETE when this branch passes regression + secret scan.
+Next queue item after Q000: Q001 capability registry.
+
+1. CURRENT CONTROL PLANE — VERIFIED
+- Canonical operational state: SQLite via aion_core/db.py.
+- Generated markdown is a view; database is truth.
+- Global task queue: aion_core/tasks.py.
+- Owner approvals: aion_core/approvals.py.
+- Failure capture: aion_core/errors.py.
+- Session logging: aion_core/sessions.py.
+- Exact checkpoint/resume: aion_core/resume.py.
+- Deterministic health: aion_core/health.py.
+- Cost/downshift Resource Governor: aion_core/governor.py + metrics.py.
+- Security/redaction/secret scan: aion_core/security.py.
+- Agent/model routing: aion_core/agents.py.
+- Worker execution/capability probe: aion_core/worker.py.
+- LearnRepo pilot queue/health: aion_core/learnrepo.py + learnrepo/.
+
+2. MECHANICAL INVARIANTS ALREADY PRESENT
+- SQLite is the single source of operational truth.
+- tasks.complete refuses DONE without non-empty evidence.
+- task claims are atomic and stale claims can be released.
+- approvals hold only the affected task; unrelated work remains runnable.
+- approval decisions are idempotent and resume the prepared task.
+- db.seen/idempotency exists for externally triggered duplicate prevention.
+- state/outbound strings pass security redaction paths.
+- model usage and governor state are recorded.
+- resume.boot verifies state, inbox, notebook, stale claims, approvals, errors, health and governor before naming the next bottleneck.
+- deterministic and local work continue when paid-model budget is exhausted.
+
+3. CURRENT RUNTIME OBSERVATION ON MARK-2
+Observed before this audit:
+- Git branch: feature/learnrepo-queue-health; clean working tree.
+- SQLite integrity: ok; FTS enabled.
+- 18 tasks in canonical DB.
+- 0 READY, 0 RUNNING, 4 BLOCKED at observation time.
+- 0 unresolved errors.
+- Governor: NORMAL; day INR 0/200; month INR 0/2000.
+- Ollama available with qwen2.5-coder:0.5b and qwen2.5-coder:1.5b.
+- Cloud worker configured through scripts/aion_codex_worker.sh.
+- 32 allowlisted command prefixes.
+- Safe mode false; paused false.
+- Secret store exists with mode 0600.
+- Backup exists.
+- LearnRepo latest deterministic run: SUCCESS, 9 checks passed, ai_calls=0, api_escalations=0, network_requests=0.
+
+4. LEARNREPO STATUS
+The current feature branch already adds a native LearnRepo pilot without a second scheduler service or external queue dependency.
+It adds additive SQLite tables for LearnRepo tasks/schedules/runs/contracts/escalations and reuses existing LucyOS tasks/errors/events/governor.
+Nightly/on-change health is deterministic; weekly external reference probing is read-only.
+This is compatible with the Skill System requirement to use LearnRepo as the dependency/research gate.
+
+5. EXISTING CAPABILITY REGISTRY — PARTIAL, NOT YET Q001-COMPLETE
+Existing foundations:
+- agents table contains capabilities, allowed_tools, model_class, cost_class, reliability, enabled state.
+- aion_core/agents.py defines DET/A/B/C/D classes and routing categories.
+- aion worker capability_report measures Ollama, cloud worker, allowlisted commands, pause/safe-mode and governor.
+- CLI exposes `aion capabilities`.
+Gap:
+- there is no generalized skill manifest/registry covering skill version, actions, input/output schemas, permissions, risk/data class, network/AI/offline requirements, cost class, platform support, executors, fallback, health/test command, evidence, timeout, retry, idempotency, approval rule, rollback and feature flag.
+Conclusion: Q001 is genuinely uncompleted and should extend existing agent/worker capability concepts rather than replace them.
+
+6. STATE OWNERSHIP MAP
+Operational truth: aion_core/db.py SQLite.
+Task lifecycle: tasks table + aion_core/tasks.py.
+Authority: approvals table + approvals.py/router strict approval syntax.
+Failures: errors table + errors.py.
+Cost/model usage: model_usage + metrics.py/governor.py.
+Durable knowledge: memory + FTS.
+Sessions/resume: sessions table + session logs + RESUME state.
+LearnRepo: additive learnrepo_* tables, still inside canonical SQLite.
+Human-facing docs: generated/derived; never a second state owner.
+
+7. TRUST BOUNDARIES
+Owner authority boundary:
+- spend, contracts, credentials/account changes and irreversible actions route to owner class D/current approval policy.
+Execution boundary:
+- worker command allowlist/forbidden-pattern rules constrain deterministic shell execution.
+Secret boundary:
+- security.py detects/redacts credential-shaped content and repository scan skips only explicit safe fixture paths.
+External AI boundary:
+- model classes and governor control escalation/cost; context.py provides task-specific work orders.
+External content boundary gap:
+- Skill System still needs a generalized untrusted-content/prompt-injection policy for future browser/email/document skills; do not solve in Q000.
+
+8. ARCHITECTURE GAPS RELEVANT TO FUTURE SKILLS
+- No generalized skill registry/manifest contract (Q001/Q002).
+- No unified skill lifecycle + feature-flag convention (Q003).
+- LearnRepo dependency-selection contract is not yet generalized to every skill candidate (Q004).
+- Cost/privacy/risk enums are not yet unified across skills (Q005).
+- No automatic architecture anti-duplication check preventing a proposed integration from adding a second canonical state/queue/scheduler/approval/secret system (Q006).
+- Current capabilities report is machine/executor-focused, not full skill-focused.
+These gaps should be implemented incrementally; none requires replacing current control-plane primitives.
+
+9. REQUIRED REUSE POINTS FOR ALL FUTURE SKILLS
+- use db.py for canonical durable state;
+- use tasks.py for work state and evidence-gated completion;
+- use approvals.py/router for authority boundaries;
+- use errors.py for failure capture;
+- use sessions.py/resume.py for handoff/checkpointing;
+- use health.py + LearnRepo health for deterministic checks;
+- use metrics.py/governor.py for model/API cost control;
+- use security.py for redaction/secret scanning;
+- use agents.py/worker.py for executor routing/capability measurement;
+- use LearnRepo for external dependency research/security/sandbox evidence.
+
+10. WHAT MUST NOT BE INTRODUCED WITHOUT A SEPARATE PROVEN NEED
+- second canonical database/state store;
+- Redis/RabbitMQ/Kafka as a new global queue;
+- second scheduler/control plane;
+- second approval system;
+- second plaintext secret vault;
+- always-on LLM heartbeat/health agent;
+- mandatory cloud browser/model dependency;
+- direct SaaS coupling inside core state logic;
+- broad autonomous install/upgrade behavior.
+
+11. SMALLEST-CHANGE PRINCIPLE FOR Q001+
+New Skill System work should be adapters and manifests around existing LucyOS primitives.
+Prefer additive schema changes only when a capability truly needs durable state.
+Prefer generated views over duplicated state.
+Feature-flag runtime integrations.
+Healthy/no-change recurring paths should make zero AI/API calls.
+
+12. DEPENDENCY DECISION FOR Q000
+No new dependency is required.
+LearnRepo external candidate research: NOT APPLICABLE for Q000.
+Reason: Q000 is an inspection/documentation gate only.
+
+13. PRIVACY / SECURITY IMPACT
+Q000 adds no runtime code, credentials, network calls or permissions.
+It documents existing trust boundaries and gaps.
+Risk: low.
+
+14. TOKEN / COST IMPACT
+Runtime token cost: zero.
+Recurring vendor cost: zero.
+No new daemon or service.
+
+15. FAILOVER IMPACT
+No runtime change.
+Audit confirms current architecture already allows deterministic/local work to continue when paid-model capacity is unavailable and isolates approval holds to individual tasks.
+
+16. ROLLBACK
+Delete this documentation file/branch. No schema or runtime rollback required.
+
+17. MAC / LINUX FIT
+Current core is Python/SQLite and already exposes an OS-adapter concept in LearnRepo (`systemd` Linux, `launchd` macOS naming).
+Future macOS work must reuse the same canonical state/contracts and use launchd only as a wake/service adapter, not as a second scheduler.
+No Mac-specific package should be installed during Q000.
+
+18. Q000 ACCEPTANCE CRITERIA
+- audit file committed on a branch based on the current LearnRepo pilot branch;
+- no runtime code changed;
+- full LucyOS regression suite passes;
+- git diff/check is clean;
+- `./aion scan .` finds no credential-shaped content;
+- Architecture re-audit confirms no new state store, queue, scheduler, approval path, secret store, daemon, recurring cost or privilege.
+
+19. EXACT RESUME POINT
+After Q000 verification, start Q001 capability registry.
+Q001 must first inspect agents.py, worker.capability_report(), db.py, CLI `aion capabilities`, LearnRepo contracts and tests, then extend/reuse them rather than inventing a parallel registry.
+Do not begin Q002 in the same work order.
