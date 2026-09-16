@@ -98,8 +98,17 @@ READY because it is a large salvage merge best reviewed with fresh eyes.
 - OBJECTIVE: a Mac can run the same unattended loop as Mark-2.
 - ALLOWED: `deploy/launchd/*.plist` (new; override granted), `deploy/launchd/README.md` (new), `scripts/install_services.sh` (add a darwin branch; leave the linux branch byte-identical), `tests/test_launchd_units.py` (new)
 - FORBIDDEN: `systemd/**` (protected, no override — put Mac docs in `deploy/launchd/README.md`); hard-coding any user home path.
-- ACTION: for each `aion-*.service`/`.timer` pair create `com.lucyos.<name>.plist` with `ProgramArguments` = the unit's `ExecStart` split into argv, `StartInterval` = the timer's `OnUnitActiveSec` in seconds, plus `WorkingDirectory`, `StandardOutPath`/`StandardErrorPath` under `$AION_HOME/logs/`, `RunAtLoad true`. Skip `mark2-*` units (host-specific; say so in the README).
-- ACCEPTANCE: every plist parses with `plistlib` (stdlib, so the test runs on Linux too); every `ProgramArguments[0]` resolves; every systemd `aion-*` unit has a plist counterpart — asserted, not assumed.
+- ACTION: create exactly **four** plists. The units are not uniform, so translate per this table — do not assume a `.service`/`.timer` pair everywhere:
+
+  | systemd source | plist | launchd scheduling key |
+  |---|---|---|
+  | `aion-work.service` + `aion-work.timer` (`OnBootSec=2min`) | `com.lucyos.aion-work.plist` | `RunAtLoad true`; no calendar key. `OnBootSec` has no exact launchd analogue — document the difference in the README rather than inventing one. |
+  | `aion-maintenance.service` + `aion-maintenance.timer` (`OnCalendar=*-*-* 03:15:00`) | `com.lucyos.aion-maintenance.plist` | `StartCalendarInterval = {Hour: 3, Minute: 15}` |
+  | `aion-bridge.service` (long-running, `Restart=always`) | `com.lucyos.aion-bridge.plist` | `RunAtLoad true` + `KeepAlive true` |
+  | `aion-interface.service` (long-running, `Restart=always`) | `com.lucyos.aion-interface.plist` | `RunAtLoad true` + `KeepAlive true` |
+
+  Each plist: `ProgramArguments` = that unit's `ExecStart` split into argv, **keeping the existing `@REPO@` / `@AION_HOME@` placeholder convention** (`install_services.sh` substitutes them — do not bake absolute paths); `WorkingDirectory`; `StandardOutPath`/`StandardErrorPath` under `@AION_HOME@/logs/`. Skip `mark2-*` units — host-specific; say so in the README.
+- ACCEPTANCE: every plist parses with `plistlib` (stdlib, so the test runs on Linux too); every `ProgramArguments[0]` is non-empty and placeholder-substitutable; all four `aion-*` units have a counterpart and no plist references a path outside the placeholders — asserted, not assumed.
 - ESCALATE: a unit uses a systemd feature with no launchd analogue — document it, do not fake it.
 
 ## S-07 — `aion drive-check`: read/write capability probe
@@ -155,6 +164,7 @@ READY because it is a large salvage merge best reviewed with fresh eyes.
 - OBJECTIVE: stop reporting "timer not active" on macOS when the launchd equivalent **is** running.
 - WHY: `ready_handoff()` (`bridges/drive_bridge.py:424`) shells to `systemctl`; on macOS that raises, is swallowed, and the readiness document then states a falsehood. C1 requires "cannot determine" to be rendered as unknown.
 - ALLOWED: `bridges/drive_bridge.py`, `scripts/check_portability.py` (override — **only** to delete its own entry), `tests/test_drive_bridge.py`
+- FORBIDDEN: any other change to the guard (rules, scope, thresholds, another task's entry); adding a platform branch in the bridge (C1 — ask the adapter); changing anything else `ready_handoff()` writes; making the readiness document claim a state it did not verify.
 - ACTION: call `host.current().service_active("mark2-drive.timer")`; render `True`→"active", `False`→"not active", `None`→**"unknown (cannot determine on this host)"**.
 - ACCEPTANCE: a test asserts all three renderings, including that `None` never prints "not active"; guard green with 1 fewer exception.
 
@@ -185,6 +195,17 @@ READY because it is a large salvage merge best reviewed with fresh eyes.
 - FORBIDDEN: touching runtime code — if the test fails, that is a finding to escalate, not a licence to change architecture tonight.
 - ACTION: with no OpenClaw process, no gateway port configured and no related env var, assert a clean `AION_HOME` can `init`, `seed`, create and transition a task, create and decide an approval, take and verify a backup, and `boot`.
 - ACCEPTANCE: passes with zero OpenClaw dependency; if it fails, open the PR with the failing test and mark `BLOCKED_HIGH_MODEL_DECISION` — a red test here is genuinely valuable information.
+
+## S-16 — Temporary-worker scope narrowing and TTL (guard rails only)
+
+- STATUS: READY · PRIORITY P2 · MODEL B · BUDGET ≤ 45k
+- OBJECTIVE: give contract C6 its enforcement primitives. **Guard rails only — this task does not spawn anything.**
+- WHY: C6 allows Lucy to create bounded temporary workers later. The limits must exist and be tested *before* anything can create one, not after.
+- ALLOWED: `aion_core/agents.py` is **FORBIDDEN** (protected, no override) — instead add `aion_core/tempworker.py` (new), `aion_core/db.py` (override — additive columns/table only), `tests/test_tempworker.py` (new)
+- FORBIDDEN: creating/spawning a worker; any new agent framework or scheduler (anti-dup will fail you); widening any existing scope; granting a capability not already held by the parent.
+- ACTION: implement `derive(parent_scope, requested_scope, ttl_seconds)` returning a scope that is the **intersection** of parent and requested — never a superset — plus `expires_at`; `is_expired(worker)`; `assert_can_claim(worker)` which refuses an expired or out-of-scope claim. Reuse the existing `agents`/`tasks` tables; store TTL as additive columns.
+- ACCEPTANCE: a child requesting a capability the parent lacks gets a **narrower** scope, never the requested one (asserted); scope narrowing is transitive across three generations; an expired worker cannot claim a task; TTL is enforced on read, not by a background sweeper (no second scheduler).
+- ESCALATE: enforcing C6 appears to require editing `agents.py` — stop and report; do not use the override you were not given.
 
 ## S-17 — Deployment-guardian skeleton (disabled)
 
@@ -234,7 +255,15 @@ READY because it is a large salvage merge best reviewed with fresh eyes.
 
 ## Owner-only
 
-- **OWNER-01** — branch protection on `main` and `integration/consolidation-20260916`; required checks exactly: `code-and-test`, `clean-bootstrap-health`, `upgrade-from-main-schema`, `authority-gate`. Admin bypass stays enabled — that is the documented landing path for constitutional PRs.
+- **OWNER-01** — branch protection on `main` and `integration/consolidation-20260916`. Required checks, **exactly as GitHub renders them** (the matrix job expands per Python version — selecting a bare `code-and-test` will not match anything):
+  - `code-and-test (py3.9)`
+  - `code-and-test (py3.11)`
+  - `code-and-test (py3.13)`
+  - `clean-bootstrap-health`
+  - `upgrade-from-main-schema`
+  - `authority-gate`
+
+  Leave `macos-readiness` and `authority-drift` **unrequired** for now (advisory/informational by design; FABLE-02 promotes the first once S-19 makes it green). Keep admin bypass enabled — it is the documented landing path for constitutional PRs.
 - **OWNER-02** — **SUPERSEDED**: repo stays PUBLIC temporarily until the Mac migration completes. Do not change visibility. Compensating control: treat everything committed as public.
 - **OWNER-03** — after protection: delete `claude/aion-whatsapp-control-1seild`, `arch/lucyos-interface-m-a`, `candidate/mark2-loop-v1.2-20260908`, `feature/lucyos-aion-handoff`, and Q000–Q005 + `feature/learnrepo-queue-health`; tag `backup/pre-mark2-loop-v1.2-20260908` as `archive/pre-mark2-loop-v1.2` then delete the branch.
 - **OWNER-04** — rclone remote write scope on Mark-2 (S-07 reports exactly which capability is missing).

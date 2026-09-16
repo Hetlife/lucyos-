@@ -4,9 +4,14 @@ name: LucyOS CI
 # with the three gates the Opus audit found missing: an upgrade-from-old-schema
 # check, the deterministic authority gate, and a macOS readiness job.
 #
-# Branch protection must require these check names: `code-and-test`,
-# `clean-bootstrap-health`, `upgrade-from-main-schema`, `authority-gate`.
-# `macos-readiness` becomes required after its first green run (task S-06).
+# Branch protection must require these check names EXACTLY as GitHub renders
+# them -- the matrix job expands per Python version, so a bare `code-and-test`
+# matches nothing:
+#   code-and-test (py3.9) · code-and-test (py3.11) · code-and-test (py3.13)
+#   clean-bootstrap-health · upgrade-from-main-schema · authority-gate
+# `macos-readiness` stays advisory until S-19 makes it green; FABLE-02 then
+# removes continue-on-error and promotes it. `authority-drift` stays
+# informational (it lags legitimately between merges and re-freezes).
 
 on:
   push:
@@ -188,7 +193,7 @@ jobs:
       - run: python scripts/verify_authority.py deploy
 
   macos-readiness:
-    name: macos-readiness (advisory until first green; see S-06)
+    name: macos-readiness (advisory until first green; S-19 then FABLE-02)
     runs-on: macos-latest
     timeout-minutes: 15
     continue-on-error: true

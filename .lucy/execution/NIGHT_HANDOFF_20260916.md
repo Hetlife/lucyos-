@@ -133,6 +133,23 @@ rather than stacking branches.
 Advisory/informational, non-blocking: `authority-drift` (hash drift until the
 re-freeze below) and `macos-readiness` (S-19 fixes it).
 
+## CI evidence from this pass (verified, not assumed)
+
+Runs on `d005a0b`, **both branches green**:
+
+| Job | planning run 35135470536 | integration run 35135483731 |
+|---|---|---|
+| `code-and-test (py3.9 / py3.11 / py3.13)` | success | success |
+| `clean-bootstrap-health` | success | success |
+| `upgrade-from-main-schema` | success | success |
+| `authority-gate` | success | success |
+| `authority-drift` | success (cleared by the re-freeze) | success |
+| `macos-readiness` | failure — advisory, S-19 | failure — advisory, S-19 |
+
+The new **Cross-platform portability guard** step was confirmed to have actually
+executed and passed inside `code-and-test (py3.9)` on both runs — checked at step
+level, because a required gate that silently skips is worse than no gate.
+
 ## Blockers
 
 1. **Branch protection is still absent** (OWNER-01). Every authority guarantee is
