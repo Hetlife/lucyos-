@@ -1,0 +1,41 @@
+LUCYOS SKILL SYSTEM — Q002 MANIFEST SCHEMA
+Date: 2026-09-16
+Base: Q001 capability registry
+
+ARCHITECTURE GAP
+Q001 created a canonical SQLite skill registry and measured availability path, but there
+was no portable machine-readable skill descriptor for LearnRepo, future Mac/Linux nodes,
+or low-token implementation workers.
+
+DECISION
+Add a versioned JSON manifest contract plus a deterministic stdlib validator/loader in
+`aion_core/skills.py`. A valid manifest maps into the existing Q001 registry. This is
+not a plugin loader and does not execute manifest commands, import code, install packages,
+or create a second state store.
+
+MANIFEST V1 CORE
+Required: schema_version, skill_id, name, version, capabilities, executor_classes,
+platforms, requirements(network/ai/offline_supported), cost_class.
+Optional fields reserve future policy metadata: description, enabled, health/test command,
+actions, permissions, input/output schema, risk/data class, fallback, evidence, timeout,
+retry, idempotency, approval rule, rollback, feature flag.
+
+SECURITY
+- `additionalProperties=false` in the documented JSON Schema.
+- Runtime validator rejects unknown top-level fields and unknown requirement fields.
+- Executor classes are constrained to existing DET/A/B/C/D.
+- Loader parses JSON data only; no dynamic import, shell, install hook, or network call.
+- Registering a manifest stores only Q001 routing/registry fields; richer policy fields
+  remain inert until their dedicated queue items define runtime semantics.
+
+DEPENDENCY DECISION
+No external JSON-schema package is needed. Python stdlib validation is sufficient for the
+runtime gate; the JSON Schema file exists for documentation/interoperability and future
+tooling. Recurring cost and AI/API use remain zero.
+
+ROLLBACK
+Revert Q002. No SQLite schema change is introduced by Q002.
+
+EXACT RESUME POINT
+After Q002 passes regression/re-audit, start Q003 skill lifecycle + feature-flag convention
+only. Q003 must reuse the Q001 registry and Q002 manifest; do not create a second registry.
