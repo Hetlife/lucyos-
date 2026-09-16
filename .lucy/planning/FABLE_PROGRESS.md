@@ -48,7 +48,13 @@ verifier), reconcile the three collisions, and hand Sonnet a bounded queue. No m
 - `.lucy/deployment/MARK2_DEPLOYMENT_CONTRACT.md` (DC-0 rehearsal = freeze sha; DC-1 unnamed until FABLE-01).
 - Full suite 256 OK; scan clean; verifier self OK.
 
-## Current task
+## Freeze record
+- Commit A (protected files frozen): `afd84aa325e4e2abebdb616185dba63af89da24d` = FABLE_FREEZE_SHA
+- Commit B (baseline records the SHA): `e4264dd3e9c99c55eb60dd3ced4f29ea4c5a53b9`
+- `verify_authority.py deploy` → ok against A.
+- Integration branch `integration/consolidation-20260916` created from B.
+
+## Current task (DONE)
 Freeze ritual: commit A (all files, sha PENDING) → commit B (fable_freeze_sha = A) → push → create `integration/consolidation-20260916` from B.
 
 ## Next action (after this session)
