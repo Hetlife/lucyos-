@@ -54,8 +54,6 @@ jobs:
     name: clean-bootstrap-health
     runs-on: ubuntu-latest
     timeout-minutes: 10
-    env:
-      AION_HOME: ${{ runner.temp }}/lucyos-clean-home
     steps:
       - uses: actions/checkout@v4
         with:
@@ -63,6 +61,13 @@ jobs:
       - uses: actions/setup-python@v5
         with:
           python-version: "3.11"
+      - name: Set AION_HOME
+        # runner.temp is only usable inside a step (env/run/with), never in
+        # jobs.<job_id>.env -- that context does not exist yet when job-level
+        # env is evaluated, and GitHub Actions rejects the whole workflow file
+        # for it (a validation-time failure, not a job-time one). $RUNNER_TEMP
+        # is the equivalent plain shell env var, always set from the first step.
+        run: echo "AION_HOME=$RUNNER_TEMP/lucyos-clean-home" >> "$GITHUB_ENV"
       - name: Initialize clean LucyOS state
         run: |
           ./aion init
@@ -99,8 +104,6 @@ jobs:
     name: upgrade-from-main-schema
     runs-on: ubuntu-latest
     timeout-minutes: 10
-    env:
-      AION_HOME: ${{ runner.temp }}/lucyos-upgrade-home
     steps:
       - uses: actions/checkout@v4
         with:
@@ -109,6 +112,8 @@ jobs:
       - uses: actions/setup-python@v5
         with:
           python-version: "3.11"
+      - name: Set AION_HOME
+        run: echo "AION_HOME=$RUNNER_TEMP/lucyos-upgrade-home" >> "$GITHUB_ENV"
       - name: Create state with the current main schema
         run: |
           git fetch origin main --depth=1
@@ -183,8 +188,6 @@ jobs:
     runs-on: macos-latest
     timeout-minutes: 15
     continue-on-error: true
-    env:
-      AION_HOME: ${{ runner.temp }}/lucyos-mac-home
     steps:
       - uses: actions/checkout@v4
         with:
@@ -192,6 +195,8 @@ jobs:
       - uses: actions/setup-python@v5
         with:
           python-version: "3.12"
+      - name: Set AION_HOME
+        run: echo "AION_HOME=$RUNNER_TEMP/lucyos-mac-home" >> "$GITHUB_ENV"
       - name: Compile sources
         run: python -m compileall -q aion_core bridges tests scripts
       - name: Full unit suite on macOS
