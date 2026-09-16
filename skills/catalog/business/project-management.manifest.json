@@ -35,5 +35,7 @@
   ],
   "implementation_notes": "External tool must not replace LucyOS global task authority.",
   "priority": "P1",
-  "cost_notes": "Candidate catalog entry only; recurring cost must be re-verified before activation."
+  "cost_notes": "Candidate catalog entry only; recurring cost must be re-verified before activation.",
+  "risk_class": "R2",
+  "data_class": "CONFIDENTIAL"
 }

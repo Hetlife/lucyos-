@@ -1,0 +1,33 @@
+LUCYOS SKILL SYSTEM — Q005 COST / RISK / DATA / PRIORITY CLASSES
+Date: 2026-09-16
+
+PURPOSE
+Give every skill machine-readable policy metadata before real integrations are activated.
+
+COST
+F0 free/local; F1 open-source with meaningful local compute/admin cost; E0 optional external free tier; E1 usage-based external; E2 subscription/managed; H hardware-constrained.
+
+RISK
+R0 read/local/reversible; R1 bounded operational write or scoped machine action; R2 consequential external/business/privileged action; R3 money/legal/security/identity/destructive/production authority.
+
+DATA
+PUBLIC; INTERNAL; CONFIDENTIAL; SECRET. SECRET content must never be sent to external models by default.
+
+PRIORITY
+P0 foundation/safety; P1 high-value capability; P2 specialized/high-risk/later.
+
+IMPLEMENTATION
+- Adds risk_class, data_class, priority columns to canonical skills table.
+- Standardizes cost_class values and normalizes legacy none/external values.
+- Makes cost/risk/data/priority required manifest fields with strict enums.
+- Updates the full catalog with explicit classifications.
+- Capability reporting exposes policy classes without model calls.
+
+SAFETY
+These are classifications, not authorization. Q005 does not grant actions, install tools, move money, or disclose data. Later authority/privacy engines must consume these classes.
+
+ROLLBACK
+Revert Q005. Additive columns can remain harmlessly in newer DBs; old binaries ignore them.
+
+NEXT
+Q006 architecture anti-duplication checks.

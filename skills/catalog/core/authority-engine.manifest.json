@@ -36,5 +36,7 @@
   "references": [],
   "implementation_notes": "Reuse current approvals; agents do not self-authorize.",
   "priority": "P0",
-  "cost_notes": "Candidate catalog entry only; recurring cost must be re-verified before activation."
+  "cost_notes": "Candidate catalog entry only; recurring cost must be re-verified before activation.",
+  "risk_class": "R2",
+  "data_class": "INTERNAL"
 }

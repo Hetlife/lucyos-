@@ -35,5 +35,7 @@
   "references": [],
   "implementation_notes": "Require explicit approval and recovery/compensation where possible.",
   "priority": "P2",
-  "cost_notes": "Candidate catalog entry only; recurring cost must be re-verified before activation."
+  "cost_notes": "Candidate catalog entry only; recurring cost must be re-verified before activation.",
+  "risk_class": "R3",
+  "data_class": "CONFIDENTIAL"
 }
