@@ -138,9 +138,22 @@ def check_learnrepo() -> dict:
         return {"name": "learnrepo", "ok": False, "detail": str(exc)}
 
 
+def check_skill_registry() -> dict:
+    try:
+        from . import skills
+        skills.ensure_defaults()
+        rows = skills.all_skills()
+        invalid = skills.validate_registry()
+        return {"name": "skill_registry", "ok": not invalid,
+                "detail": (f"{len(rows)} registered, {sum(bool(r['enabled']) for r in rows)} enabled"
+                           if not invalid else f"invalid: {', '.join(invalid[:4])}")}
+    except Exception as exc:
+        return {"name": "skill_registry", "ok": False, "detail": str(exc)}
+
+
 
 CHECKS = [check_db, check_shared_brain, check_disk, check_inbox, check_tasks, check_errors,
-          check_budget, check_git, check_ollama, check_network, check_secrets, check_backup, check_learnrepo]
+          check_budget, check_git, check_ollama, check_network, check_secrets, check_backup, check_learnrepo, check_skill_registry]
 
 
 def run_all(deep: bool = False) -> dict:
