@@ -5,7 +5,7 @@
   "contract": ".lucy/handoffs/2026-09-16/03_HIGH_TO_LOW_MODEL_AUTHORITY_CONTRACT.md",
   "execution_package": ".lucy/authority/LUCYOS_FABLE_ARCHITECT_EXECUTION_PACKAGE.md",
   "integration_branch": "integration/consolidation-20260916",
-  "fable_freeze_sha": "6dd3085f34e13c0916bb29adb42a9a4132fb4345",
+  "fable_freeze_sha": "9c151b038a40feaf474b2d03b98fea5feb15c35e",
   "verifier": "scripts/verify_authority.py",
   "how_verified": "In CI on pull requests the verifier and this baseline are read from the BASE branch (never from the branch under test). On pushes and on Mark-2 the deployed tree is checked against protected_file_hashes and against the blobs at fable_freeze_sha.",
   "protected_paths": [
@@ -165,7 +165,7 @@
     ".lucy/handoffs/2026-09-16/03_HIGH_TO_LOW_MODEL_AUTHORITY_CONTRACT.md": "68df8014364f6c56fedf6d5df4029b2dd6d8dc4ee0fe9880fabac5149cbc29a2",
     ".lucy/handoffs/2026-09-16/04_HANDOFF_POINTERS.json": "6514af4fd042806d9398ba3a87a264b4caf483f091d2289763d9747b4c3abf69",
     ".lucy/handoffs/2026-09-16/05_FABLE_SINGLE_PASS_OVERNIGHT_MASTER_PROMPT.txt": "dfbca0b148b4b90217642185448adc6a243c6e5cf520d3b6149b1ef32f8cab56",
-    ".lucy/handoffs/2026-09-16/06_SONNET_AUTONOMOUS_NIGHT_LOOP_PROMPT.txt": "9cd7a41edbb12fdd1a7b1ac88cd251eb9e9962fd878fe629ba193ef4d38826e6",
+    ".lucy/handoffs/2026-09-16/06_SONNET_AUTONOMOUS_NIGHT_LOOP_PROMPT.txt": "876685e9cb0f53931c1cd47c40c4bacd84213fb7ad231e107dd118c2f64055e5",
     ".secretscanignore": "cc96d8613b276b9f737bae4c7ede24eeff202efefeb92cc981a6ac25d4f3d0a2",
     "aion": "5784a0cc29ad119345c03f524df0675b3978446ec31daf2bbe49bc13e1ae37d9",
     "aion_core/agents.py": "74771d5f8fcabb1387b8fb592124fe5bc09842f51266a382bd23fff870325c89",
