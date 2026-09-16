@@ -199,6 +199,8 @@ def _main(argv=None) -> int:
     sc = sub.add_parser("scan", help="scan a path for secrets before committing")
     sc.add_argument("path", nargs="?", default=".")
 
+    sub.add_parser("drive-check", help="Drive list/read/write capability probe")
+
     sec = sub.add_parser("secrets")
     sec.add_argument("op", choices=["init", "set", "list"])
     sec.add_argument("name", nargs="?")
@@ -409,6 +411,13 @@ def _main(argv=None) -> int:
         for f in found:
             print(f"{f['file']}:{f['line']} {f['kind']} {f['preview']}")
         return 1
+    elif cmd == "drive-check":
+        from bridges.drive_bridge import capability
+        cap = capability()
+        if cap["detail"] == "rclone not installed":
+            _print("rclone not installed")
+            return 0
+        _print(cap)
     elif cmd == "secrets":
         if args.op == "init":
             _print(str(bootstrap.init_secret_store()))

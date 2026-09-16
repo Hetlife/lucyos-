@@ -156,13 +156,24 @@ def check_skill_registry() -> dict:
 
 
 
+def check_drive_bridge() -> dict:
+    from bridges.drive_bridge import capability
+    cap = capability()
+    if cap["detail"] == "rclone not installed":
+        return {"name": "drive_bridge", "ok": True, "required": False, "detail": cap["detail"]}
+    return {"name": "drive_bridge", "ok": cap["list"], "required": False, "detail": cap["detail"]}
+
+
 CHECKS = [check_db, check_shared_brain, check_disk, check_inbox, check_tasks, check_errors,
           check_budget, check_git, check_ollama, check_network, check_secrets, check_backup, check_learnrepo, check_skill_registry]
+# Shells out to rclone with a network round-trip; too slow to run on every
+# ordinary health check, so it only runs when deep=True asks for it.
+DEEP_ONLY_CHECKS = [check_drive_bridge]
 
 
 def run_all(deep: bool = False) -> dict:
     results = []
-    for fn in CHECKS:
+    for fn in CHECKS + (DEEP_ONLY_CHECKS if deep else []):
         try:
             results.append(fn())
         except Exception as exc:
