@@ -1,0 +1,227 @@
+{
+  "_synthetic": "SYNTHETIC FIXTURE — not a record of a real investigation. The repository, findings, scores and test results below are invented to demonstrate the shape of a manifest that satisfies the gate, and are used by tests/test_learnrepo_skill.py. Never copy these values into a real manifest.",
+  "schema_version": 1,
+  "capability_id": "example-json-diff",
+  "name": "Example JSON diff",
+  "purpose": "Produce a structural diff between two JSON documents for approval cards.",
+  "request": "Let LucyOS show what actually changed between two config snapshots instead of dumping both.",
+  "candidates": [
+    {
+      "name": "example-org/json-differ",
+      "url": "https://example.invalid/example-org/json-differ",
+      "verdict": "selected",
+      "why": "single-purpose, no runtime dependencies, permissive license"
+    },
+    {
+      "name": "example-org/mega-diff-suite",
+      "url": "https://example.invalid/example-org/mega-diff-suite",
+      "verdict": "rejected",
+      "why": "38 transitive dependencies for one function; conflicts with the stdlib-only policy"
+    },
+    {
+      "name": "build native",
+      "url": "",
+      "verdict": "considered",
+      "why": "viable, but the selected candidate is ~200 lines and already well tested"
+    }
+  ],
+  "consumers": ["lucyos-core"],
+  "status": "prepared",
+  "created_at": "2026-09-16T00:00:00+00:00",
+  "updated_at": "2026-09-16T00:00:00+00:00",
+  "source": {
+    "kind": "git",
+    "canonical_url": "https://example.invalid/example-org/json-differ",
+    "owner": "example-org",
+    "commit": "0000000000000000000000000000000000000000",
+    "tag": "v1.4.2",
+    "version": "1.4.2",
+    "release_date": "2026-05-02",
+    "retrieved_at": "2026-09-16T00:00:00+00:00",
+    "provenance_verified": true,
+    "provenance_notes": "Owner, canonical URL and tag confirmed; tag matches the published release artifact."
+  },
+  "license": {
+    "spdx": "MIT",
+    "source_of_truth": "LICENSE file read at tag v1.4.2",
+    "obligations": ["retain copyright notice", "retain license text"],
+    "commercial_use": "permitted",
+    "redistribution": "permitted",
+    "network_use": "permitted",
+    "modification": "permitted",
+    "compatible_with_lucyos": true,
+    "requires_legal_review": false,
+    "notes": "Single license across the tree; no vendored subdirectories with other terms."
+  },
+  "evidence": [
+    {
+      "claim": "No runtime dependencies at v1.4.2.",
+      "type": "fact",
+      "source": "pyproject.toml read at the evaluated tag",
+      "date": "2026-09-16",
+      "note": "Verified directly rather than trusting the README."
+    },
+    {
+      "claim": "Maintainer states the output format is stable since v1.0.",
+      "type": "maintainer_claim",
+      "source": "project README",
+      "date": "2026-09-16",
+      "note": "Not independently verified across versions."
+    },
+    {
+      "claim": "Users report correct handling of deeply nested arrays.",
+      "type": "user_report",
+      "source": "issue tracker discussion",
+      "date": "2026-09-16",
+      "note": "Anecdotal; treated as supporting, not decisive."
+    },
+    {
+      "claim": "Static screen produced no high or critical findings.",
+      "type": "tool_finding",
+      "source": "scripts/static_screen.py output stored in assessments/",
+      "date": "2026-09-16",
+      "note": "A clean screen is not proof of safety."
+    }
+  ],
+  "learned": "Structural JSON diffing is small enough to wrap rather than rebuild; the useful pattern is emitting a path-addressed change list rather than a text diff.",
+  "disposition": {
+    "reused": [],
+    "wrapped": ["the diff function, behind aion_core-owned interface"],
+    "rewritten": [],
+    "patched": [],
+    "rejected": ["the library's optional colour-output module (pulls a terminal dependency)"]
+  },
+  "dependencies": {
+    "direct": [],
+    "transitive_count": 0,
+    "pinned": true,
+    "lockfile": "vendored at a recorded commit with a checksum"
+  },
+  "runtime": {
+    "permissions": ["read: the two documents passed in"],
+    "network": [],
+    "secrets": [],
+    "telemetry": "none",
+    "data_flows": ["in-process only; nothing leaves the host"]
+  },
+  "security": {
+    "findings": [
+      {
+        "id": "F-1",
+        "severity": "low",
+        "title": "Recursion depth is unbounded on hostile input",
+        "evidence": "diff() recurses per nesting level; a deeply nested document can exhaust the stack",
+        "disposition": "mitigated",
+        "confidence": "high"
+      }
+    ],
+    "screened_at": "2026-09-16T00:00:00+00:00",
+    "screening_method": "static_screen.py plus manual review of the diff and parser paths; no execution",
+    "execution_performed": false,
+    "sandbox": "none"
+  },
+  "changes": {
+    "files_added": ["aion_core/jsondiff_adapter.py", "tests/test_jsondiff_adapter.py"],
+    "files_changed": [],
+    "files_removed": []
+  },
+  "tests": {
+    "suites": [
+      {
+        "name": "adapter unit tests",
+        "command": "python3 -m unittest tests.test_jsondiff_adapter -q",
+        "result": "pass",
+        "notes": "happy path, empty documents, type changes, nesting-depth ceiling"
+      },
+      {
+        "name": "adversarial input",
+        "command": "python3 -m unittest tests.test_jsondiff_adapter -q -k adversarial",
+        "result": "pass",
+        "notes": "deep nesting is rejected before recursion rather than crashing"
+      }
+    ],
+    "regression_suite_run": true,
+    "regression_result": "pass"
+  },
+  "resources": {
+    "cpu": "negligible for documents under 1 MB",
+    "memory": "proportional to document size",
+    "disk": "none",
+    "network": "none",
+    "latency": "sub-millisecond on representative configs",
+    "token_cost": "none — deterministic code path",
+    "monetary_cost": "none"
+  },
+  "confidence": {
+    "evidence": 88,
+    "functional_fit": 95,
+    "lucyos_compatibility": 96,
+    "security": 92,
+    "license": 97,
+    "test": 96,
+    "maintainability": 85,
+    "overall": 92
+  },
+  "confidence_reasons": {
+    "evidence": "Dependency and license claims verified directly; the stability claim is the maintainer's and unverified.",
+    "functional_fit": "Covers the needed diff shape exactly; colour output not needed.",
+    "lucyos_compatibility": "Pure standard library, no threads, no I/O; fits the stdlib-only policy.",
+    "security": "Small reviewed surface, no network, no filesystem, no secrets; one low finding mitigated by a depth ceiling.",
+    "license": "MIT read directly at the evaluated tag; single license across the tree.",
+    "test": "Happy path and adversarial paths covered; regression suite passes.",
+    "maintainability": "Low volume of change upstream, but a single maintainer is a real bus-factor risk.",
+    "overall": "Small, reversible, well-scoped; held below 95 by the bus factor and the unverified stability claim."
+  },
+  "assessment": {
+    "expected_value": "medium",
+    "integration_effort": "low",
+    "failure_impact": "low",
+    "reversibility": "easy",
+    "recommendation": "ready_for_merge_approval"
+  },
+  "limitations": [
+    "Nesting deeper than the configured ceiling is rejected rather than diffed.",
+    "Diff output is structural, not semantic: reordered list items read as changes."
+  ],
+  "residual_risks": [
+    "Single-maintainer upstream could go unmaintained; mitigated because the vendored surface is small enough to own.",
+    "Output format could change upstream; pinned version prevents surprise, at the cost of manual updates."
+  ],
+  "feature_flag": {
+    "name": "LUCY_JSON_DIFF",
+    "default": "off"
+  },
+  "rollback": {
+    "steps": [
+      "Set LUCY_JSON_DIFF=off (capability becomes inert immediately).",
+      "git revert the merge commit.",
+      "Run: python3 -m unittest discover -s tests -t . -q"
+    ],
+    "tested": true,
+    "tested_evidence": "Revert rehearsed on the feature branch; suite passed before and after; flag-off path covered by a test."
+  },
+  "integration": {
+    "pattern": "adapter",
+    "branch": "feature/learnrepo-json-diff",
+    "baseline_commit": "0000000",
+    "target_branch": "main"
+  },
+  "external_services": {
+    "required": false,
+    "services": [],
+    "accounts_needed": [],
+    "privacy_review_required": false,
+    "cost_review_required": false,
+    "activation_is_separate_approval": true
+  },
+  "monitoring": {
+    "enabled": true,
+    "watch": ["releases and advisories for example-org/json-differ"]
+  },
+  "approval": {
+    "status": "not_requested",
+    "approver": "",
+    "timestamp": "",
+    "note": ""
+  }
+}

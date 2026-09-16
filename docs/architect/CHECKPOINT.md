@@ -69,6 +69,18 @@ Session 2 — **LQ-01 argv execution boundary: DONE.**
 - BLOCKERS: none.
 - NEXT_ACTION: LQ-05 (runtime inventory) then LQ-03 (CI), per §15.
 
+Session 3 — **`learnrepo` skill built (PREPARED, NOT MERGED).**
+- STATUS: prepared on this branch, awaiting owner merge approval.
+- FILES_CHANGED: `.claude/skills/learnrepo/**` (17 files: SKILL.md, 7 references,
+  7 scripts, 1 asset, CHANGELOG), `tests/test_learnrepo_skill.py` (new, 46 tests).
+- TESTS: full suite **258 OK** (212 → 258); official skill validator "Skill is valid!";
+  `./aion scan .` clean; packages cleanly to `learnrepo.skill`.
+- EVIDENCE: gate proven to fail closed on a blank manifest and to pass on a synthetic
+  complete fixture; open critical finding vetoes perfect scores; execution without
+  recorded containment blocks; static screen verified not to execute candidate code.
+- BLOCKERS: none technical. Merge to `main` requires owner approval (RED band).
+- NEXT_ACTION: owner decides OD-19 (merge learnrepo) — see §13.
+
 ## 11. REMAINING WORK (ordered; ids in EXECUTION_PACKAGE §9 / LOW_MODEL_TASK_QUEUE)
 
 Phase 0: T-01/OD-03 disable desktop-commander (owner) · T-02/OD-01 visibility (owner) · T-03/LQ-05 runtime inventory · T-06/LQ-04 strategy-factory history scan.
