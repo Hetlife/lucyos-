@@ -36,5 +36,7 @@
   ],
   "implementation_notes": "Optional managed fallback; not core.",
   "priority": "P2",
-  "cost_notes": "Candidate catalog entry only; recurring cost must be re-verified before activation."
+  "cost_notes": "Candidate catalog entry only; recurring cost must be re-verified before activation.",
+  "risk_class": "R0",
+  "data_class": "PUBLIC"
 }

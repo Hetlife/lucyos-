@@ -61,8 +61,8 @@ class TestSkillManifest(AionTest):
             "version": "1.0.0", "capabilities": ["read", "write"],
             "executor_classes": ["DET"], "platforms": ["linux", "darwin"],
             "requirements": {"network": False, "ai": False, "offline_supported": True},
-            "cost_class": "none", "enabled": True,
-            "actions": ["read"], "permissions": ["workspace:read"],
+            "cost_class": "F0", "risk_class": "R0", "data_class": "INTERNAL", "priority": "P2",
+            "enabled": True, "actions": ["read"], "permissions": ["workspace:read"],
         }
 
     def test_valid_manifest_registers_into_existing_registry(self):
@@ -205,3 +205,31 @@ class TestLearnRepoSkillContract(AionTest):
         after = db.connect().execute("SELECT COUNT(*) FROM model_usage").fetchone()[0]
         self.assertEqual(before, after)
         self.assertIn("RESEARCH", learnrepo.skill_review_status("docs.pdf-read")["stages"])
+
+
+class TestSkillPolicyClasses(AionTest):
+    def test_policy_enums_are_strict(self):
+        with self.assertRaises(skills.SkillError):
+            skills.register(skill_id="test.badpolicy", name="bad", cost_class="FREE")
+        with self.assertRaises(skills.SkillError):
+            skills.register(skill_id="test.badpolicy2", name="bad", risk_class="HIGH")
+        with self.assertRaises(skills.SkillError):
+            skills.register(skill_id="test.badpolicy3", name="bad", data_class="PRIVATE")
+
+    def test_catalog_has_explicit_cost_risk_data_priority(self):
+        for path in skills.catalog_manifests():
+            data = skills.load_manifest(path)
+            self.assertIn(data["cost_class"], skills.COST_CLASSES, path)
+            self.assertIn(data["risk_class"], skills.RISK_CLASSES, path)
+            self.assertIn(data["data_class"], skills.DATA_CLASSES, path)
+            self.assertIn(data["priority"], skills.PRIORITY_CLASSES, path)
+
+    def test_capability_report_exposes_policy_without_model_call(self):
+        before = db.connect().execute("SELECT COUNT(*) FROM model_usage").fetchone()[0]
+        report = worker.capability_report()
+        after = db.connect().execute("SELECT COUNT(*) FROM model_usage").fetchone()[0]
+        row = next(x for x in report["skills"] if x["skill_id"] == "core.state")
+        self.assertIn(row["cost_class"], skills.COST_CLASSES)
+        self.assertIn(row["risk_class"], skills.RISK_CLASSES)
+        self.assertIn(row["data_class"], skills.DATA_CLASSES)
+        self.assertEqual(before, after)

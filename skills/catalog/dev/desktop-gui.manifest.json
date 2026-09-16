@@ -37,5 +37,7 @@
   "references": [],
   "implementation_notes": "Prefer API/browser over GUI.",
   "priority": "P2",
-  "cost_notes": "Candidate catalog entry only; recurring cost must be re-verified before activation."
+  "cost_notes": "Candidate catalog entry only; recurring cost must be re-verified before activation.",
+  "risk_class": "R2",
+  "data_class": "INTERNAL"
 }

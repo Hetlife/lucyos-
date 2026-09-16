@@ -4,15 +4,30 @@
   "name": "Example deterministic echo",
   "version": "0.1.0",
   "description": "Documentation fixture only; not automatically registered or executed.",
-  "capabilities": ["echo"],
-  "executor_classes": ["DET"],
-  "platforms": ["any"],
-  "requirements": {"network": false, "ai": false, "offline_supported": true},
-  "cost_class": "none",
+  "capabilities": [
+    "echo"
+  ],
+  "executor_classes": [
+    "DET"
+  ],
+  "platforms": [
+    "any"
+  ],
+  "requirements": {
+    "network": false,
+    "ai": false,
+    "offline_supported": true
+  },
+  "cost_class": "F0",
   "enabled": false,
   "health_command": "",
   "test_command": "",
-  "actions": ["echo"],
+  "actions": [
+    "echo"
+  ],
   "permissions": [],
-  "fallback": []
+  "fallback": [],
+  "risk_class": "R0",
+  "data_class": "INTERNAL",
+  "priority": "P2"
 }

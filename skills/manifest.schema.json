@@ -13,7 +13,10 @@
     "executor_classes",
     "platforms",
     "requirements",
-    "cost_class"
+    "cost_class",
+    "risk_class",
+    "data_class",
+    "priority"
   ],
   "properties": {
     "schema_version": {
@@ -87,8 +90,14 @@
       }
     },
     "cost_class": {
-      "type": "string",
-      "minLength": 1
+      "enum": [
+        "F0",
+        "F1",
+        "E0",
+        "E1",
+        "E2",
+        "H"
+      ]
     },
     "enabled": {
       "type": "boolean"
@@ -124,10 +133,20 @@
       ]
     },
     "risk_class": {
-      "type": "string"
+      "enum": [
+        "R0",
+        "R1",
+        "R2",
+        "R3"
+      ]
     },
     "data_class": {
-      "type": "string"
+      "enum": [
+        "PUBLIC",
+        "INTERNAL",
+        "CONFIDENTIAL",
+        "SECRET"
+      ]
     },
     "fallback": {
       "type": "array",

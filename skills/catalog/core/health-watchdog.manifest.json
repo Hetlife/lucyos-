@@ -38,5 +38,7 @@
   ],
   "implementation_notes": "Native deterministic health first; heavy telemetry only when justified.",
   "priority": "P0",
-  "cost_notes": "Candidate catalog entry only; recurring cost must be re-verified before activation."
+  "cost_notes": "Candidate catalog entry only; recurring cost must be re-verified before activation.",
+  "risk_class": "R0",
+  "data_class": "INTERNAL"
 }

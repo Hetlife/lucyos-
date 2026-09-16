@@ -13,6 +13,10 @@ from . import db, security, util
 
 _SKILL_ID = re.compile(r"^[a-z0-9][a-z0-9_.-]{2,79}$")
 _EXECUTOR_CLASSES = {"DET", "A", "B", "C", "D"}
+COST_CLASSES = {"F0", "F1", "E0", "E1", "E2", "H"}
+RISK_CLASSES = {"R0", "R1", "R2", "R3"}
+DATA_CLASSES = {"PUBLIC", "INTERNAL", "CONFIDENTIAL", "SECRET"}
+PRIORITY_CLASSES = {"P0", "P1", "P2"}
 
 MANIFEST_SCHEMA_VERSION = 1
 LIFECYCLE_STATES = {"DISCOVERED", "RESEARCHED", "LICENSE_OK", "SECURITY_REVIEWED", "SANDBOXED", "BENCHMARKED", "ARCHITECTURE_APPROVED", "OWNER_APPROVED", "INSTALLED_DISABLED", "TESTED", "ACTIVE", "DEGRADED", "QUARANTINED", "DEPRECATED", "REJECTED", "ROLLED_BACK"}
@@ -37,10 +41,11 @@ LIFECYCLE_TRANSITIONS = {
 MANIFEST_REQUIRED = {
     "schema_version", "skill_id", "name", "version", "capabilities",
     "executor_classes", "platforms", "requirements", "cost_class",
+    "risk_class", "data_class", "priority",
 }
 MANIFEST_OPTIONAL = {
     "description", "enabled", "health_command", "test_command", "actions",
-    "permissions", "input_schema", "output_schema", "risk_class", "data_class",
+    "permissions", "input_schema", "output_schema",
     "fallback", "evidence", "timeout_seconds", "retry", "idempotency",
     "approval_rule", "rollback", "feature_flag", "lifecycle_state", "references",
     "implementation_notes", "priority", "cost_notes",
@@ -49,31 +54,31 @@ MANIFEST_OPTIONAL = {
 DEFAULT_SKILLS = [
     dict(skill_id="core.state", name="Canonical state", capabilities="sqlite,state,events,idempotency",
          executor_classes="DET", platforms="any", network_required=0, ai_required=0,
-         offline_supported=1, cost_class="none", health_command="aion health"),
+         offline_supported=1, cost_class="F0", health_command="aion health"),
     dict(skill_id="core.tasks", name="Task queue", capabilities="queue,claim,retry,evidence",
          executor_classes="DET", platforms="any", network_required=0, ai_required=0,
-         offline_supported=1, cost_class="none", health_command="aion health"),
+         offline_supported=1, cost_class="F0", health_command="aion health"),
     dict(skill_id="core.approvals", name="Owner approvals", capabilities="approve,deny,resume",
          executor_classes="DET,D", platforms="any", network_required=0, ai_required=0,
-         offline_supported=1, cost_class="none", health_command="aion health"),
+         offline_supported=1, cost_class="F0", health_command="aion health"),
     dict(skill_id="core.security", name="Secret protection", capabilities="redact,scan,guard",
          executor_classes="DET", platforms="any", network_required=0, ai_required=0,
-         offline_supported=1, cost_class="none", health_command="aion scan ."),
+         offline_supported=1, cost_class="F0", health_command="aion scan ."),
     dict(skill_id="core.health", name="Deterministic health", capabilities="health,integrity,watchdog",
          executor_classes="DET", platforms="any", network_required=0, ai_required=0,
-         offline_supported=1, cost_class="none", health_command="aion health"),
+         offline_supported=1, cost_class="F0", health_command="aion health"),
     dict(skill_id="core.backup", name="Backup and restore", capabilities="backup,restore,verify",
          executor_classes="DET", platforms="any", network_required=0, ai_required=0,
-         offline_supported=1, cost_class="none", health_command="aion health"),
+         offline_supported=1, cost_class="F0", health_command="aion health"),
     dict(skill_id="core.learnrepo", name="LearnRepo", capabilities="dependency_research,queue,health,quarantine",
          executor_classes="DET,C", platforms="any", network_required=0, ai_required=0,
-         offline_supported=1, cost_class="none", health_command="aion learnrepo-status"),
+         offline_supported=1, cost_class="F0", health_command="aion learnrepo-status"),
     dict(skill_id="ai.local", name="Local model worker", capabilities="classify,extract,format,summarize",
          executor_classes="A", platforms="any", network_required=0, ai_required=1,
-         offline_supported=1, cost_class="none", health_command="ollama list"),
+         offline_supported=1, cost_class="F0", health_command="ollama list"),
     dict(skill_id="ai.cloud", name="Cloud model worker", capabilities="code,research,debug,reason",
          executor_classes="B,C", platforms="any", network_required=1, ai_required=1,
-         offline_supported=0, cost_class="external", health_command=""),
+         offline_supported=0, cost_class="E1", health_command=""),
 ]
 
 
@@ -93,7 +98,8 @@ def _clean_csv(value: str) -> str:
 def register(*, skill_id: str, name: str, description: str = "", version: str = "0.1.0",
              capabilities: str = "", executor_classes: str = "DET", platforms: str = "any",
              network_required: int = 0, ai_required: int = 0, offline_supported: int = 1,
-             cost_class: str = "none", enabled: int = 1, health_command: str = "",
+             cost_class: str = "F0", risk_class: str = "R1", data_class: str = "INTERNAL",
+             priority: str = "P1", enabled: int = 1, health_command: str = "",
              test_command: str = "", lifecycle_state: str = "ACTIVE", feature_flag: str = "",
              source_manifest: str = "") -> str:
     skill_id = skill_id.strip().lower()
@@ -106,26 +112,39 @@ def register(*, skill_id: str, name: str, description: str = "", version: str = 
     lifecycle_state = lifecycle_state.strip().upper()
     if lifecycle_state not in LIFECYCLE_STATES:
         raise SkillError(f"invalid lifecycle state {lifecycle_state!r}")
+    cost_class = cost_class.strip().upper()
+    risk_class = risk_class.strip().upper()
+    data_class = data_class.strip().upper()
+    priority = priority.strip().upper()
+    if cost_class not in COST_CLASSES:
+        raise SkillError(f"invalid cost class {cost_class!r}")
+    if risk_class not in RISK_CLASSES:
+        raise SkillError(f"invalid risk class {risk_class!r}")
+    if data_class not in DATA_CLASSES:
+        raise SkillError(f"invalid data class {data_class!r}")
+    if priority not in PRIORITY_CLASSES:
+        raise SkillError(f"invalid priority {priority!r}")
     now = util.now()
     values = (
         skill_id, security.redact(name), security.redact(description), version,
         security.redact(_clean_csv(capabilities)), classes, _clean_csv(platforms.lower()) or "any",
         int(bool(network_required)), int(bool(ai_required)), int(bool(offline_supported)),
-        cost_class.strip().lower() or "none", int(bool(enabled)),
+        cost_class, risk_class, data_class, priority, int(bool(enabled)),
         security.redact(health_command), security.redact(test_command), lifecycle_state,
         security.redact(feature_flag), security.redact(source_manifest), now,
     )
     conn = db.connect()
     conn.execute(
         "INSERT INTO skills(skill_id,name,description,version,capabilities,executor_classes,platforms,"
-        "network_required,ai_required,offline_supported,cost_class,enabled,health_command,test_command,"
+        "network_required,ai_required,offline_supported,cost_class,risk_class,data_class,priority,enabled,health_command,test_command,"
         "lifecycle_state,feature_flag,source_manifest,updated_at) "
-        "VALUES(?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?) ON CONFLICT(skill_id) DO UPDATE SET "
+        "VALUES(?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?) ON CONFLICT(skill_id) DO UPDATE SET "
         "name=excluded.name,description=excluded.description,version=excluded.version,"
         "capabilities=excluded.capabilities,executor_classes=excluded.executor_classes,"
         "platforms=excluded.platforms,network_required=excluded.network_required,"
         "ai_required=excluded.ai_required,offline_supported=excluded.offline_supported,"
-        "cost_class=excluded.cost_class,enabled=excluded.enabled,health_command=excluded.health_command,"
+        "cost_class=excluded.cost_class,risk_class=excluded.risk_class,data_class=excluded.data_class,priority=excluded.priority,"
+        "enabled=excluded.enabled,health_command=excluded.health_command,"
         "test_command=excluded.test_command,lifecycle_state=excluded.lifecycle_state,"
         "feature_flag=excluded.feature_flag,source_manifest=excluded.source_manifest,updated_at=excluded.updated_at",
         values,
@@ -139,6 +158,11 @@ def ensure_defaults() -> int:
         # Defaults must not silently re-enable an owner-disabled skill.
         if get(spec["skill_id"]) is None:
             register(**spec)
+    conn = db.connect()
+    # One-time compatibility normalization from pre-Q005 free/external labels.
+    conn.execute("UPDATE skills SET cost_class='F0' WHERE lower(cost_class) IN ('none','free','local')")
+    conn.execute("UPDATE skills SET cost_class='E1' WHERE lower(cost_class)='external'")
+    conn.commit()
     return len(DEFAULT_SKILLS)
 
 
@@ -176,6 +200,14 @@ def validate_registry() -> list[str]:
         classes = {x for x in row["executor_classes"].split(",") if x}
         if not classes or not classes <= _EXECUTOR_CLASSES:
             errors.append(f"{row['skill_id']}:invalid-executor")
+        if row["cost_class"] not in COST_CLASSES:
+            errors.append(f"{row['skill_id']}:invalid-cost")
+        if row["risk_class"] not in RISK_CLASSES:
+            errors.append(f"{row['skill_id']}:invalid-risk")
+        if row["data_class"] not in DATA_CLASSES:
+            errors.append(f"{row['skill_id']}:invalid-data")
+        if row["priority"] not in PRIORITY_CLASSES:
+            errors.append(f"{row['skill_id']}:invalid-priority")
     return errors
 
 
@@ -205,8 +237,9 @@ def report(runtime: dict) -> list[dict]:
             "enabled": bool(row["enabled"]), "available": available,
             "executor_classes": row["executor_classes"], "network_required": bool(row["network_required"]),
             "ai_required": bool(row["ai_required"]), "offline_supported": bool(row["offline_supported"]),
-            "cost_class": row["cost_class"], "lifecycle_state": row["lifecycle_state"],
-            "feature_flag": row["feature_flag"], "reason": reason,
+            "cost_class": row["cost_class"], "risk_class": row["risk_class"],
+            "data_class": row["data_class"], "priority": row["priority"],
+            "lifecycle_state": row["lifecycle_state"], "feature_flag": row["feature_flag"], "reason": reason,
         })
     return out
 
@@ -231,9 +264,17 @@ def validate_manifest(data: dict) -> list[str]:
     sid = str(data.get("skill_id", "")).strip().lower()
     if not _SKILL_ID.match(sid):
         errors.append("manifest:invalid-skill-id")
-    for key in ("name", "version", "cost_class"):
+    for key in ("name", "version", "cost_class", "risk_class", "data_class", "priority"):
         if not isinstance(data.get(key), str) or not data.get(key, "").strip():
             errors.append(f"manifest:invalid-{key}")
+    if isinstance(data.get("cost_class"), str) and data["cost_class"].upper() not in COST_CLASSES:
+        errors.append("manifest:invalid-cost-class")
+    if isinstance(data.get("risk_class"), str) and data["risk_class"].upper() not in RISK_CLASSES:
+        errors.append("manifest:invalid-risk-class")
+    if isinstance(data.get("data_class"), str) and data["data_class"].upper() not in DATA_CLASSES:
+        errors.append("manifest:invalid-data-class")
+    if isinstance(data.get("priority"), str) and data["priority"].upper() not in PRIORITY_CLASSES:
+        errors.append("manifest:invalid-priority")
     for key in ("capabilities", "executor_classes", "platforms"):
         value = data.get(key)
         if not isinstance(value, list) or not value or not all(isinstance(x, str) and x.strip() for x in value):
@@ -286,6 +327,7 @@ def register_manifest(data: dict) -> str:
         executor_classes=",".join(data["executor_classes"]), platforms=",".join(data["platforms"]),
         network_required=req["network"], ai_required=req["ai"],
         offline_supported=req["offline_supported"], cost_class=data["cost_class"],
+        risk_class=data["risk_class"], data_class=data["data_class"], priority=data["priority"],
         enabled=data.get("enabled", True), health_command=data.get("health_command", ""),
         test_command=data.get("test_command", ""), lifecycle_state=data.get("lifecycle_state", "DISCOVERED"),
         feature_flag=data.get("feature_flag", ""),
