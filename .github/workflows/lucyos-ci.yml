@@ -41,6 +41,10 @@ jobs:
           python-version: ${{ matrix.python-version }}
       - name: Compile sources
         run: python -m compileall -q aion_core bridges tests scripts
+      - name: Cross-platform portability guard
+        # Owner invariant: one codebase, macOS + Linux, no forked core logic.
+        # A ratchet -- see scripts/check_portability.py.
+        run: python scripts/check_portability.py
       - name: Secret scan
         env:
           AION_HOME: ${{ runner.temp }}/lucyos-scan-home
