@@ -305,6 +305,23 @@ CREATE TABLE IF NOT EXISTS notebook (
 );
 CREATE UNIQUE INDEX IF NOT EXISTS idx_notebook_hash ON notebook(hash);
 
+CREATE TABLE IF NOT EXISTS sync_outbox (
+    sync_id      TEXT PRIMARY KEY,
+    at           TEXT NOT NULL,
+    project      TEXT NOT NULL DEFAULT '',
+    kind         TEXT NOT NULL,
+    local_path   TEXT NOT NULL,
+    content_hash TEXT NOT NULL,
+    remote_target TEXT NOT NULL DEFAULT '',
+    status       TEXT NOT NULL,
+    attempts     INTEGER NOT NULL DEFAULT 0,
+    last_error   TEXT NOT NULL DEFAULT '',
+    synced_at    TEXT NOT NULL DEFAULT '',
+    promoted_by  TEXT NOT NULL DEFAULT ''
+);
+CREATE INDEX IF NOT EXISTS idx_sync_outbox_status ON sync_outbox(status);
+CREATE INDEX IF NOT EXISTS idx_sync_outbox_hash ON sync_outbox(content_hash);
+
 CREATE TABLE IF NOT EXISTS idempotency (
     key       TEXT PRIMARY KEY,
     at        TEXT NOT NULL,
