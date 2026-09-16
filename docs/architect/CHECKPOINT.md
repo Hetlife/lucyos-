@@ -1,122 +1,103 @@
 # LucyOS Architect Session — CHECKPOINT / PROGRESS
 
-Last updated: 2026-09-16 (session 1, high-capability architect pass)
-Branch: `claude/lucyos-architecture-audit-4o4q83`
-Status: IN PROGRESS — read/verify phase complete for package; repo verification underway.
+Last updated: 2026-09-16 (end of session 1, high-capability architect pass)
+Branch: `claude/lucyos-architecture-audit-4o4q83` (pushed)
+Status: ARCHITECTURE + EXECUTION PACKAGE COMPLETE. Implementation not started (by design). Next work is Phase 0 tasks.
 
-> RESUME RULE: If you are a new AI reading this, do NOT reread the research ZIP.
-> Read this file, then `docs/architect/LUCYOS_ARCHITECT_EXECUTION_PACKAGE.md` (when it exists),
-> then continue from "EXACT NEXT ACTION" below.
+> RESUME RULE: a new AI must NOT reread the research ZIP. Read this file, then
+> `LUCYOS_ARCHITECT_EXECUTION_PACKAGE.md`, then take the next task from
+> "EXACT NEXT ACTION". Everything load-bearing from the research is reproduced
+> with evidence classes in `01_CURRENT_STATE_AUDIT.md`.
 
 ## 1. CURRENT OBJECTIVE
 
-Independently audit the LucyOS research handoff package, produce a decision-grade
-architecture + execution package, a low-model task queue, owner decisions, and
-leave everything durable in this repo. Sequence: READ → VERIFY → CHALLENGE →
-RECONCILE → ARCHITECT → RED-TEAM → COST → PRIORITIZE → SPECIFY → HAND OFF.
+Session 1 objective (DONE): independently audit the research package, produce decision-grade architecture, threat model, execution package, low-model task queue, owner decisions, and leave it all in the repo.
+Next objective: execute Phase 0 (close P0 exposures, resolve UNKNOWNs) per the execution package §8, then Phase 1.
 
-## 2. VERIFIED STATE (evidence class in brackets)
+## 2. VERIFIED STATE
 
-- [VERIFIED] Both uploaded copies of the ZIP and TXT are byte-identical (md5 checked). One package, one prompt.
-- [VERIFIED] Package contents: 23 synthesized docs + QA report + evidence snapshots (raw deep-research MD/JSON, Mark-2 readiness audit JSON, deep-research master prompt, repo status JSON). All read.
-- [VERIFIED] Repo `Hetlife/lucyos-` at `33e4ced` (2026-09-13): 123 files, ~900KB, 38 commits, pure Python 3.9+ stdlib, no third-party deps.
-- [VERIFIED, THIS CONTAINER] `python3 -m unittest discover -s tests` → **205 tests OK** on Python 3.11.15 (2026-09-16). The "205 tests" commit claim is now independently verified in a clean Linux environment. NOT yet verified on the deployment host (SCS.ADMIN01 / Mark-2).
-- [VERIFIED] Full git-history secret scan (token/key/private-key/phone/email patterns): only deliberate test fixtures (the fake GitHub token and the AWS documentation example key used in tests/test_security.py). No real credential shapes found. Owner email appears only in commit author metadata (normal for git).
-- [VERIFIED] `.gitignore` excludes shared_brain, private_state, secrets.env, *.json creds, sqlite files. `.secretscanignore` allowlists only test files + the detector.
-- [VERIFIED] Repo describes itself as "OpenClaw driver interface + AION brain + Ubuntu PC permanent office". Canonical runtime state lives at `~/openclaw/shared_brain` (never committed) → nothing in git is canonical business state.
+- [VERIFIED] Package and prompt uploads were byte-identical duplicates; package fully read (23 docs, QA, manifest, raw deep-research report, Mark-2 readiness audit text, deep-research master prompt).
+- [VERIFIED] Repo `Hetlife/lucyos-` at `33e4ced` + this branch: 207 tests pass (Python 3.11.15, clean Linux container, 2026-09-16). Stdlib only. `./aion scan .` clean.
+- [VERIFIED] Full git-history secret scan of `lucyos-`: only the documented test fixtures (the fake GitHub token and the AWS documentation example key in `tests/test_security.py`). No real credentials.
+- [VERIFIED LIVE, GitHub API 2026-09-16] `Hetlife/lucyos-` public; `Hetlife/strategy-factory` public; also public: `Hetlife/paperclip` (fork), `Hetlife/claude-test`. Zero open issues on `lucyos-`.
+- [VERIFIED by code] execution boundary = prefix allowlist + `shell=True` (partially mitigated this session); `agents.allowed_tools` never enforced; approvals decided by any `sender` string; backups same-disk unencrypted, `private_state` never backed up; bridge exports entire secret file to env; root remote-shell unit `mark2-desktop-commander.service` shipped in repo.
+- [REPORTED, 2026-09-09] Mark-2 = DigitalOcean droplet Ubuntu 24.04 2vCPU/4GB, AION runs as root, Ollama with qwen2.5-coder 0.5b/1.5b, Drive bridge blocked on Google Drive API disabled, maintenance service had exited 1, six open errors.
+- [UNKNOWN] Mark-2 state today; SCS.ADMIN01 state; Radeon PC identity; Project X / SEVAACONNECT code (none in this repo).
 
-## 3. CRITICAL FINDINGS (running list)
+## 3. CRITICAL FINDINGS (full list: 03_THREAT_MODEL_AND_SECURITY.md §1)
 
-- F-01 [P0] Repo visibility: package says PUBLIC on 2026-09-16. Live check in progress via GitHub MCP. History scan found no secrets, so exposure risk today = code/design + owner mission text (INR targets, business direction), not credentials. See owner decision OD-01.
-- F-02 [P0] Strategy Factory hard rule "never make repo public" contradicts reported public visibility (package QA contradiction #1). Strategy Factory is outside this session's repo scope; only metadata can be checked.
-- F-03 [P1] Architecture contradiction: repo README/systemd say canonical brain = Ubuntu PC (`SCS.ADMIN01`/Mark-2), research says migrate to Mac controller. Decision pending in ADR-02.
-- F-04 [P1] Package hardware doc relies on an Apple M6/M5 Pro launch claim (25 Aug 2026, ₹99,900). Treated as REPORTED-NOT-VERIFIED by me (cannot re-fetch Apple page offline in this container). Architecture below is written to be independent of which Mac generation is bought.
+- S-01 P0 root remote-shell service on the controller (desktop-commander) → OD-03.
+- S-02 P0 shell-injectable execution boundary → partial fix committed (3126ff1); full fix LQ-01.
+- S-03 P0 everything runs as root → LQ-10 / OD-06.
+- S-04 P0 no off-host/encrypted backup; secrets unbacked → LQ-02 / OD-05.
+- S-05 P0 repos public → OD-01 / LQ-04.
+- S-06 P1 approval authority = channel token, no expiry/scope → LQ-06.
+- A2 (audit): research under-weighted that the controller already exists (VPS), missed desktop-commander, overrated tiny local models, and asked "which Mac" instead of "buy at all".
 
 ## 4. FILES / REPOSITORIES INSPECTED
 
-Package: all 23 docs, QA report, manifest, evidence README, repo-status JSON, raw deep research MD, Mark-2 audit JSON (structure + report text), deep-research master prompt (head).
-Repo: README, docs/ARCHITECTURE.md, TOMORROW.md, docs/MASTER_AI_HANDOFF.md, aion_core/* (sizes; security/approvals/governor/agents/config/backup/db/worker in detail), bridges/*, systemd/*, scripts/*, directives index, tests (executed).
+Package: all docs + evidence snapshots. Repo: README, docs/*, TOMORROW.md, aion_core/{security,approvals,governor,agents,config,backup,db(schema),worker,router,plan(head),fable(head),metrics(budget)}.py, bridges/{whatsapp_bridge,http_server,drive_bridge(head)}.py, systemd/*, scripts/*, directives/{00,02(grep),07}, deploy/queues (head), tests (executed). GitHub API: repo metadata, issues, user.
 
-## 5. ARCHITECTURE DECISIONS (ADR index — full text in EXECUTION_PACKAGE)
+## 5. ARCHITECTURE DECISIONS — see 02_ARCHITECTURE_DECISIONS.md (ADR-01…20)
 
-- ADR-01 AION stays the deterministic kernel (KEEP + HARDEN). Evidence: 205 passing tests, evidence-gated completion, deterministic command router, redaction, governor.
-- ADR-02 Controller platform: (pending, see below).
-- ADR-03 SQLite stays canonical; add FTS5 + WAL + integrity job; Postgres only on measured trigger.
-- ADR-04 No Temporal / n8n / Kubernetes / vector DB now.
-- ADR-05 OpenClaw = transport/tool adapter only, never authority. WhatsApp bridge already treats it that way.
-- ADR-06 Capability broker + GREEN/AMBER/RED policy engine is the #1 build item.
-- ADR-07 Radeon PC = compute appliance behind an inference-only endpoint; qualification gate before any reliance.
+Headline: KEEP AION; controller = hardened Linux host (Mark-2 now, buy nothing until Phase-1 gate; Linux mini-PC default if on-prem later, Mac only by preference); SQLite+FTS5; no Temporal/n8n/K8s/vector DB; OpenClaw adapter-only; capability broker + GREEN/AMBER/RED + approvals v2 first; Radeon = appliance after gate; class A = cheapest *validated* executor (not "local"); WhatsApp Cloud API stays primary channel; first workflow = document intake; Strategy Factory evidence-only; portability via export/import; non-root service identity.
 
-## 6. ASSUMPTIONS / UNKNOWNS
+## 6. ASSUMPTIONS / UNKNOWNS — see 07_UNRESOLVED_QUESTIONS.md (U-01…14)
 
-- Deployment host runtime state (SCS.ADMIN01 / Mark-2) is UNKNOWN to this session (no access). All runtime claims stay REPORTED-NOT-VERIFIED.
-- Exact Radeon SKU/OS UNKNOWN.
-- Owner's intent on public visibility UNKNOWN.
-- Current API/token spend: ₹0 per seeded governor; real usage UNKNOWN.
+Prices (M6, mini-PC, Runpod, DO) are stale/REPORTED; refresh at purchase time. Mark-2 list price assumed ~$24/mo.
 
-## 7. REJECTED ALTERNATIVES (running)
+## 7. REJECTED ALTERNATIVES — see EXECUTION_PACKAGE §12 (binding list).
 
-Rebuild from scratch; OpenClaw as kernel; 20–50 permanent agents; Kubernetes; Temporal now; n8n now; standalone vector DB; 4×RTX2060; RTX3060 purchase; M5 Pro 64GB; autonomous live trading; dropshipping factory; AI news bot; self-modifying policy.
-
-## 8. SECURITY FINDINGS (running)
-
-- S-01 Secret handling in AION is redaction + scanning (post-hoc), not capability-scoped brokerage. Confirmed by reading `aion_core/security.py`.
-- S-02 Repo public (pending live confirm). No secrets in history (verified).
-- S-03 Mark-2 "Remote Desktop Commander" service exists in systemd (`mark2-desktop-commander.service`) — a desktop-control surface. Must be reviewed against the compute-appliance rule.
-- S-04 Drive bridge uses service account (commit 51c3ddb) — credential scope to be verified.
+## 8. SECURITY FINDINGS — see 03_THREAT_MODEL_AND_SECURITY.md (S-01…13, hardening H-1…12).
 
 ## 9. CURRENT TASK
 
-Reading kernel modules + bridges + systemd for trust-boundary audit; live repo visibility check.
+None in progress. Session 1 closed cleanly.
 
-## 10. COMPLETED WORK
+## 10. COMPLETED WORK (session 1)
 
-- Package fully read.
-- Test suite executed and passing (205/205).
-- Git history secret scan clean.
-- Checkpoint file created.
+- Read + verified package; ran tests (205→207 OK); history secret scan; live visibility check.
+- Committed: `docs/architect/{README,CHECKPOINT,01_CURRENT_STATE_AUDIT,02_ARCHITECTURE_DECISIONS,03_THREAT_MODEL_AND_SECURITY,05_LOW_MODEL_TASK_QUEUE,06_OWNER_DECISIONS,07_UNRESOLVED_QUESTIONS,LUCYOS_ARCHITECT_EXECUTION_PACKAGE}.md`.
+- P0 partial fix: `worker.FORBIDDEN` hardened (`;`, `$(`, backtick, `|bash`, home wipes, sudo/ssh/wget/systemctl…) + 2 tests (commit 3126ff1).
 
-## 11. REMAINING WORK
+## 11. REMAINING WORK (ordered; ids in EXECUTION_PACKAGE §9 / LOW_MODEL_TASK_QUEUE)
 
-1. Finish repo code audit (security/approvals/worker/bridges/systemd).
-2. Live GitHub visibility check (lucyos-, strategy-factory metadata).
-3. Write ARCHITECTURE_DECISIONS.md (ADRs with rationale).
-4. Write THREAT_MODEL_AND_SECURITY.md.
-5. Write LUCYOS_ARCHITECT_EXECUTION_PACKAGE.md (the contract).
-6. Write LOW_MODEL_TASK_QUEUE.md (fully specified tasks).
-7. Write OWNER_DECISIONS.md + UNRESOLVED_QUESTIONS.md.
-8. Safe, reversible P0 fixes in repo if any are obvious.
-9. Commit + push after each milestone.
+Phase 0: T-01/OD-03 disable desktop-commander (owner) · T-02/OD-01 visibility (owner) · T-03/LQ-05 runtime inventory · T-06/LQ-04 strategy-factory history scan.
+Phase 1: T-04/LQ-02 backups (needs OD-05) · T-05/LQ-01 argv boundary · T-07/LQ-03 CI · T-15/LQ-09 export/import.
+Phase 2: T-08/LQ-10 non-root (needs OD-06) · T-09/LQ-11 remove unit · LQ-07 · LQ-08.
+Phase 3: T-10/LQ-06 approvals v2 · T-11/LQ-14 manifests · T-12/LQ-20 policy root · T-13 broker (strong-model review) · T-14/LQ-15 telemetry · LQ-17 audit chain.
+Phase 4–6: T-17/LQ-12 Radeon gate · T-16/LQ-13 FTS tables · T-18/LQ-18 document intake.
+Strong-model-only items: broker interface review; injection red-team of intake; Phase-1 gate hardware re-decision; AMBER policy authoring with owner.
 
 ## 12. BLOCKERS
 
-- No access to deployment host → runtime verification is delegated (see task queue).
-- No web access assumed for price refresh → hardware prices flagged as time-sensitive, not re-verified.
+- No access to Mark-2/SCS.ADMIN01 from this session → runtime verification delegated (LQ-05).
+- Owner decisions OD-01…06 pending (none block LQ-01, LQ-03, LQ-05, LQ-09, LQ-13, LQ-14, LQ-15, LQ-17 — start those).
 
-## 13. OWNER DECISIONS (index — full text in OWNER_DECISIONS.md)
+## 13. OWNER DECISIONS — see 06_OWNER_DECISIONS.md
 
-- OD-01 Is `Hetlife/lucyos-` intentionally public? (blocks nothing technically; blocks storing any business data in-repo)
-- OD-02 Controller purchase: none now (recommended) vs used M4 vs new M6.
-- OD-03 Monthly autonomous spend caps (API / cloud GPU).
-- OD-04 First production workflow choice.
+NOW: OD-01 visibility · OD-02 buy nothing · OD-03 disable desktop-commander · OD-04 caps · OD-05 backup target · OD-06 non-root window. LATER: OD-07…18.
 
-## 14. LOW-MODEL TASK QUEUE
+## 14. LOW-MODEL TASK QUEUE — see 05_LOW_MODEL_TASK_QUEUE.md (LQ-01…20, 16-field specs).
 
-See `docs/architect/LOW_MODEL_TASK_QUEUE.md` (to be written).
+Unblocked right now for a cheap model: LQ-01, LQ-03, LQ-05, LQ-09, LQ-13, LQ-14, LQ-15, LQ-17, LQ-07, LQ-08.
 
 ## 15. EXACT NEXT ACTION
 
-Complete repo code audit → write ADRs → write execution package. Commit after each file.
+1. Owner: answer OD-01…OD-06 (or "accept all recommendations").
+2. Cheap coding model: execute **LQ-01** (argv boundary) on this branch → then **LQ-05** (inventory script) → then **LQ-03** (CI). Commit each with the handoff format.
+3. Worker with Mark-2 access: run `scripts/runtime_inventory.sh` (after LQ-05) and paste sanitized JSON into `EVIDENCE/`; update §2 of this file.
+4. When OD-05 is answered: **LQ-02** backups, then the clean restore drill.
+5. Strong model: only re-engage for T-13 broker review and the Phase-1 gate.
 
 ## 16. RESUME INSTRUCTIONS
 
 ```
 git fetch origin claude/lucyos-architecture-audit-4o4q83
 git checkout claude/lucyos-architecture-audit-4o4q83
-cat docs/architect/CHECKPOINT.md
-ls docs/architect/
-python3 -m unittest discover -s tests -t . -q   # must still say OK
+cat docs/architect/CHECKPOINT.md            # this file
+cat docs/architect/LUCYOS_ARCHITECT_EXECUTION_PACKAGE.md
+python3 -m unittest discover -s tests -t . -q   # must say OK (207)
+./aion scan .                                    # must be clean
 ```
-Then continue from section 15. Do not reread the research ZIP unless a specific
-claim needs re-checking; the package's key claims are reproduced with evidence
-classes inside the execution package.
+Then take the next unblocked task from §15. Update §9/§10/§15 of this file and commit after every task. Do not reread the research ZIP; do not re-litigate ADRs without new evidence.
