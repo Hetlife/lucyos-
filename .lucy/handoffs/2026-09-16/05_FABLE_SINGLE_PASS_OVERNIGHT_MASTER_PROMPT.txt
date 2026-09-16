@@ -1,0 +1,199 @@
+LUCYOS — SINGLE-PASS FABLE OVERNIGHT MASTER PROMPT
+
+PURPOSE
+Use ONE deliberate high-capability Fable session to reconcile the current LucyOS state, encode the owner decisions made after the earlier architecture pass, finish only the high-reasoning/constitutional work that must be owned by Fable, and leave a complete low-token execution queue that Sonnet can work through overnight without re-planning the architecture.
+
+THIS IS AN OVERLAY, NOT A REPLACEMENT
+First read and obey the existing governing material in this repo, especially:
+- `.lucy/handoffs/2026-09-16/02_FABLE_ARCHITECT_EXECUTION_PROMPT.txt`
+- `.lucy/handoffs/2026-09-16/03_HIGH_TO_LOW_MODEL_AUTHORITY_CONTRACT.md`
+- `.lucy/planning/LUCYOS_OPUS_TO_FABLE_ARCHITECT_BRIEF.md`
+- `.lucy/planning/FABLE_PROGRESS.md`
+- `.lucy/authority/LUCYOS_FABLE_ARCHITECT_EXECUTION_PACKAGE.md`
+- `.lucy/authority/HIGH_MODEL_BASELINE.json`
+- `.lucy/authority/PROTECTED_PATHS.md`
+- `.lucy/execution/SONNET_TASK_QUEUE.md`
+- `.lucy/deployment/MARK2_DEPLOYMENT_CONTRACT.md`
+- `.lucy/handoffs/2026-09-16/04_HANDOFF_POINTERS.json`
+
+Treat prior documents and chat-derived notes as context, not truth. Re-read the live repository, current branches, open PRs, CI/check runs, and relevant runtime evidence before changing architecture or claiming a capability works.
+
+OWNER DECISIONS / NEW INVARIANTS TO INCORPORATE
+
+1. REPOSITORY VISIBILITY
+LucyOS may remain public temporarily until the Mac migration/setup is complete. Therefore assume everything committed to GitHub is public. Never commit credentials, private Drive content, customer data, raw sensitive logs, OAuth material, machine secrets, or private operating data. Do not change repository visibility tonight.
+
+2. CURRENT COMPUTE ROLE
+Mark-2 is a Linux test bench/rehearsal machine, not the final permanent host. A local Linux PC may become available for additional tests in about two days. The planned Mac controller is 24 GB unified memory, not 64 GB.
+
+3. CROSS-PLATFORM IS A PROTECTED ARCHITECTURAL INVARIANT
+LucyOS must remain one codebase that can run on macOS and Linux without forking core logic.
+- Core/domain/AION logic must not directly depend on systemd, launchd, Linux-only paths, or macOS-only paths.
+- OS-specific concerns belong behind a small platform/host adapter layer.
+- Linux and macOS service definitions, path resolution, process/service management, bootstrap, permissions probes, and platform quirks must be isolated.
+- CI must enforce portability where practical.
+- Future Linux machines with more RAM must be able to run the same LucyOS brain and project state.
+- Do not duplicate business logic between Linux and macOS adapters.
+Encode this invariant durably in architecture docs/contracts and, where appropriate, in machine-checkable tests/guards before bulk implementation.
+
+4. LOCAL-FIRST DRIVE / FILE SYNC
+Do NOT make Mark-2 dependent on writing directly to Google Drive. Current Mark-2 Drive reads work but writes are not a requirement for tonight.
+Target model:
+- Mark-2 and future hosts maintain a local working mirror/cache/staging tree.
+- All local work continues even if Drive is unavailable.
+- Outbound Drive changes become deterministic `PENDING_SYNC` artifacts/ledger entries.
+- A trusted external connector/chat/app with Drive write access may promote/sync those artifacts later.
+- Drive is collaboration/backup transport, never Lucy's transactional source of truth.
+- Do not spend tonight fixing OAuth or forcing Mark-2 uploads.
+Design the local mirror, pending-sync ledger, idempotency, conflict policy, and provenance cleanly. Avoid building a second database.
+
+5. SHARED INTELLIGENCE LIBRARY / DATA ASSET
+LucyOS is a multi-project / multi-company platform. For now the owner wants maximum cross-project learning rather than strict silos, but every datum must carry provenance and project/ownership metadata so stricter separation can be added later without a data migration crisis.
+
+Create/confirm a canonical data-intake contract:
+- preserve raw originals immutably;
+- normalize useful text to UTF-8 / structured JSON or JSONL where appropriate;
+- normalize analytical/tabular data to CSV/Parquet or another justified machine-readable format; Excel is an import/export/view surface, not canonical truth;
+- attach source, acquisition timestamp, project/company, entity references, schema/version, confidentiality/permission tag, transformation history, checksum/content hash, and training-eligibility metadata;
+- raw evidence, normalized records, derived signals, curated training sets, indexes, and exports must be distinguishable;
+- vector/embedding indexes are disposable/rebuildable, never canonical memory;
+- use deterministic filters/exact lookup/SQLite FTS before semantic/vector retrieval;
+- a local recall/indexing service should let local/Ollama models retrieve small relevant slices so paid models do not scan the library;
+- design for future NAS/cold-storage migration and rebuildable indexes.
+Do not build a large vector infrastructure merely because it is fashionable.
+
+6. LUCY / OPENCLAW / FUTURE LUCY CLAW
+Near-term interaction model:
+OWNER -> OpenClaw interactive runtime -> Lucy Bridge -> AION/LucyOS canonical state/tools.
+OpenClaw can provide chat/model/plugin runtime initially, but it is replaceable. LucyOS owns canonical state, projects, tasks, approvals, memory, provenance, budgets, policy and durable knowledge.
+
+Preserve a model/provider gateway seam inside LucyOS so future direct provider APIs can be added without rewriting projects.
+
+Future runway: `Lucy Claw` may become a thin, upstream-compatible OpenClaw-derived distribution/plugin bundle customized for Lucy. Do NOT start a heavy fork tonight. Prefer supported plugin/adapter surfaces and keep an upstream-compatible boundary. The failure of OpenClaw upstream must not destroy LucyOS: pin known-good versions, preserve a reproducible copy/mirror strategy, and keep Lucy state outside OpenClaw.
+
+7. MULTI-PROJECT / REUSABLE CAPABILITY MODEL
+LucyOS is the platform. Companies/projects (e.g. SevaaConnect, Strategy Factory, future real-estate/import-export ventures) consume reusable capabilities, skills, schemas and teams.
+- Shared capabilities should be reusable across projects.
+- Project/company context and data provenance remain explicit.
+- A new company should start from reusable capabilities rather than cloning an entire agent stack.
+- Prefer skills/services/workflows over permanent agent proliferation.
+
+8. HR / TEMPORARY WORKER MODEL
+Lucy is the owner-facing supervisor. Team supervisors/HR logic may request temporary workers when workload spikes.
+- Lucy may create bounded temporary workers automatically inside approved budgets/capabilities.
+- Temporary workers inherit least-privilege task scopes and terminate cleanly after the task/TTL.
+- Permanent new roles, privileged/high-authority agents, new external credentials, material spend, or authority expansion remain owner-gated.
+- More workers must not be treated as evidence of progress; throughput and verified outcomes matter.
+
+9. PROGRESSIVE AUTONOMY / DEPLOYMENT GUARDIAN
+Use progressive autonomy, not manual approval for every safe action and not unrestricted autonomy.
+GREEN: reversible, bounded, policy-compliant work may proceed automatically.
+AMBER: allowed only inside explicit standing scope/budget; otherwise request approval.
+RED: fresh owner authorization.
+
+Lucy may eventually auto-deploy GREEN changes only through a deterministic deployment guardian:
+SNAPSHOT -> ISOLATE/SANDBOX -> IMPLEMENT -> TEST -> STATIC/SECURITY CHECK -> INDEPENDENT VERIFY -> STAGE -> HEALTH CHECK -> LIMITED DEPLOY -> MONITOR -> AUTO-ROLLBACK ON FAILURE -> EVIDENCE.
+No process exit code alone counts as proof. Blast-radius limits, rollback, checkpoints, kill switch, audit trail and failure injection are mandatory before expanding autonomy.
+
+10. URGENT OWNER ESCALATION POLICY
+Design the escalation subsystem now; do not buy or configure a telephony provider tonight unless already authorized.
+Target policy:
+- Lucy works 24/7 unless owner sets a temporary quiet rule.
+- Urgent action-required event -> concise text/push first containing trigger, evidence, risk, exact approval/action, rollback and deadline.
+- Default urgent response window should be configurable (owner currently expects roughly 1–2 minutes for genuinely urgent events).
+- If still urgent and unanswered, a future phone-call adapter may escalate anytime unless the owner has set a temporary no-call window.
+- If the owner declines/cuts the call, enforce a configurable cooldown (current desired default: 1 hour) unless a separately defined catastrophic safety condition exists.
+- No response never means permission. Hold, rollback, or fail safe according to policy.
+- Approvals must be unambiguous, authenticated, scoped and auditable.
+
+11. FINANCIAL SELF-FUNDING GOAL WITHOUT A SURVIVAL DRIVE
+LucyOS should track the cost of its operating stack and aim to become financially self-funding during a bootstrap runway (owner is thinking in terms of ~6 months), but this is a budgeting objective, NOT a self-preservation objective.
+- Report runway, operating cost, realized verified value/revenue, and proposed infrastructure upgrades honestly.
+- If targets are missed, degrade/scale down gracefully and ask the owner; never hide risk or seek money autonomously.
+- Infrastructure upgrades are proposed when evidence supports value; they are not a reward Lucy should chase.
+- Spending, subscriptions, transfers, deposits, withdrawals, contracts and other material financial actions remain owner-gated unless an explicit standing budget exists.
+
+12. STRATEGY FACTORY
+Treat Strategy Factory as an evidence/research/paper-trading investment subsystem, not as a proven money machine.
+Tonight may improve research, data, backtesting, paper-trading, risk, accounting evidence, monitoring and interfaces.
+DO NOT activate real-capital trading, crypto purchases, derivatives/F&O, withdrawals, deposits, broker execution or live autonomous investment. Capital activation remains owner-gated after independent validation.
+
+13. UI/UX
+Explicitly OUT OF SCOPE tonight. Do not spend Fable or Sonnet tokens designing interfaces. Backend contracts and evidence first.
+
+TONIGHT'S HIGH-CAPABILITY PRIORITIES
+Spend Fable reasoning only where high capability materially reduces architecture/security risk. In order:
+
+P0-A. Re-establish live repo truth: integration branch, planning branch, PR #11/#12 (or their successors), CI/check state, authority baseline and current queue. Do not assume earlier chat status is still current.
+
+P0-B. Resolve/encode the minimum constitutional architecture required before low-token bulk work:
+- cross-platform core/host-adapter invariant;
+- local-first pending-sync Drive model;
+- shared intelligence/data intake contract;
+- Lucy/OpenClaw bridge boundary and replaceability;
+- progressive-autonomy/deployment-guardian contract;
+- temporary-worker/HR authority boundaries.
+Do not mass-implement all of these personally. Freeze the interfaces and acceptance criteria, then delegate mechanical implementation.
+
+P0-C. Preserve and strengthen the existing authority substrate. Do not weaken the authority gate to make a PR green. If a constitutional change legitimately requires Fable/owner landing, document the exact override/landing path. Positive and negative authority tests must ultimately prove the mechanism.
+
+P0-D. Make recoverability a first-class readiness gate: clean bootstrap, backup, real restore, crash/restart/resume, corrupted-state/failure injection, exact-SHA rollback and evidence.
+
+P1. Reconcile the execution queue so Sonnet has enough independent, low-risk work to continue all night even when sequential tasks are waiting on owner merges. Reuse the current `SONNET_TASK_QUEUE.md`; do not create a competing queue. Add/refine bounded tasks for the new owner decisions only where they are not already covered.
+
+P1. Explicitly separate:
+- MUST BE DONE BY FABLE/HIGH MODEL
+- READY FOR SONNET/CHEAP CLOUD
+- READY FOR LOCAL/DETERMINISTIC EXECUTION
+- WAITING FOR OWNER
+- WAITING FOR FUTURE HARDWARE
+- DEFERRED (including UI/UX and heavy Lucy Claw fork).
+
+OVERNIGHT LOW-TOKEN HANDOFF
+Before ending the Fable session:
+1. Update/finalize `.lucy/execution/SONNET_TASK_QUEUE.md` with dependencies, allowed/forbidden paths, tests, budgets and escalation rules.
+2. Read `.lucy/handoffs/2026-09-16/06_SONNET_AUTONOMOUS_NIGHT_LOOP_PROMPT.txt`. If queue semantics changed, update that loop prompt minimally so it remains compatible with the frozen architecture; do not loosen owner safety policy.
+3. Ensure every task suitable for overnight execution is clearly marked READY or has machine-checkable dependency conditions.
+4. Prioritize independent work so Sonnet can continue when sequential PRs cannot be merged overnight.
+5. Leave no low-token mechanical task hidden only in prose. Put it in the canonical queue or explicitly mark it deferred.
+
+OVERNIGHT SAFETY BOUNDARIES
+Do NOT:
+- merge to `main`;
+- deploy unreviewed code to Mark-2/production;
+- change repo visibility;
+- expose/store secrets in Git/Drive/chat logs;
+- rotate credentials;
+- purchase/subscribe/spend money;
+- activate real-capital trading or financial execution;
+- weaken CI, authority, security, redaction or rollback controls merely to pass checks;
+- make Mark-2 Drive uploads a prerequisite;
+- build UI/UX;
+- start a heavy OpenClaw fork;
+- invent new control planes where AION already provides the function.
+
+EFFICIENCY / SESSION-RESET RULE
+Assume this Fable session can end unexpectedly.
+- Save progress after every major decision/milestone.
+- Do not leave unique reasoning only in chat.
+- Prefer concise durable contracts, schemas, tests and task specifications over long prose.
+- Reuse existing files rather than creating duplicates.
+- Use tokens for architecture, ambiguity, red-team work and conflict resolution; delegate mechanical coding.
+
+REQUIRED MORNING ARTIFACT
+Create/update a concise durable morning handoff under `.lucy/execution/` (reuse an existing suitable progress/report file if one already exists; do not create duplicates) that states:
+- exact branch/SHA audited;
+- what Fable changed and why;
+- constitutional decisions frozen;
+- tasks ready for Sonnet;
+- tasks completed by Sonnet if evidence is available;
+- open PRs/check results;
+- blockers;
+- owner approvals required;
+- what is waiting for Mac/Linux hardware;
+- exact resume point.
+
+FABLE FINISH CONDITION
+Do not stop after writing a plan. Complete the high-model work that cannot safely be delegated, freeze the resulting contracts, generate/refine the low-token queue, and hand off to the Sonnet night loop. Do not consume premium tokens doing mechanical tasks already safe for Sonnet.
+
+The target by morning is not "everything built". The target is maximum VERIFIED backend progress with no architecture drift, no silent authority expansion, no unsafe spend, no live-capital action, and a clean resume path.
