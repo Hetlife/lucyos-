@@ -1,0 +1,19 @@
+{
+  "schema_version": 1,
+  "created_at": "2026-09-16",
+  "repository": "Hetlife/lucyos-",
+  "planning_branch": "planning/opus-fable-20260916",
+  "base_branch": "feature/skill-system-q006-architecture-guard",
+  "verified_base_commit": "2b59aea7d785bbc42139dcb361834bb48ae158a3",
+  "github_handoff_path": ".lucy/handoffs/2026-09-16",
+  "drive_root": "MARK2_SHARED/05_HANDOFFS",
+  "drive_existing_coding_handoff": "LUCYOS_CODING_AGENT_HANDOFF_2026-09-16",
+  "drive_claude_folder": "MARK2_SHARED/05_HANDOFFS/CLAUDE/LUCYOS_OPUS_FABLE_PLANNING_2026-09-16",
+  "opus_output": ".lucy/planning/LUCYOS_OPUS_TO_FABLE_ARCHITECT_BRIEF.md",
+  "fable_output": ".lucy/authority/LUCYOS_FABLE_ARCHITECT_EXECUTION_PACKAGE.md",
+  "authority_baseline": ".lucy/authority/HIGH_MODEL_BASELINE.json",
+  "sonnet_queue": ".lucy/execution/SONNET_TASK_QUEUE.md",
+  "mark2_deployment_contract": ".lucy/deployment/MARK2_DEPLOYMENT_CONTRACT.md",
+  "main_merge": "OWNER_APPROVAL_REQUIRED",
+  "mark2_deployment": "CODEX_EXACT_SHA_AFTER_FABLE_REVIEW"
+}
