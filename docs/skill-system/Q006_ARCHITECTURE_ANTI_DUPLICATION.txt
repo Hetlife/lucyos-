@@ -1,0 +1,34 @@
+LUCYOS SKILL SYSTEM — Q006 ARCHITECTURE ANTI-DUPLICATION GUARD
+Date: 2026-09-16
+
+PURPOSE
+Turn the Q000 architecture rules into a deterministic machine-check before a skill integration can earn ARCHITECTURE_APPROVED evidence.
+
+BLOCKED BY DEFAULT
+- second canonical state store
+- second global queue
+- second scheduler/control plane
+- second approval system
+- second secret store
+- always-on LLM health loop
+- mandatory cloud dependency
+- direct SaaS coupling in core state logic
+- broad autonomous installer/upgrader
+- failure to reuse canonical SQLite/tasks/approvals/health/Resource Governor
+- missing feature flag, rollback or evidence definition
+
+NEEDS REVIEW
+A new persistent daemon, recurring vendor cost, or new OS/account privilege does not automatically pass. It produces NEEDS_REVIEW evidence, not PASS.
+
+CLI
+`aion architecture-check <proposal.json>` performs a deterministic check.
+`aion architecture-check <proposal.json> --record` records PASS/NEEDS_REVIEW into the existing LearnRepo ARCHITECTURE stage.
+
+SAFETY
+The guard does not install or activate anything. A BLOCK result cannot satisfy the Q004 ARCHITECTURE lifecycle gate.
+
+TOKEN/COST
+Local JSON validation only; zero model/API calls.
+
+NEXT
+With Q000-Q006 in place, proceed to Wave 1 skills by value/risk: secret broker, backup/restore proof, provider failover, secure node federation, dependency locks, sandbox and supply-chain security.
