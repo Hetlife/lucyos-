@@ -8,6 +8,7 @@ Read these in this order before making changes:
 1. `.lucy/authority/HIGH_MODEL_BASELINE.json`
 2. `.lucy/authority/PROTECTED_PATHS.md`
 3. `.lucy/authority/LUCYOS_FABLE_ARCHITECT_EXECUTION_PACKAGE.md`
+3b. `.lucy/authority/LUCYOS_PLATFORM_AND_DATA_CONTRACTS.md` (C1-C10, frozen 2026-09-16 overnight)
 4. `.lucy/execution/SONNET_TASK_QUEUE.md`
 5. `.lucy/planning/FABLE_PROGRESS.md`
 6. `.lucy/handoffs/2026-09-16/03_HIGH_TO_LOW_MODEL_AUTHORITY_CONTRACT.md`
@@ -87,7 +88,8 @@ STEP 4 — TEST IN LAYERS
 Run, at minimum:
 1. task-specific tests;
 2. full test suite;
-3. `./aion scan .`;
+3. `./aion scan .` and `python3 scripts/check_portability.py` (the C1 cross-platform
+   ratchet; it is a required CI step, so a red guard is a red build);
 4. any migration/upgrade test required by the task;
 5. authority verification required by the queue;
 6. architecture anti-duplication verification required by the queue.

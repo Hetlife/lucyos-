@@ -29,7 +29,9 @@
     ".gitignore",
     "aion",
     "systemd/**",
-    "deploy/**"
+    "deploy/**",
+    ".lucy/authority/LUCYOS_PLATFORM_AND_DATA_CONTRACTS.md",
+    "scripts/check_portability.py"
   ],
   "constitutional_paths_no_override_possible": [
     ".lucy/authority/**",
@@ -75,7 +77,11 @@
     "util",
     "worker",
     "resource_governor",
-    "research_registry"
+    "research_registry",
+    "host",
+    "sync_outbox",
+    "intake",
+    "bridge"
   ],
   "sqlite_connect_allowed": [
     "aion_core/db.py",
@@ -105,6 +111,21 @@
     ],
     "S-08": [
       "aion_core/security.py"
+    ],
+    "S-11": [
+      "scripts/check_portability.py"
+    ],
+    "S-12": [
+      "scripts/check_portability.py"
+    ],
+    "S-13": [
+      "aion_core/db.py"
+    ],
+    "S-14": [
+      "aion_core/db.py"
+    ],
+    "S-16": [
+      "aion_core/db.py"
     ]
   },
   "allowed_executor_scope": {
@@ -124,7 +145,7 @@
   "owner_only_actions": [
     "merge into main",
     "enable/modify branch protection and required checks",
-    "change repository visibility (decision this cycle: PRIVATE)",
+    "change repository visibility (SUPERSEDED 2026-09-16 overnight: repo stays PUBLIC temporarily until Mac migration completes; treat everything committed as public; do not change visibility)",
     "create/rotate/delete credentials or rclone remotes",
     "delete branches or tags",
     "deploy to Mark-2 or expose any service beyond loopback",
@@ -168,5 +189,8 @@
     "systemd/mark2-desktop-commander.service": "0d3043ccf07261a78840a0420e1c4b01a5f2b9487a8e2b8cbcba72130f533c4c",
     "systemd/mark2-drive.service": "db6d25ead0e96afc03faa0d1d65e8e670ac48a2a676694bcdf683b7ddbe154f3",
     "systemd/mark2-drive.timer": "a79c642874ffd6bdbcc70794b7f784d238b1674736c2e7f4d21de2a7f5ba41c1"
-  }
+  },
+  "platform_and_data_contracts": ".lucy/authority/LUCYOS_PLATFORM_AND_DATA_CONTRACTS.md",
+  "portability_guard": "scripts/check_portability.py",
+  "public_repo_assumption": "Repository is PUBLIC by owner decision until Mac migration completes. Never commit credentials, private Drive content, customer data, raw sensitive logs, OAuth material or machine secrets."
 }

@@ -22,7 +22,7 @@ Classifications merge Opus's repository evidence with the owner's Mark-2 evidenc
 | CI | **ABSENT → now DESIGNED+IMPLEMENTED on this branch** | `.github/workflows/lucyos-ci.yml`; becomes CI_VERIFIED on first green run |
 | Authority enforcement | **ABSENT → now IMPLEMENTED+TESTED** | `scripts/verify_authority.py`, 8 tests |
 | Branch protection | ABSENT | GitHub API `protected: false`; OWNER-01 |
-| Repository visibility | PUBLIC | owner decision: PRIVATE (OWNER-02) |
+| Repository visibility | PUBLIC | stays public temporarily by owner decision (2026-09-16 overnight) |
 | Mac portability | ABSENT | one darwin-aware line; S-05 + macOS CI job |
 
 Test suite at this commit: **256 passing** (248 Q006 + 8 verifier).
@@ -192,7 +192,11 @@ See `.lucy/deployment/MARK2_DEPLOYMENT_CONTRACT.md`. Summary: snapshot → detac
 
 **Now (block the Sonnet phase until done):**
 - OWNER-01 branch protection on `main` and the integration branch with the four required checks; direct pushes off; admin bypass is the Fable/owner landing path.
-- OWNER-02 repository → PRIVATE (decided; needs the click).
+- ~~OWNER-02 repository → PRIVATE~~ **SUPERSEDED 2026-09-16 overnight.** The owner
+  now wants the repo to stay PUBLIC temporarily until the Mac migration is complete.
+  Do not change visibility. The compensating control is unchanged and now mandatory:
+  assume everything committed is public (see C-contracts and `public_repo_assumption`
+  in the baseline).
 - Approve creation/use of `integration/consolidation-20260916` as the single integration branch (created by Fable from the freeze commit; contains no code beyond Q006 + substrate).
 
 **Later:**

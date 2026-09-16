@@ -18,7 +18,7 @@ the owner, or a task-scoped exception the baseline records **before** the work s
 
 | Path | Why |
 |---|---|
-| `.lucy/authority/**` | The frozen contract, this file, the baseline and the execution package. If a model could edit these, nothing else here would mean anything. |
+| `.lucy/authority/**` | The frozen contract, this file, the baseline, the execution package and `LUCYOS_PLATFORM_AND_DATA_CONTRACTS.md` (C1–C10). If a model could edit these, nothing else here would mean anything. |
 | `.github/workflows/lucyos-ci.yml` | The pipeline that runs the gates. Removing a job is the same as removing the gate. |
 | `scripts/verify_authority.py` | The verifier. Self-explanatory. |
 
@@ -31,6 +31,7 @@ by the owner with admin bypass. That friction is the feature.
 |---|---|
 | `.lucy/deployment/**`, `.lucy/handoffs/**` | Deployment contract and the handoff chain |
 | `scripts/ci_health_gate.py` | Which health checks CI is allowed to require |
+| `scripts/check_portability.py` | The cross-platform ratchet (contract C1). Protected but **not** constitutional: S-11 and S-12 hold task-scoped overrides letting each delete *only its own* `KNOWN_EXCEPTIONS` entry, so the excuse list can shrink under Fable-granted authority and never silently grow. |
 | `aion_core/db.py` | Canonical state: every table, every migration |
 | `aion_core/resume.py` | The checkpoint/resume contract |
 | `aion_core/worker.py` | Execution boundary: what a plan may run, and how work is admitted |
