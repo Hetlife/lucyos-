@@ -1,0 +1,68 @@
+LUCYOS SKILL SYSTEM — Q001 CAPABILITY REGISTRY
+Date: 2026-09-16
+Base: Q000 architecture audit branch
+
+ARCHITECTURE GAP
+Q000 verified that LucyOS already had agent capability strings, DET/A/B/C/D routing,
+worker.capability_report(), `aion capabilities`, canonical SQLite, deterministic health,
+and LearnRepo. It did not have a generalized durable registry for named skills.
+
+DECISION
+Extend the existing capability path instead of creating a second registry service.
+Q001 adds a small `skills` table inside the existing canonical SQLite database and
+`aion_core/skills.py`. The existing `worker.capability_report()` now includes skill
+availability derived from the same measured Ollama/cloud-worker facts it already owns.
+No external dependency is required.
+
+SCOPE
+- additive canonical SQLite `skills` table;
+- schema version 6 -> 7;
+- default registry entries for already-existing LucyOS core capabilities;
+- strict skill IDs and DET/A/B/C/D executor-class validation;
+- deterministic current-availability report;
+- owner disable state is preserved across default seeding;
+- deterministic skill-registry health check;
+- tests for canonical storage, idempotency, validation, availability and zero model calls.
+
+NOT Q001
+Q001 does not define the final on-disk skill manifest schema, lifecycle state machine,
+full risk/privacy enums, repository installer, plugin loader, scheduler, approval path,
+or secret store. Those remain later queue items.
+
+REUSE POINTS
+- SQLite via db.py is the only durable registry state.
+- agents.py remains model/executor routing authority.
+- worker.py remains the live machine capability probe.
+- health.py remains deterministic health.
+- bootstrap.py seeds only built-in registry identities.
+- LearnRepo remains external dependency/repository gate.
+
+DEPENDENCY DECISION
+No new package or repository. LearnRepo candidate research is not applicable because
+Python stdlib + current LucyOS primitives satisfy Q001 completely.
+
+PRIVACY / SECURITY
+No new network calls, credentials, filesystem scope, external service, telemetry, or
+model context. Registry strings pass security.redact where human text/commands are stored.
+
+TOKEN / COST
+Registry listing and health are deterministic. Expected AI/API calls: 0.
+Recurring vendor cost: 0.
+
+FAILOVER
+A skill may be registered but currently unavailable. Availability is calculated from
+existing measured executors, so absence of Ollama/cloud worker degrades only affected
+skills and does not make core deterministic skills unavailable.
+
+ROLLBACK
+Revert Q001 commit. The `skills` table is additive; an older binary ignores it. No
+existing table is renamed or dropped.
+
+MAC / LINUX
+Registry platform metadata is descriptive in Q001 and does not install packages.
+Core registry code is Python/SQLite and platform-neutral.
+
+EXACT RESUME POINT
+After Q001 tests/re-audit, start Q002 manifest schema only. Q002 should define and
+validate a machine-readable skill manifest that maps into this registry; it must not
+introduce another registry or state store.

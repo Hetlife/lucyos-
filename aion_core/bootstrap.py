@@ -138,6 +138,8 @@ def ensure() -> int:
         notebook.ensure()
         touched += 1
     agents.seed_defaults()
+    from . import skills
+    skills.ensure_defaults()
     _write_gitignore(root)
     return touched
 

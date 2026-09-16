@@ -462,8 +462,14 @@ def _fail(task_id: str, cls: str, message: str, session_id: str | None) -> dict:
 
 
 def capability_report() -> dict:
-    """What this machine can actually execute right now — measured."""
-    return {
+    """What this machine can actually execute right now — measured.
+
+    The skill registry extends this existing machine report; it does not create
+    a second capability control plane.  Availability is derived from the same
+    measured executor facts already used by the worker.
+    """
+    from . import skills
+    report = {
         "ollama": ollama_available(),
         "ollama_model": db.get_meta("ollama_model", "llama3.1:8b"),
         "cloud_worker": bool(cloud_command()),
@@ -473,3 +479,5 @@ def capability_report() -> dict:
         "safe_mode": router.is_safe_mode(),
         "governor": metrics.budget_status()["governor"],
     }
+    report["skills"] = skills.report(report)
+    return report

@@ -81,6 +81,25 @@ CREATE TABLE IF NOT EXISTS agents (
     enabled           INTEGER NOT NULL DEFAULT 1
 );
 
+CREATE TABLE IF NOT EXISTS skills (
+    skill_id          TEXT PRIMARY KEY,
+    name              TEXT NOT NULL,
+    description       TEXT NOT NULL DEFAULT '',
+    version           TEXT NOT NULL DEFAULT '0.1.0',
+    capabilities      TEXT NOT NULL DEFAULT '',
+    executor_classes  TEXT NOT NULL DEFAULT 'DET',
+    platforms         TEXT NOT NULL DEFAULT 'any',
+    network_required  INTEGER NOT NULL DEFAULT 0,
+    ai_required       INTEGER NOT NULL DEFAULT 0,
+    offline_supported INTEGER NOT NULL DEFAULT 1,
+    cost_class        TEXT NOT NULL DEFAULT 'none',
+    enabled           INTEGER NOT NULL DEFAULT 1,
+    health_command    TEXT NOT NULL DEFAULT '',
+    test_command      TEXT NOT NULL DEFAULT '',
+    updated_at        TEXT NOT NULL
+);
+CREATE INDEX IF NOT EXISTS idx_skills_enabled ON skills(enabled);
+
 CREATE TABLE IF NOT EXISTS approvals (
     approval_id     TEXT PRIMARY KEY,
     created_at      TEXT NOT NULL,
