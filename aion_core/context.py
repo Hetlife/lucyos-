@@ -55,6 +55,7 @@ def build(task_id: str) -> str:
     lines += ["", "## RECENT FAILURES"]
     lines += [f"- {e['error_id']} ({e['kind']}) {e['message'][:120]}" for e in recent_errs] or ["- none"]
     lines += ["", "## RETURN THIS RESULT PACKET", "",
-              "TASK_ID / STATUS / ACTIONS_TAKEN / FILES_CHANGED / TESTS_RUN / RESULTS / "
-              "FAILURES / RISKS / ASSUMPTIONS / NEXT_RECOMMENDED_ACTION / EXACT_RESUME_POINT", ""]
+              "STATUS / ACTIONS / FILES_CHANGED / TESTS / RESULTS / BLOCKERS / NEXT_ACTION",
+              "Use these seven field names exactly. Put unresolved failures in BLOCKERS; "
+              "put the exact resume step in NEXT_ACTION. Do not add alternate field names.", ""]
     return security.redact("\n".join(lines))
