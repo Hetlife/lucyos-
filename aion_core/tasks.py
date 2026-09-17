@@ -20,10 +20,13 @@ EXECUTOR_WAIT_BLOCKERS = {
 
 FIELDS = (
     "project parent_task title description status priority impact probability unlocks "
-    "info_gain cost risk time_est human_dependence owner_agent model_class dependencies "
+    "info_gain cost risk time_est human_dependence owner_agent model_class data_class dependencies "
     "blockers approval_id success_criteria validation_method output_location next_action "
     "evidence last_error kind exec_command validation_command plan_id"
 ).split()
+
+
+DATA_CLASSES = {"PUBLIC", "INTERNAL", "CONFIDENTIAL", "SECRET"}
 
 
 class TaskError(Exception):
@@ -42,6 +45,10 @@ def create(title: str, **kw) -> str:
     row = {f: kw.get(f) for f in FIELDS if f in kw}
     row["title"] = security.redact(title)
     row["status"] = status
+    data_class = str(row.get("data_class") or "INTERNAL").upper()
+    if data_class not in DATA_CLASSES:
+        raise TaskError(f"invalid data_class {data_class!r}")
+    row["data_class"] = data_class
     if "description" in row:
         row["description"] = security.redact(row["description"])
     cols = ["task_id", "created_at", "updated_at"] + list(row)
