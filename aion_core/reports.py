@@ -5,8 +5,14 @@ can carry a credential into WhatsApp.
 """
 from __future__ import annotations
 
+import hashlib
+import json
+
 from . import (agents, approvals, config, db, errors, governor, memory, metrics,
                packets, resume, security, tasks, util)
+
+AUDIT_GENESIS_HASH = "0" * 64
+_AUDIT_CHAIN_FIELDS = ("id", "at", "day", "actor", "kind", "subject", "detail", "prev_hash")
 
 
 def _clean(text: str) -> str:
@@ -226,3 +232,59 @@ def render_markdown_surfaces() -> list[str]:
     lines = ["# BLOCKERS", "", "```", blockers(), "```", ""]
     written.append(str(util.atomic_write(root / "BLOCKERS.md", "\n".join(lines))))
     return written
+
+
+def _audit_record_hash(record: dict) -> str:
+    payload = json.dumps({k: record[k] for k in _AUDIT_CHAIN_FIELDS}, sort_keys=True).encode("utf-8")
+    return hashlib.sha256(payload).hexdigest()
+
+
+def audit_export() -> list[dict]:
+    """Export every `events` row, oldest first, exactly as written -- this is
+    a read-only export, never a rewrite of the events table itself. Each
+    record carries prev_hash (the previous record's hash) and its own hash
+    over its fields plus prev_hash, forming a hash chain: `audit_verify()`
+    can then detect a modified, deleted, or naively-inserted record in the
+    exported chain without needing the live database."""
+    rows = db.connect().execute(
+        "SELECT id, at, day, actor, kind, subject, detail FROM events ORDER BY id ASC"
+    ).fetchall()
+    chain = []
+    prev_hash = AUDIT_GENESIS_HASH
+    for row in rows:
+        record = {k: row[k] for k in ("id", "at", "day", "actor", "kind", "subject", "detail")}
+        record["prev_hash"] = prev_hash
+        record["hash"] = _audit_record_hash(record)
+        chain.append(record)
+        prev_hash = record["hash"]
+    return chain
+
+
+def audit_verify(chain: list[dict]) -> dict:
+    """Walk an exported chain and confirm every link and every hash.  A
+    record whose fields were edited fails its own hash check; a deleted
+    record breaks the next record's prev_hash link; an inserted record
+    (without the attacker re-deriving every following hash by hand) breaks
+    the link the same way.  This proves the exported chain is internally
+    tamper-evident -- it does not, on its own, prove the export still
+    matches the live `events` table (a re-export and diff does that)."""
+    if not chain:
+        return {"ok": True, "detail": "empty chain", "records": 0}
+    prev_hash = AUDIT_GENESIS_HASH
+    for i, record in enumerate(chain):
+        if not all(k in record for k in _AUDIT_CHAIN_FIELDS) or "hash" not in record:
+            return {"ok": False, "detail": f"record {i}: missing required field(s)",
+                     "records": len(chain), "broken_at": i}
+        if record["prev_hash"] != prev_hash:
+            return {"ok": False,
+                     "detail": f"record {i} (id={record.get('id')}): prev_hash link broken "
+                               "-- a record was deleted, reordered, or inserted",
+                     "records": len(chain), "broken_at": i}
+        expected = _audit_record_hash(record)
+        if record["hash"] != expected:
+            return {"ok": False,
+                     "detail": f"record {i} (id={record.get('id')}): hash does not match its "
+                               "own fields -- record was modified",
+                     "records": len(chain), "broken_at": i}
+        prev_hash = record["hash"]
+    return {"ok": True, "detail": f"chain of {len(chain)} record(s) verified intact", "records": len(chain)}
