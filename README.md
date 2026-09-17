@@ -14,6 +14,8 @@ owner       authority           the only source of Tier-3 approval
 
 ## Quick start
 
+AI/model continuation entry point: **`START_HERE.md`**. It routes to live state, memory, context, authority and architecture-audit seams without duplicating them.
+
 ```bash
 scripts/install.sh
 aion boot
