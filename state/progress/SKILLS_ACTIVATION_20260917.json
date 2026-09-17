@@ -147,5 +147,24 @@
       "validation": "json+security+34_tests+compact_task_packet",
       "resume": "Implement runtime packet builder/validator next; main integration unchanged."
     }
-  ]
+  ],
+  "free_compute_tests": [
+    {
+      "id": "LOCAL-FREE-001",
+      "status": "PASS",
+      "executor": "ollama/qwen2.5-coder:1.5b",
+      "cost": "local_zero_api_cost",
+      "tests": {
+        "public_extraction": "PASS",
+        "classification": "PASS",
+        "tiny_python_code_with_deterministic_exec": "PASS"
+      },
+      "latency_summary": "~8.8s-14.7s per task on Mark-2",
+      "prompt_tokens_summary": "~129-145 per task",
+      "output_tokens_summary": "~71-81 per task",
+      "external_provider_keys_configured": false,
+      "external_api_test": "BLOCKED_PENDING_OWNER_KEY"
+    }
+  ],
+  "resume_point": "Free compute local baseline passed; next optional step is one legitimate external free-provider key test."
 }
