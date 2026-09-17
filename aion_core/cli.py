@@ -54,6 +54,9 @@ def _main(argv=None) -> int:
     bk = sub.add_parser("backup", help="create a backup and restore-test it")
     bk.add_argument("--verify-only", action="store_true")
     sub.add_parser("openclaw-check", help="loopback reachability probe for an optional OpenClaw gateway")
+    sub.add_parser("export", help="write a portable archive of canonical state (no secrets)")
+    im = sub.add_parser("import", help="verify and restore a portable archive into this AION_HOME")
+    im.add_argument("archive", help="path to a lucyos-export-*.tar.gz")
 
     t = sub.add_parser("tasks", help="list top tasks")
     t.add_argument("--limit", type=int, default=10)
@@ -315,6 +318,18 @@ def _main(argv=None) -> int:
     elif cmd == "openclaw-check":
         from bridges import openclaw_check
         _print(openclaw_check.check())
+    elif cmd == "export":
+        from . import portability
+        path = portability.export()
+        _print(f"exported {path}")
+    elif cmd == "import":
+        from . import portability
+        try:
+            result = portability.import_(Path(args.archive))
+        except portability.PortabilityError as exc:
+            _print(str(exc))
+            return 1
+        _print(result)
     elif cmd == "tasks":
         _print(reports.task_list(args.limit))
     elif cmd == "task-add":
