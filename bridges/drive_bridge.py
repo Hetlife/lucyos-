@@ -224,6 +224,51 @@ class Rclone:
         self.run('deletefile', 'gdrive:MARK2_SHARED/' + folder + '/' + name)
 
 
+_PROBE_NAME = '.lucyos-write-probe'
+_PROBE_CONTENT = b'x'
+
+
+def _probe_ok(binary, *args, stdin_data=None):
+    """One attempt, no retries: a capability probe must stay fast enough for
+    an interactive health check, unlike Rclone.run()'s deliberate 3-attempt
+    backoff for real transfers."""
+    try:
+        result = subprocess.run([binary, *args, '--contimeout', '5s', '--timeout', '10s',
+                                 '--log-level', 'ERROR'], input=stdin_data,
+                                stdout=subprocess.PIPE, stderr=subprocess.DEVNULL,
+                                timeout=15, check=False)
+        return result.returncode == 0, result.stdout
+    except (OSError, subprocess.TimeoutExpired):
+        return False, b''
+
+
+def capability() -> dict:
+    """Read/write/list probe for the configured Drive remote. Never exposes a
+    remote path, folder name, or rclone stderr -- only booleans plus a short,
+    redacted detail string. Never makes any of this a precondition for
+    anything else in the bridge; it exists purely to answer 'what's broken'."""
+    binary = shutil.which('rclone')
+    if not binary:
+        return {'list': False, 'read': False, 'write': False,
+                'detail': 'rclone not installed'}
+
+    list_ok, _ = _probe_ok(binary, 'lsd', 'gdrive:MARK2_SHARED')
+    write_ok, _ = _probe_ok(binary, 'rcat', 'gdrive:MARK2_SHARED/' + _PROBE_NAME,
+                            stdin_data=_PROBE_CONTENT)
+    read_ok = False
+    if write_ok:
+        read_ok_raw, content = _probe_ok(binary, 'cat', 'gdrive:MARK2_SHARED/' + _PROBE_NAME)
+        read_ok = read_ok_raw and content == _PROBE_CONTENT
+    if write_ok:
+        _probe_ok(binary, 'deletefile', 'gdrive:MARK2_SHARED/' + _PROBE_NAME)  # never leave the probe behind
+
+    parts = [f"list={'ok' if list_ok else 'failed'}",
+             f"write={'ok' if write_ok else 'failed'}",
+             f"read={'ok' if read_ok else 'failed'}"]
+    return {'list': list_ok, 'read': read_ok, 'write': write_ok,
+            'detail': security.redact(', '.join(parts))}
+
+
 class Bridge:
     def __init__(self, root=None, remote=None):
         self.home = Path(root) if root else config.home()
