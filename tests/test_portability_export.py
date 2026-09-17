@@ -1,4 +1,5 @@
 """S-23: aion export / aion import -- move a shared brain between hosts."""
+import io
 import json
 import shutil
 import tarfile
@@ -117,6 +118,20 @@ class PortabilityExportTest(AionTest):
 
             with self.assertRaises(portability.PortabilityError):
                 portability.import_(future)
+
+    def test_import_refuses_path_traversal_archive(self):
+        outside = self.tmp.parent / "portability-escape-proof.txt"
+        outside.unlink(missing_ok=True)
+        malicious = self.tmp / "malicious.tar.gz"
+        payload = b"must-not-escape"
+        with tarfile.open(malicious, "w:gz") as tar:
+            info = tarfile.TarInfo("../portability-escape-proof.txt")
+            info.size = len(payload)
+            tar.addfile(info, io.BytesIO(payload))
+
+        with self.assertRaises(portability.PortabilityError):
+            portability.import_(malicious)
+        self.assertFalse(outside.exists())
 
     def test_archive_contains_no_secret_and_no_absolute_path(self):
         self._seed()

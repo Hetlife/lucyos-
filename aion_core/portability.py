@@ -13,7 +13,7 @@ import platform
 import shutil
 import tarfile
 import tempfile
-from pathlib import Path
+from pathlib import Path, PurePosixPath
 
 from . import backup, config, util
 
@@ -22,6 +22,26 @@ FORMAT = "lucyos-export-v1"
 
 class PortabilityError(Exception):
     pass
+
+
+def _safe_extract(tar: tarfile.TarFile, dest: Path) -> None:
+    """Extract only regular files/directories contained under *dest*.
+
+    Python <3.12 may not provide tarfile's data filter.  Portability archives
+    can cross trust boundaries, so never fall back to an unchecked extract.
+    """
+    members = tar.getmembers()
+    for member in members:
+        name = member.name.replace("\\", "/")
+        rel = PurePosixPath(name)
+        if rel.is_absolute() or ".." in rel.parts:
+            raise PortabilityError(f"unsafe archive member path: {member.name!r}")
+        if not (member.isfile() or member.isdir()):
+            raise PortabilityError(f"unsafe archive member type: {member.name!r}")
+    try:
+        tar.extractall(dest, members=members, filter="data")
+    except TypeError:  # Python versions without the data filter
+        tar.extractall(dest, members=members)
 
 
 def export(dest: Path | None = None) -> Path:
@@ -33,12 +53,8 @@ def export(dest: Path | None = None) -> Path:
 
     with tempfile.TemporaryDirectory() as tmp:
         tmp_path = Path(tmp)
-        try:
-            with tarfile.open(backup_path, "r:gz") as tar:
-                tar.extractall(tmp_path, filter="data")
-        except TypeError:  # Python < 3.12 has no filter kwarg
-            with tarfile.open(backup_path, "r:gz") as tar:
-                tar.extractall(tmp_path)
+        with tarfile.open(backup_path, "r:gz") as tar:
+            _safe_extract(tar, tmp_path)
 
         db_file = tmp_path / "state" / "aion.sqlite3"
         if not db_file.exists():
@@ -81,12 +97,8 @@ def import_(archive: Path) -> dict:
 
     with tempfile.TemporaryDirectory() as tmp:
         tmp_path = Path(tmp)
-        try:
-            with tarfile.open(archive, "r:gz") as tar:
-                tar.extractall(tmp_path, filter="data")
-        except TypeError:
-            with tarfile.open(archive, "r:gz") as tar:
-                tar.extractall(tmp_path)
+        with tarfile.open(archive, "r:gz") as tar:
+            _safe_extract(tar, tmp_path)
 
         manifest_file = tmp_path / "manifest.json"
         if not manifest_file.exists():
