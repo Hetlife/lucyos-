@@ -153,3 +153,21 @@ Verify and expand into Codex-ready repo instructions:
 7. Confirm nothing proposed introduces a new `aion_core` top-level module, a second scheduler, or a table outside `db.py`.
 
 Do not weaken any gate to simplify integration.
+
+---
+
+## SUPERSEDED 2026-09-17 — branch roles inverted
+
+The relationship this document assumes — `integration/consolidation-20260916`
+as the target, `main` as the eventual destination — **inverted while this
+document sat unmerged.** The owner froze `origin/main` at `0720a920` ("owner:
+freeze supervised integration candidate") carrying all 23 S-task branches.
+`integration/consolidation-20260916` is now the branch 8 commits *ahead* on
+unreconciled owner work, not the canonical target.
+
+See `.lucy/planning/CANONICAL_BRANCH.md` and
+`docs/internal/health-audit/HEALTH_REPORT.md` (branch `audit/health-20260917`)
+for the current, verified state. Treat the wave ordering and gate protocol
+above as historically informative — the underlying discipline (per-branch
+`strict`, cumulative `anti-dup`, no second store/scheduler) still applies —
+but the base branch identity throughout is reversed from current reality.
