@@ -108,6 +108,11 @@ def _main(argv=None) -> int:
     hc = sub.add_parser("health")
     hc.add_argument("--deep", action="store_true")
 
+    ae = sub.add_parser("audit-export", help="export the events log as a hash-chained, tamper-evident file")
+    ae.add_argument("--out", help="write JSON here instead of AION_HOME/state/AUDIT_EXPORT-<stamp>.json")
+    av = sub.add_parser("audit-verify", help="verify a hash-chained audit export")
+    av.add_argument("path", help="path to a JSON file produced by 'aion audit-export'")
+
     lr = sub.add_parser("learnrepo-run", help="run due deterministic LearnRepo health jobs")
     lr.add_argument("--mode", choices=["nightly", "daily", "weekly", "monthly", "quarterly"], default="nightly")
     sub.add_parser("learnrepo-status", help="show LearnRepo queue/health state")
@@ -353,6 +358,18 @@ def _main(argv=None) -> int:
             print(f"{'OK  ' if c['ok'] else 'FAIL'} {c['name']}: {c['detail']}")
         print("healthy" if r["healthy"] else "FAILING: " + ", ".join(r["failing"]))
         return 0 if r["healthy"] else 1
+    elif cmd == "audit-export":
+        chain = reports.audit_export()
+        out = Path(args.out) if args.out else (
+            config.home() / "state" / f"AUDIT_EXPORT-{util.now().replace(':', '').replace('-', '')}.json")
+        out.parent.mkdir(parents=True, exist_ok=True)
+        out.write_text(json.dumps(chain, indent=2))
+        _print(f"exported {len(chain)} record(s) to {out}")
+    elif cmd == "audit-verify":
+        chain = json.loads(Path(args.path).read_text())
+        result = reports.audit_verify(chain)
+        _print(result)
+        return 0 if result["ok"] else 1
     elif cmd == "learnrepo-run":
         _print(learnrepo.run_due(mode=args.mode))
     elif cmd == "learnrepo-status":
