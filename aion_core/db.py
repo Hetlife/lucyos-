@@ -464,6 +464,14 @@ _ADDED_COLUMNS = {
         ("delivery_id", "TEXT"),
         ("cost_category", "TEXT"),
     ],
+    # Guard-rail columns for contract C6 temporary workers (S-16).  Additive
+    # and both nullable: a permanent agent has neither a parent nor an
+    # expiry, and nothing here ever spawns a row that sets them -- that is
+    # explicitly future work, gated on this schema existing first.
+    "agents": [
+        ("parent_agent_id", "TEXT"),
+        ("expires_at", "TEXT"),
+    ],
 }
 
 
