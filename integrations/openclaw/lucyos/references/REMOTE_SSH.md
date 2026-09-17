@@ -23,3 +23,18 @@ all forwarding requests.
 
 Activation of the dedicated key/account is intentionally deferred until the
 SCS.ADMIN01 node is reachable. Do not copy a private key from Mark-2 to SCS.
+## Prepared enrollment flow
+
+Mark-2 ships `scripts/enroll-client-public-key`. It accepts exactly one
+Ed25519 public key on stdin, validates it, backs up `authorized_keys`, and
+adds the key with `restrict` plus the forced LucyOS dispatcher. Repeating the
+same enrollment is idempotent.
+
+The client ships `scripts/bootstrap-client-ssh`. Run it on SCS.ADMIN01 only
+when that machine is reachable. It creates `~/.ssh/lucyos_mark2` locally,
+writes a 0600 LucyOS environment file, and prints only the public key.
+
+Never generate the long-lived SCS private key on Mark-2 and copy it across.
+The only remaining enrollment data Mark-2 needs is the SCS-generated `.pub`
+line. Until that exists, the real client connection remains intentionally
+pending.

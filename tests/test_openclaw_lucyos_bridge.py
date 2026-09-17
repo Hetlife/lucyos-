@@ -9,6 +9,7 @@ ROOT = Path(__file__).resolve().parents[1]
 SCRIPTS = ROOT / "integrations" / "openclaw" / "lucyos" / "scripts"
 DISPATCH = SCRIPTS / "lucyos-remote-dispatch"
 CTL = SCRIPTS / "lucyosctl"
+ENROLL = SCRIPTS / "enroll-client-public-key"
 
 
 class OpenClawLucyBridgeTest(unittest.TestCase):
@@ -112,3 +113,22 @@ if __name__ == "__main__":
 # Remote architecture-check stdin transport is covered indirectly by the
 # dispatcher stdin test plus the fake-ssh client harness above. The client
 # rejects non-files before SSH, so only explicit local proposal files can be sent.
+
+class PublicKeyEnrollmentTest(unittest.TestCase):
+    def test_enrollment_is_restricted_and_idempotent(self):
+        with tempfile.TemporaryDirectory() as td:
+            root = Path(td)
+            key = root / "client"
+            auth = root / "authorized_keys"
+            subprocess.run(["ssh-keygen", "-q", "-t", "ed25519", "-N", "", "-f", str(key)], check=True)
+            auth.write_text("")
+            env = os.environ.copy()
+            env["LUCYOS_AUTHORIZED_KEYS"] = str(auth)
+            env["LUCYOS_REMOTE_DISPATCH"] = str(DISPATCH)
+            pub = key.with_suffix(".pub").read_text()
+            for _ in range(2):
+                subprocess.run([str(ENROLL), "scs-test"], input=pub, text=True, env=env, check=True, capture_output=True)
+            lines = auth.read_text().splitlines()
+            self.assertEqual(len(lines), 1)
+            self.assertIn('restrict,command="', lines[0])
+            self.assertIn("lucyos-scs-test", lines[0])
