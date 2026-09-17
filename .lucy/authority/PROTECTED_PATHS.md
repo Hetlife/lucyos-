@@ -18,7 +18,7 @@ the owner, or a task-scoped exception the baseline records **before** the work s
 
 | Path | Why |
 |---|---|
-| `.lucy/authority/**` | The frozen contract, this file, the baseline, the execution package and `LUCYOS_PLATFORM_AND_DATA_CONTRACTS.md` (C1–C10). If a model could edit these, nothing else here would mean anything. |
+| `.lucy/authority/**` | The frozen contract, this file, the baseline, the execution package and `.lucy/authority/LUCYOS_PLATFORM_AND_DATA_CONTRACTS.md` (C1–C10). If a model could edit these, nothing else here would mean anything. |
 | `.github/workflows/lucyos-ci.yml` | The pipeline that runs the gates. Removing a job is the same as removing the gate. |
 | `scripts/verify_authority.py` | The verifier. Self-explanatory. |
 

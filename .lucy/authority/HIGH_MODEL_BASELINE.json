@@ -53,18 +53,22 @@
     "db",
     "deliveries",
     "errors",
+    "experiments",
     "fable",
     "governor",
+    "guardian",
     "handoff",
     "health",
     "learnrepo",
     "memory",
     "metrics",
     "milestones",
+    "money_path",
     "notebook",
     "owner_setup",
     "packets",
     "plan",
+    "portability",
     "recall",
     "reports",
     "resume",
@@ -74,6 +78,7 @@
     "sessions",
     "skills",
     "tasks",
+    "tempworker",
     "util",
     "worker",
     "resource_governor",
@@ -126,6 +131,10 @@
     ],
     "S-16": [
       "aion_core/db.py"
+    ],
+    "S-22": [
+      "systemd/mark2-desktop-commander.service",
+      "systemd/README.md"
     ]
   },
   "allowed_executor_scope": {
