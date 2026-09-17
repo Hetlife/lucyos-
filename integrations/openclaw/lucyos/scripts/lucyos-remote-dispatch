@@ -1,0 +1,133 @@
+#!/usr/bin/env python3
+"""Forced-command SSH dispatcher for the LucyOS OpenClaw bridge.
+
+This is intentionally not a shell. sshd supplies SSH_ORIGINAL_COMMAND; this
+program validates it against a small allowlist and invokes AION without shell
+expansion. The bridge is read-mostly; architecture checks and work are dry-run.
+"""
+from __future__ import annotations
+
+import os
+import re
+import shlex
+import subprocess
+import sys
+from pathlib import Path
+
+AION = os.environ.get("LUCYOS_AION_BIN", "/root/lucyos/aion")
+AION_HOME = os.environ.get("AION_HOME", "/root/openclaw/shared_brain")
+MAX_STDIN = 16 * 1024
+MAX_OUTPUT = 256 * 1024
+TASK_ID = re.compile(r"^TASK-[A-Z0-9]{6,}$")
+ATOM = re.compile(r"^[A-Za-z0-9_.:-]{1,64}$")
+
+SIMPLE = {
+    "status": ["status"],
+    "health": ["health"],
+    "skills": ["skills", "list"],
+    "learnrepo-status": ["learnrepo-status"],
+    "tasks": ["tasks"],
+    "approvals": ["approvals"],
+}
+def fail(message: str, code: int = 2) -> "NoReturn":
+    print(f"bridge refused: {message}", file=sys.stderr)
+    raise SystemExit(code)
+
+
+def parse_original() -> list[str]:
+    original = os.environ.get("SSH_ORIGINAL_COMMAND", "").strip()
+    if not original:
+        fail("missing command")
+    if len(original) > 512:
+        fail("command too long")
+    try:
+        parts = shlex.split(original, posix=True)
+    except ValueError:
+        fail("invalid quoting")
+    if not parts:
+        fail("missing command")
+    return parts
+
+
+def build(parts: list[str]) -> tuple[list[str], bytes | None]:
+    command, *args = parts
+    if command in SIMPLE:
+        if args:
+            fail(f"{command} takes no arguments")
+        return SIMPLE[command], None
+
+    if command == "context":
+        if len(args) != 1 or not TASK_ID.fullmatch(args[0]):
+            fail("context requires one valid TASK-ID")
+        return ["context", args[0]], None
+    if command == "route":
+        if not 1 <= len(args) <= 4 or any(not ATOM.fullmatch(a) for a in args):
+            fail("route requires 1-4 bounded atom arguments")
+        out = ["route", args[0]]
+        names = ["--complexity", "--stakes", "--ambiguity"]
+        for name, value in zip(names, args[1:]):
+            out.extend([name, value])
+        return out, None
+
+    if command == "work-dry":
+        if len(args) > 1:
+            fail("work-dry takes at most one integer")
+        maximum = args[0] if args else "1"
+        if not maximum.isdigit() or not 1 <= int(maximum) <= 10:
+            fail("work-dry max must be 1..10")
+        return ["work", "--max", maximum, "--dry-run"], None
+
+    if command == "architecture-check":
+        if args:
+            fail("architecture-check receives JSON on stdin only")
+        data = sys.stdin.buffer.read(MAX_STDIN + 1)
+        if len(data) > MAX_STDIN:
+            fail("architecture proposal too large")
+        if not data.strip():
+            fail("architecture proposal missing")
+        return ["architecture-check", "-"], data
+
+    fail("command is not allowlisted")
+def run_aion(argv: list[str], stdin_data: bytes | None) -> int:
+    env = {
+        "PATH": "/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin",
+        "HOME": "/root",
+        "AION_HOME": AION_HOME,
+        "LANG": "C.UTF-8",
+    }
+    temp_path: Path | None = None
+    if argv[:2] == ["architecture-check", "-"]:
+        import tempfile
+        with tempfile.NamedTemporaryFile(prefix="lucyos-arch-", suffix=".json", delete=False) as fh:
+            fh.write(stdin_data or b"")
+            temp_path = Path(fh.name)
+        argv = ["architecture-check", str(temp_path)]
+        stdin_data = None
+    try:
+        result = subprocess.run(
+            [AION, *argv], input=stdin_data, stdout=subprocess.PIPE,
+            stderr=subprocess.PIPE, env=env, timeout=30, check=False,
+        )
+    except subprocess.TimeoutExpired:
+        fail("LucyOS command timed out", 124)
+    finally:
+        if temp_path is not None:
+            temp_path.unlink(missing_ok=True)
+
+    out = result.stdout[:MAX_OUTPUT]
+    err = result.stderr[:MAX_OUTPUT]
+    sys.stdout.buffer.write(out)
+    sys.stderr.buffer.write(err)
+    if len(result.stdout) > MAX_OUTPUT or len(result.stderr) > MAX_OUTPUT:
+        print("bridge output truncated", file=sys.stderr)
+    return result.returncode
+
+
+def main() -> int:
+    parts = parse_original()
+    argv, stdin_data = build(parts)
+    return run_aion(argv, stdin_data)
+
+
+if __name__ == "__main__":
+    raise SystemExit(main())

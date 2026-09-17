@@ -1,0 +1,42 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+# Enroll one client public key into Mark-2 with a forced LucyOS command.
+# Public key is read from stdin; private keys must never be copied here.
+AUTH_KEYS="${LUCYOS_AUTHORIZED_KEYS:-/root/.ssh/authorized_keys}"
+DISPATCH="${LUCYOS_REMOTE_DISPATCH:-/root/lucyos/integrations/openclaw/lucyos/scripts/lucyos-remote-dispatch}"
+LABEL="${1:-lucyos-client}"
+
+[[ "$LABEL" =~ ^[A-Za-z0-9._-]{1,64}$ ]] || { echo "invalid label" >&2; exit 2; }
+[[ -x "$DISPATCH" ]] || { echo "dispatcher missing or not executable" >&2; exit 3; }
+IFS= read -r PUB || true
+[[ -n "$PUB" ]] || { echo "public key required on stdin" >&2; exit 2; }
+[[ "$PUB" != *$'\n'* && ${#PUB} -le 4096 ]] || { echo "invalid public key payload" >&2; exit 2; }
+tmp="$(mktemp)"
+trap 'rm -f "$tmp"' EXIT
+printf '%s\n' "$PUB" >"$tmp"
+chmod 600 "$tmp"
+KEY_TYPE="$(awk '{print $1}' "$tmp")"
+[[ "$KEY_TYPE" == "ssh-ed25519" ]] || { echo "only ssh-ed25519 keys are accepted" >&2; exit 2; }
+ssh-keygen -lf "$tmp" >/dev/null 2>&1 || { echo "invalid public key" >&2; exit 2; }
+
+install -d -m 700 "$(dirname "$AUTH_KEYS")"
+touch "$AUTH_KEYS"
+chmod 600 "$AUTH_KEYS"
+BACKUP="${AUTH_KEYS}.bak.$(date -u +%Y%m%dT%H%M%SZ)"
+cp -p "$AUTH_KEYS" "$BACKUP"
+
+BLOB="$(awk '{print $2}' "$tmp")"
+if awk -v b="$BLOB" '$2==b || $3==b || $4==b {found=1} END{exit !found}' "$AUTH_KEYS"; then
+  echo "already enrolled"
+  exit 0
+fi
+COMMENT="lucyos-${LABEL}"
+OPTIONS="restrict,command=\"${DISPATCH}\""
+KEY_BODY="$(awk '{print $1" "$2}' "$tmp")"
+printf '%s %s %s\n' "$OPTIONS" "$KEY_BODY" "$COMMENT" >>"$AUTH_KEYS"
+chmod 600 "$AUTH_KEYS"
+
+echo "enrolled ${COMMENT}"
+echo "fingerprint $(ssh-keygen -lf "$tmp" | awk '{print $2}')"
+echo "backup ${BACKUP}"

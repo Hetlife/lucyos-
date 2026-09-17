@@ -1,0 +1,29 @@
+{
+  "reuse_canonical_sqlite": true,
+  "reuse_task_queue": true,
+  "reuse_approval_engine": true,
+  "reuse_health": true,
+  "reuse_resource_governor": true,
+  "feature_flagged": true,
+  "rollback_defined": true,
+  "evidence_defined": true,
+  "new_canonical_state": false,
+  "new_global_queue": false,
+  "new_scheduler": false,
+  "new_approval_system": false,
+  "new_secret_store": false,
+  "always_on_llm_health": false,
+  "mandatory_cloud_dependency": false,
+  "direct_saas_core_coupling": false,
+  "broad_autonomous_installer": false,
+  "new_daemon": false,
+  "new_recurring_cost": false,
+  "new_privilege": false,
+  "skill_id": "core.capability-registry",
+  "candidate_id": "mac-capability-resolver",
+  "notes": "Extend existing skill manifests/registry to resolve platform fit; no autonomous installer.",
+  "evidence": {
+    "worktree": "feature/skills-execution-20260917",
+    "sandbox_only": true
+  }
+}

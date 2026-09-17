@@ -13,9 +13,10 @@ import json
 import mimetypes
 import os
 import sys
+import time
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 from pathlib import Path
-from urllib.parse import urlsplit
+from urllib.parse import parse_qs, urlsplit
 
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 
@@ -42,6 +43,8 @@ V1_ROUTES = {
     "/api/v1/projects": api.projects,
     "/api/v1/costs": api.costs,
     "/api/v1/tasks": api.tasks_ranked,
+    "/api/v1/capabilities": api.capability_plan,
+    "/api/v1/aux-providers": api.auxiliary_providers,
 }
 
 
@@ -87,6 +90,36 @@ class InterfaceHandler(BaseHTTPRequestHandler):
         self.end_headers()
         self.wfile.write(safe)
 
+    def _sse(self, *, after_id: int = 0, once: bool = False, max_seconds: int = 30) -> None:
+        """Stream existing LucyOS events without introducing a second event bus."""
+        self.send_response(200)
+        self.send_header("Content-Type", "text/event-stream; charset=utf-8")
+        self.send_header("Cache-Control", "no-store")
+        self.send_header("Connection", "close" if once else "keep-alive")
+        self._security_headers()
+        self.end_headers()
+        last_id = max(0, int(after_id))
+        deadline = time.monotonic() + max(1, min(int(max_seconds), 60))
+        try:
+            while True:
+                rows = api.events(last_id, 100)
+                for row in rows:
+                    payload = security.redact(json.dumps(row, ensure_ascii=False, separators=(",", ":")))
+                    body = f"id: {row['id']}\nevent: lucyos\ndata: {payload}\n\n".encode("utf-8")
+                    self.wfile.write(body)
+                    last_id = int(row["id"])
+                self.wfile.flush()
+                if once or time.monotonic() >= deadline:
+                    if once:
+                        self.close_connection = True
+                    break
+                if not rows:
+                    self.wfile.write(b": heartbeat\n\n")
+                    self.wfile.flush()
+                time.sleep(1.0)
+        except (BrokenPipeError, ConnectionResetError, OSError):
+            return
+
     def _authorized(self) -> bool:
         auth = self.headers.get("Authorization", "")
         scheme, _, provided = auth.partition(" ")
@@ -116,10 +149,27 @@ class InterfaceHandler(BaseHTTPRequestHandler):
         self.wfile.write(body)
 
     def do_GET(self):  # noqa: N802
-        path = urlsplit(self.path).path
+        parsed = urlsplit(self.path)
+        path = parsed.path
         if path.startswith("/api/"):
             if not self._authorized():
                 return self._json(401, {"error": "unauthorized"})
+            if path == "/api/v1/events":
+                qs = parse_qs(parsed.query)
+                try:
+                    after_id = int((qs.get("after") or ["0"])[0])
+                    limit = int((qs.get("limit") or ["100"])[0])
+                except ValueError:
+                    return self._json(400, {"error": "invalid event cursor"})
+                return self._json(200, {"ok": True, "data": api.events(after_id, limit)})
+            if path == "/api/v1/events/stream":
+                qs = parse_qs(parsed.query)
+                try:
+                    after_id = int((qs.get("after") or ["0"])[0])
+                except ValueError:
+                    return self._json(400, {"error": "invalid event cursor"})
+                once = (qs.get("once") or ["0"])[0] == "1"
+                return self._sse(after_id=after_id, once=once)
             v1_fn = V1_ROUTES.get(path)
             if v1_fn:
                 return self._json(200, {"ok": True, "data": v1_fn()})
