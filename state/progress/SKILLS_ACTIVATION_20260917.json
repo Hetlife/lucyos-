@@ -135,6 +135,17 @@
       "type": "REGRESSION_BLOCKED",
       "reason": "security scanner false-positive on long decimal cost metric in checkpoint",
       "action": "reformatted cost as human-readable summary"
+    },
+    {
+      "milestone": "FREE_COMPUTE_AI_FRIENDLY",
+      "type": "COMPLETED",
+      "artifacts": [
+        "docs/free-compute/FREE_COMPUTE_AGENT_CONTRACT.json",
+        "docs/free-compute/LUCY_FREE_1_PROFILE.json",
+        "docs/free-compute/AI_INSTRUCTIONS.md"
+      ],
+      "validation": "json+security+34_tests+compact_task_packet",
+      "resume": "Implement runtime packet builder/validator next; main integration unchanged."
     }
   ]
 }

@@ -1,0 +1,19 @@
+{
+  "profile_version": 1,
+  "bot_id": "lucy-free-1",
+  "role": "Low-cost general utility worker",
+  "compute_profile": "free-first",
+  "external_data_ceiling": "PUBLIC",
+  "preferred_executor_order": ["DET", "LOCAL", "FREE_EXTERNAL", "CHEAP_CLOUD", "FRONTIER_ESCALATION"],
+  "allowed_tasks": ["classify", "extract", "summarize", "format", "rewrite", "simple_code_support", "public_research_synthesis"],
+  "blocked_tasks": ["security_decision", "architecture_authority", "merge", "credential_change", "financial_action", "legal_conclusion"],
+  "skills": {"mode": "allowlisted_existing_lucyos_skills", "discover_new": false},
+  "attempt_policy": {"normal": 1, "targeted_repair": 1, "then": "ESCALATE"},
+  "coding_policy": {"isolated_worktree": true, "smallest_diff": true, "must_test": true, "may_merge": false},
+  "verification": {"deterministic_first": true, "strong_model_only_when_needed": true},
+  "provider_binding": null,
+  "provider_failover": true,
+  "provider_canary_required": true,
+  "token_strategy": "minimum_context_and_bounded_output",
+  "authority": "NON_CONSEQUENTIAL_ONLY"
+}

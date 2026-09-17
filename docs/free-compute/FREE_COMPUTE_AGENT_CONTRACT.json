@@ -1,0 +1,19 @@
+{
+  "contract_version": 1,
+  "contract_id": "lucyos.free-compute.v1",
+  "purpose": "Make low-cost models useful through strict scoped execution and verification.",
+  "authority": "LOW",
+  "external_data_ceiling": "PUBLIC",
+  "instruction_order": ["SYSTEM_CONTRACT", "BOT_PROFILE", "TASK_PACKET", "SKILL_RULES", "OUTPUT_SCHEMA"],
+  "workflow": ["CLASSIFY", "RETRIEVE_MINIMUM_CONTEXT", "SELECT_SKILLS", "PLAN_SMALL_STEPS", "EXECUTE_ONE_STEP", "VERIFY", "REPAIR_ONCE", "RETURN_OR_ESCALATE"],
+  "context_policy": {"whole_repo": false, "minimum_evidence_only": true, "prefer_structured_facts": true},
+  "skill_policy": {"use_existing_lucyos_skills_first": true, "invent_tools": false, "respect_skill_permissions": true},
+  "provider_policy": {"provider_agnostic": true, "revalidate_on_model_change": true, "quarantine_on_repeated_quality_failure": true},
+  "budget": {"max_normal_attempts": 1, "max_targeted_repairs": 1, "unbounded_reflection": false, "unbounded_agent_spawning": false},
+  "verification_order": ["SCHEMA", "ACCEPTANCE_TEST", "EVIDENCE", "DIFF", "COMPILE_LINT", "FOCUSED_TEST", "POLICY"],
+  "quality_states": ["PASS", "PASS_WITH_NOTE", "RETRY_TARGETED", "ESCALATE", "QUARANTINE_PROVIDER"],
+  "forbidden_authority": ["MERGE", "PROTECTED_PUSH", "CREDENTIAL_CHANGE", "SECURITY_POLICY_CHANGE", "FINANCIAL_ACTION", "AUTHORITY_CHANGE"],
+  "on_uncertainty": "ESCALATE",
+  "event_namespace": "free_compute",
+  "main_lucyos_audit_is_authoritative": true
+}
