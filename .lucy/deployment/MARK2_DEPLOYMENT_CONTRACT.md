@@ -53,9 +53,32 @@ PY
 
 ## 4. Service changes
 
-DC-0: none. DC-1: none expected; if the SHA's `systemd/` differs from the installed units (`diff -r systemd/ ~/.config/systemd/user/ | grep aion`), report the diff and stop — unit changes are a separate owner decision.
+DC-0: none. DC-1: none expected. The files under `systemd/` are templates:
+`scripts/install_services.sh` substitutes `@REPO@` and `@AION_HOME@` before
+writing them to `~/.config/systemd/user/`. Therefore **never compare raw
+templates to installed units**. Verify the rendered forms instead:
 
-Restart the loop only after §2 and §3 pass:
+```
+python3 scripts/verify_installed_services.py
+```
+
+This command is read-only and must report `"ok": true`. If any unit is missing
+or differs after rendering, report the exact unit and stop — unit changes are a
+separate owner decision.
+
+Also verify that an earlier owner pause has not left the autonomous timers
+disabled:
+
+```
+systemctl --user is-enabled aion-work.timer aion-maintenance.timer
+```
+
+If either timer is disabled, report and stop unless the owner has explicitly
+authorized resuming autonomous background work. Do not silently convert an
+owner pause into a restart.
+
+Restart the loop only after §2 and §3 pass, rendered units match, and the timers
+are already enabled (or their re-enablement was separately owner-authorized):
 ```
 systemctl --user daemon-reload
 systemctl --user restart aion-work.timer aion-maintenance.timer
