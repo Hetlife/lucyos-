@@ -7,8 +7,8 @@ import json
 import sys
 from pathlib import Path
 
-from . import (agents, approvals, backup, bootstrap, config, db, errors, fable, health,
-               memory, metrics, notebook, owner_setup, packets, reports, resume, router,
+from . import (agents, approvals, backup, bootstrap, config, db, errors, experiments, fable,
+               health, memory, metrics, notebook, owner_setup, packets, reports, resume, router,
                security, seed, sessions, tasks, util, plan, worker, governor, handoff,
                milestones, deliveries, autonomy, learnrepo)
 
@@ -26,7 +26,7 @@ def main(argv=None) -> int:
         return _main(argv)
     except (tasks.TaskError, approvals.ApprovalError, packets.PacketError,
             security.SecretLeak, plan.PlanError, worker.Refused, ValueError,
-            FileNotFoundError, CliError) as exc:
+            FileNotFoundError, CliError, experiments.ExperimentError) as exc:
         print(f"error: {exc}", file=sys.stderr)
         return 2
 
@@ -57,6 +57,13 @@ def _main(argv=None) -> int:
     sub.add_parser("export", help="write a portable archive of canonical state (no secrets)")
     im = sub.add_parser("import", help="verify and restore a portable archive into this AION_HOME")
     im.add_argument("archive", help="path to a lucyos-export-*.tar.gz")
+
+    es = sub.add_parser("experiment-status", help="funnel counts and verdict for one experiment")
+    es.add_argument("experiment_id")
+    ed = sub.add_parser("experiment-decide", help="write RESULT.md once a verdict exists")
+    ed.add_argument("experiment_id")
+    mp = sub.add_parser("money-path", help="ordered real-world steps to real money")
+    mp.add_argument("project", nargs="?", help="limit to one project; omit for all")
 
     t = sub.add_parser("tasks", help="list top tasks")
     t.add_argument("--limit", type=int, default=10)
@@ -285,6 +292,13 @@ def _main(argv=None) -> int:
         _print(reports.money())
     elif cmd == "blockers":
         _print(reports.blockers())
+    elif cmd == "experiment-status":
+        _print(experiments.report(args.experiment_id))
+    elif cmd == "experiment-decide":
+        _print(experiments.decide(args.experiment_id))
+    elif cmd == "money-path":
+        from . import money_path
+        _print(money_path.report(args.project))
     elif cmd == "errors":
         _print(reports.error_list())
     elif cmd == "agents":
