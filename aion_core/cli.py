@@ -108,6 +108,8 @@ def _main(argv=None) -> int:
     hc = sub.add_parser("health")
     hc.add_argument("--deep", action="store_true")
 
+    sub.add_parser("routing-report", help="deterministic SQL report over model_usage")
+
     lr = sub.add_parser("learnrepo-run", help="run due deterministic LearnRepo health jobs")
     lr.add_argument("--mode", choices=["nightly", "daily", "weekly", "monthly", "quarterly"], default="nightly")
     sub.add_parser("learnrepo-status", help="show LearnRepo queue/health state")
@@ -351,6 +353,8 @@ def _main(argv=None) -> int:
             print(f"{'OK  ' if c['ok'] else 'FAIL'} {c['name']}: {c['detail']}")
         print("healthy" if r["healthy"] else "FAILING: " + ", ".join(r["failing"]))
         return 0 if r["healthy"] else 1
+    elif cmd == "routing-report":
+        _print(reports.routing_report())
     elif cmd == "learnrepo-run":
         _print(learnrepo.run_due(mode=args.mode))
     elif cmd == "learnrepo-status":
