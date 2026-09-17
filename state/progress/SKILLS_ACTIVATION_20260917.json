@@ -42,6 +42,12 @@
       "type": "BENCHMARK_ATTEMPT_FAILED",
       "reason": "called nonexistent semantic_recall.readiness(); no repo mutation occurred",
       "resume": "use dependency_status() and canonical memory seed path"
+    },
+    {
+      "milestone": "M1",
+      "type": "BENCHMARK_ATTEMPT_FAILED",
+      "reason": "called nonexistent bootstrap.init(); no integration mutation occurred",
+      "resume": "use bootstrap.ensure()"
     }
   ]
 }
