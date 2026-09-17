@@ -296,6 +296,18 @@ def _raise_approval(task) -> str:
         task_id=task["task_id"])
 
 
+AUX_FORBIDDEN_KINDS = {"architecture", "security_review", "finance_reason", "legal", "production_deploy", "real_money"}
+
+
+def auxiliary_eligible(task) -> bool:
+    """Conservative gate for free external models: explicit PUBLIC + low risk + independent validation."""
+    return (str(task["data_class"] or "INTERNAL").upper() == "PUBLIC"
+            and float(task["risk"] or 0) <= 1.5
+            and float(task["time_est"] or 0) <= 2.0
+            and (task["kind"] or "") not in AUX_FORBIDDEN_KINDS
+            and bool(task["validation_command"] or task["output_location"]))
+
+
 def _preview(task) -> dict:
     """What would happen to this task, without touching anything."""
     cls = task["model_class"] or "B"
@@ -314,8 +326,11 @@ def _preview(task) -> dict:
         action = ("prompt the local model" if ollama_available()
                   else "no local model — would fall through to the cloud worker")
     else:
-        action = ("prompt the cloud worker" if cloud_command()
-                  else "no cloud worker configured — would save a work order instead")
+        if cls == "B" and auxiliary_eligible(task):
+            action = "try an eligible E0 auxiliary provider, then fall back to the cloud worker"
+        else:
+            action = ("prompt the cloud worker" if cloud_command()
+                      else "no cloud worker configured — would save a work order instead")
     return {"task_id": task["task_id"], "status": "DRY_RUN", "class": cls,
             "agent": route["agent_id"], "title": task["title"], "would": action,
             "validation": task["validation_command"] or task["output_location"]
@@ -367,6 +382,8 @@ def _execute(task, cls: str, *, dry_run: bool, session_id: str | None) -> dict:
         tasks.update(task_id, status="NEEDS_REVIEW", owner_agent=None, claimed_at=None,
                      evidence=evidence[:900], last_error="")
         metrics.record_usage(produced.get("model", agent_id), cls, task_id=task_id,
+                             input_tokens=int(produced.get("input_tokens", 0) or 0),
+                             output_tokens=int(produced.get("output_tokens", 0) or 0),
                              cost_inr=produced.get("cost_inr", 0.0),
                              note=task["title"][:100])
         if session_id:
@@ -406,6 +423,17 @@ def _do_work(task, cls: str) -> dict:
         out = run_ollama(prompt)
         return {"ok": out["ok"] and bool(out["output"]), "output": out["output"],
                 "how": f"local model {out.get('model')}", "model": out.get("model", "ollama")}
+    if cls == "B" and auxiliary_eligible(task):
+        from . import model_gateway
+        aux = model_gateway.complete(prompt, data_class=task["data_class"], task_id=task["task_id"])
+        if aux.get("ok"):
+            usage = aux.get("usage") or {}
+            return {"ok": True, "output": aux["text"],
+                    "how": f"auxiliary free provider {aux['provider']}",
+                    "model": f"aux:{aux['provider']}:{aux['model']}",
+                    "input_tokens": int(usage.get("prompt_tokens", 0) or 0),
+                    "output_tokens": int(usage.get("completion_tokens", 0) or 0),
+                    "cost_inr": 0.0}
     out = run_cloud(prompt, timeout_s=CLASS_B_TIMEOUT_S if cls == "B" else TIMEOUT_S)
     if not out["ok"]:
         # Missing executors and bounded timeouts are environmental limits, not

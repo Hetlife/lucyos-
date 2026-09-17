@@ -39,6 +39,7 @@ CREATE TABLE IF NOT EXISTS tasks (
     human_dependence  REAL NOT NULL DEFAULT 1,
     owner_agent       TEXT,
     model_class       TEXT NOT NULL DEFAULT 'B',
+    data_class        TEXT NOT NULL DEFAULT 'INTERNAL',
     dependencies      TEXT NOT NULL DEFAULT '',
     blockers          TEXT NOT NULL DEFAULT '',
     approval_id       TEXT,
@@ -446,6 +447,7 @@ _ADDED_COLUMNS = {
         ("exec_command", "TEXT NOT NULL DEFAULT ''"),
         ("validation_command", "TEXT NOT NULL DEFAULT ''"),
         ("plan_id", "TEXT"),
+        ("data_class", "TEXT NOT NULL DEFAULT 'INTERNAL'"),
     ],
     # Nullable by design: revenue recorded before stable payer identity was
     # introduced remains unknown rather than being inferred from description.

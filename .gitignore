@@ -20,3 +20,6 @@ rclone.conf
 *oauth*.json
 *credentials*.json
 cookies*
+
+# Local optional-dependency sandboxes and downloaded models.
+.sandbox/

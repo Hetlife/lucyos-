@@ -8,10 +8,11 @@ const HEALTH_KEY = "aion.interface.health.v1";
 const TASKS_KEY = "aion.interface.tasks.v1";
 const PROJECTS_KEY = "aion.interface.projects.v1";
 const QUEUE_KEY = "aion.interface.capture-queue.v1";
+const EVENT_CURSOR_KEY = "aion.interface.event-cursor.v1";
 const SNAPSHOT_FIELDS = ["status", "blockers", "today"];
 
 const byId = id => document.getElementById(id);
-const state = { token: localStorage.getItem(TOKEN_KEY) || "", busy: false };
+const state = { token: localStorage.getItem(TOKEN_KEY) || "", busy: false, liveAbort: null, liveReconnect: null };
 
 function toast(message) {
   const node = byId("toast");
@@ -238,7 +239,7 @@ async function refresh() {
     await flushQueue();
   } catch (error) {
     if (error.message === "unauthorized") {
-      stopAutoRefresh();
+      stopAutoRefresh(); stopLiveEvents();
       localStorage.removeItem(TOKEN_KEY); state.token = "";
       byId("unlock").hidden = false; byId("dashboard").hidden = true;
       setConnection(false, "Token rejected · reconnect this device");
@@ -258,6 +259,64 @@ function stopAutoRefresh() {
   autoRefreshTimer = null;
 }
 
+function stopLiveEvents() {
+  if (state.liveAbort) state.liveAbort.abort();
+  state.liveAbort = null;
+  if (state.liveReconnect) clearTimeout(state.liveReconnect);
+  state.liveReconnect = null;
+}
+
+let liveRefreshTimer = null;
+function scheduleLiveRefresh() {
+  if (liveRefreshTimer) return;
+  liveRefreshTimer = setTimeout(() => { liveRefreshTimer = null; refresh(); }, 250);
+}
+
+async function startLiveEvents() {
+  stopLiveEvents();
+  if (!state.token || document.hidden) return;
+  const controller = new AbortController();
+  state.liveAbort = controller;
+  const after = Number(localStorage.getItem(EVENT_CURSOR_KEY) || 0);
+  try {
+    const response = await fetch(`/api/v1/events/stream?after=${after}`, {
+      headers: { Authorization: `Bearer ${state.token}` },
+      cache: "no-store", signal: controller.signal,
+    });
+    if (response.status === 401) throw new Error("unauthorized");
+    if (!response.ok || !response.body) throw new Error(`event stream failed (${response.status})`);
+    const reader = response.body.getReader();
+    const decoder = new TextDecoder();
+    let buffer = "";
+    while (true) {
+      const { value, done } = await reader.read();
+      if (done) break;
+      buffer += decoder.decode(value, { stream: true });
+      const frames = buffer.split("\n\n");
+      buffer = frames.pop() || "";
+      for (const frame of frames) {
+        const match = frame.match(/^id:\s*(\d+)/m);
+        if (!match) continue;
+        localStorage.setItem(EVENT_CURSOR_KEY, match[1]);
+        scheduleLiveRefresh();
+      }
+    }
+  } catch (error) {
+    if (error.name === "AbortError") return;
+    if (error.message === "unauthorized") {
+      localStorage.removeItem(TOKEN_KEY); state.token = "";
+      setConnection(false, "Token rejected · reconnect this device");
+      return;
+    }
+  } finally {
+    if (state.liveAbort === controller) state.liveAbort = null;
+    if (state.token && !document.hidden) {
+      state.liveReconnect = setTimeout(startLiveEvents, 1000);
+    }
+  }
+}
+
+
 function captureQueue() { return storedJSON(QUEUE_KEY, []); }
 function showQueue() {
   const count = captureQueue().length;
@@ -274,7 +333,7 @@ async function flushQueue() {
 
 byId("token-form").addEventListener("submit", event => {
   event.preventDefault(); state.token = byId("token").value.trim();
-  localStorage.setItem(TOKEN_KEY, state.token); showDashboard(); refresh(); startAutoRefresh();
+  localStorage.setItem(TOKEN_KEY, state.token); showDashboard(); refresh(); startAutoRefresh(); startLiveEvents();
 });
 byId("capture-form").addEventListener("submit", async event => {
   event.preventDefault();
@@ -287,7 +346,7 @@ byId("capture-form").addEventListener("submit", async event => {
 });
 byId("refresh").addEventListener("click", refresh);
 byId("forget").addEventListener("click", () => {
-  localStorage.removeItem(TOKEN_KEY); state.token = ""; location.reload();
+  stopLiveEvents(); localStorage.removeItem(TOKEN_KEY); state.token = ""; location.reload();
 });
 
 renderSnapshot(storedJSON(SNAPSHOT_KEY, {})); showQueue();
@@ -301,13 +360,14 @@ const cachedTasks = storedJSON(TASKS_KEY, null);
 if (cachedTasks) renderTasks(cachedTasks);
 const cachedProjects = storedJSON(PROJECTS_KEY, null);
 if (cachedProjects) renderProjects(cachedProjects);
-if (state.token) { showDashboard(); refresh(); startAutoRefresh(); }
+if (state.token) { showDashboard(); refresh(); startAutoRefresh(); startLiveEvents(); }
 if ("serviceWorker" in navigator) navigator.serviceWorker.register("/service-worker.js").catch(() => {});
 
 // Catch up immediately when the phone comes back to the foreground, rather
 // than waiting up to a minute for the next scheduled refresh.
 document.addEventListener("visibilitychange", () => {
-  if (!document.hidden && state.token) refresh();
+  if (!document.hidden && state.token) { refresh(); startLiveEvents(); }
+  else stopLiveEvents();
 });
 
 // Keep "Updated Xs ago" honest between refreshes without hitting the network.
