@@ -306,6 +306,41 @@ CREATE TABLE IF NOT EXISTS notebook (
 );
 CREATE UNIQUE INDEX IF NOT EXISTS idx_notebook_hash ON notebook(hash);
 
+CREATE TABLE IF NOT EXISTS sync_outbox (
+    sync_id      TEXT PRIMARY KEY,
+    at           TEXT NOT NULL,
+    project      TEXT NOT NULL DEFAULT '',
+    kind         TEXT NOT NULL,
+    local_path   TEXT NOT NULL,
+    content_hash TEXT NOT NULL,
+    remote_target TEXT NOT NULL DEFAULT '',
+    status       TEXT NOT NULL,
+    attempts     INTEGER NOT NULL DEFAULT 0,
+    last_error   TEXT NOT NULL DEFAULT '',
+    synced_at    TEXT NOT NULL DEFAULT '',
+    promoted_by  TEXT NOT NULL DEFAULT ''
+);
+CREATE INDEX IF NOT EXISTS idx_sync_outbox_status ON sync_outbox(status);
+CREATE INDEX IF NOT EXISTS idx_sync_outbox_hash ON sync_outbox(content_hash);
+CREATE TABLE IF NOT EXISTS intake_records (
+    record_id         TEXT PRIMARY KEY,
+    source            TEXT NOT NULL,
+    acquired_at       TEXT NOT NULL,
+    project           TEXT NOT NULL DEFAULT '',
+    tier              TEXT NOT NULL,
+    payload_path      TEXT NOT NULL,
+    entity_refs       TEXT NOT NULL DEFAULT '',
+    schema_version    INTEGER NOT NULL DEFAULT 1,
+    confidentiality   TEXT NOT NULL,
+    transform_chain   TEXT NOT NULL DEFAULT '[]',
+    content_hash      TEXT NOT NULL,
+    training_eligible INTEGER NOT NULL DEFAULT 0,
+    derived_from      TEXT NOT NULL DEFAULT '',
+    created_at        TEXT NOT NULL
+);
+CREATE INDEX IF NOT EXISTS idx_intake_project_tier ON intake_records(project, tier);
+CREATE INDEX IF NOT EXISTS idx_intake_hash ON intake_records(content_hash);
+
 CREATE TABLE IF NOT EXISTS idempotency (
     key       TEXT PRIMARY KEY,
     at        TEXT NOT NULL,
@@ -465,6 +500,14 @@ _ADDED_COLUMNS = {
         # must stay unlinked rather than acquiring guessed identities.
         ("delivery_id", "TEXT"),
         ("cost_category", "TEXT"),
+    ],
+    # Guard-rail columns for contract C6 temporary workers (S-16).  Additive
+    # and both nullable: a permanent agent has neither a parent nor an
+    # expiry, and nothing here ever spawns a row that sets them -- that is
+    # explicitly future work, gated on this schema existing first.
+    "agents": [
+        ("parent_agent_id", "TEXT"),
+        ("expires_at", "TEXT"),
     ],
 }
 
