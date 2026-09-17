@@ -32,18 +32,34 @@ from pathlib import Path
 from . import (agents, approvals, config, context, db, errors, governor, metrics,
                router, security, sessions, tasks, util)
 
-# Prefixes a plan may execute without asking.  Everything here is reversible,
-# local and inspectable.  Extend deliberately with `aion allow-command`.
-DEFAULT_ALLOWED = [
-    "aion ", "python3 -m unittest", "python3 -m pytest", "pytest",
-    "python3 ", "git status", "git diff", "git log", "git add", "git commit",
-    "ls ", "cat ", "head ", "tail ", "wc ", "grep ", "rg ", "find ", "mkdir -p ",
-    "cp ", "mv ", "test ", "echo ", "sort ", "uniq ", "sed -n", "awk ",
-    "ollama ", "curl -s http://localhost", "bash scripts/", "./aion ",
-]
-# Never runnable, even if a prefix above would otherwise match.
+# argv[0] names a plan may execute without asking.  Everything here is
+# reversible, local and inspectable.  Extend deliberately with
+# `aion allow-command` (owner-only once the policy is locked — see LQ-20).
+DEFAULT_ARGV_ALLOW = {
+    "aion", "python3", "pytest", "git", "ls", "cat", "head", "tail", "wc",
+    "grep", "rg", "find", "mkdir", "cp", "mv", "test", "echo", "sort",
+    "uniq", "sed", "awk", "ollama", "curl", "bash",
+}
+# Binaries that are never runnable, no matter what allow_command() has added.
+HARD_DENY_BINARIES = {"rm"}
+# Shell control characters that must never appear in a parsed argument: their
+# presence means the model tried to chain, redirect, substitute or pipe
+# rather than run one plain command.  Enforced per shlex token below.
+SHELL_METACHARS = ";&|<>$`\n"
+# Raw-text substring defense in depth, kept from the earlier prefix-based
+# design and still checked before argv parsing.
+# NOTE (architect audit 2026-09-16, LQ-01 implemented): the execution
+# boundary is now argv-based (see check_command/run_command below): commands
+# are parsed with shlex, argv[0] must be on DEFAULT_ARGV_ALLOW (or an owner
+# extension), shell control characters are refused per-token, path traversal
+# is refused, and subprocess.run never uses a shell.  FORBIDDEN remains a
+# second, independent layer over the raw text.
 FORBIDDEN = ["rm -rf /", "mkfs", "dd if=", ":(){", "shutdown", "reboot",
-             "chmod 777 /", "curl | sh", "| sh", "> /dev/sd", "sudo "]
+             "chmod 777 /", "curl | sh", "| sh", "|sh", "| bash", "|bash",
+             "> /dev/sd", "> /dev/", "sudo ", "doas ", "$(", "`", ";",
+             "rm -rf ~", "rm -rf $HOME", "rm -rf .", "rm -rf *", "rm -fr ",
+             "| python", "|python", "| perl", "| node", "eval ", "exec ",
+             "nohup ", "crontab", "systemctl ", "ssh ", "scp ", "wget "]
 
 TIMEOUT_S = 300
 CLASS_B_TIMEOUT_S = 900
@@ -55,41 +71,129 @@ class Refused(Exception):
     """The loop declined to run something.  Not a failure — a boundary."""
 
 
-def allowed_commands() -> list[str]:
+def _argv_allow_names() -> set[str]:
+    """Binary basenames currently allowed as argv[0]: defaults, owner
+    extensions recorded by allow_command(), and the configured cloud-worker
+    binary (so a template like 'claude -p {prompt_file}' works without a
+    separate approval)."""
     extra = db.get_meta("allowed_command_prefixes", "")
-    return DEFAULT_ALLOWED + [p for p in extra.split("\n") if p.strip()]
+    names = {p.strip() for p in extra.split("\n") if p.strip()}
+    names |= DEFAULT_ARGV_ALLOW
+    template = cloud_command()
+    if template:
+        head = template.split("{", 1)[0].strip()
+        try:
+            parts = shlex.split(head)
+        except ValueError:
+            parts = head.split()
+        if parts:
+            names.add(Path(parts[0]).name)
+    return names
 
 
-def allow_command(prefix: str) -> None:
+def allowed_commands() -> list[str]:
+    """Sorted list of argv[0] basenames currently allowed."""
+    return sorted(_argv_allow_names())
+
+
+def allow_command(name: str) -> None:
+    """Extend the argv[0] allowlist with one more binary name.
+
+    Owner-only in intent: once the policy is locked (`meta.policy_locked`,
+    set by LQ-20's policy root), this refuses so a worker cannot widen its
+    own execution boundary.
+    """
+    if db.get_meta("policy_locked", "0") == "1":
+        raise Refused("the command allowlist is policy-locked; ask the owner to extend it")
+    bare = (name or "").strip().split()[0] if (name or "").strip() else ""
+    if not bare:
+        return
+    bare = Path(bare).name
     current = db.get_meta("allowed_command_prefixes", "")
     entries = [p for p in current.split("\n") if p.strip()]
-    if prefix not in entries:
-        entries.append(prefix)
+    if bare not in entries:
+        entries.append(bare)
     db.set_meta("allowed_command_prefixes", "\n".join(entries))
-    db.log_event("owner", "worker.allow_command", prefix)
+    db.log_event("owner", "worker.allow_command", bare)
 
 
-def check_command(cmd: str) -> None:
+def _has_path_traversal(token: str) -> bool:
+    return ".." in token.split("/")
+
+
+def _check_binary_constraints(name: str, args: list[str]) -> None:
+    """Per-binary limits beyond simple argv[0] membership."""
+    if name == "git":
+        allowed = {"status", "diff", "log", "add", "commit"}
+        if not args or args[0] not in allowed:
+            raise Refused(f"git subcommand not allowed: {args[0] if args else '(none)'!r}")
+    elif name == "python3":
+        if args and args[0] in ("-c", "-"):
+            raise Refused("python3 -c/- (inline code) is not allowed")
+    elif name == "bash":
+        if not args or not args[0].startswith("scripts/") or _has_path_traversal(args[0]):
+            raise Refused("bash may only run a script under scripts/")
+    elif name == "curl":
+        urls = [a for a in args if a.startswith("http://") or a.startswith("https://")]
+        if not urls or any(not (u.startswith("http://localhost:") or
+                                 u.startswith("http://127.0.0.1:")) for u in urls):
+            raise Refused("curl may only reach http://localhost:<port> or http://127.0.0.1:<port>")
+    elif name == "sed":
+        if "-n" not in args:
+            raise Refused("sed must be run with -n")
+
+
+def check_command(cmd: str) -> list[str]:
+    """Validate a command and return its parsed argv.
+
+    Raises Refused if the command cannot run: not shlex-parseable, contains a
+    shell control character, contains a path-traversal segment, its binary is
+    denied or not on the allowlist, or it fails that binary's constraint.
+    """
     text = (cmd or "").strip()
     if not text:
         raise Refused("empty command")
     for bad in FORBIDDEN:
         if bad in text:
             raise Refused(f"command contains a forbidden pattern: {bad!r}")
-    if not any(text.startswith(p) for p in allowed_commands()):
-        raise Refused(f"command is not on the allowlist: {text.split()[0]!r}. "
-                      "Approve it once with `aion allow-command '<prefix>'`.")
+    try:
+        argv = shlex.split(text)
+    except ValueError as exc:
+        raise Refused(f"could not parse command: {exc}") from None
+    if not argv:
+        raise Refused("empty command")
+    for token in argv:
+        if any(ch in token for ch in SHELL_METACHARS):
+            raise Refused(f"command argument contains a shell control character: {token!r}")
+        if _has_path_traversal(token):
+            raise Refused(f"command argument contains a path-traversal segment: {token!r}")
+    name = Path(argv[0]).name
+    if name in HARD_DENY_BINARIES:
+        raise Refused(f"{name!r} is never allowed")
+    if name not in _argv_allow_names():
+        raise Refused(f"command is not on the allowlist: {name!r}. "
+                      "Approve it once with `aion allow-command '<name>'`.")
+    _check_binary_constraints(name, argv[1:])
+    return argv
 
 
 def run_command(cmd: str, cwd: Path | None = None, *, timeout_s: int = TIMEOUT_S) -> dict:
-    """Run an allowlisted command and return its real result."""
-    check_command(cmd)
+    """Run an allowlisted command and return its real result.
+
+    The command never touches a shell: check_command parses and validates it
+    into argv, which subprocess.run executes directly (shell=False), so shell
+    metacharacters inside an argument can never be reinterpreted as chaining,
+    redirection or substitution.
+    """
+    argv = check_command(cmd)
     try:
-        proc = subprocess.run(cmd, shell=True, capture_output=True, text=True,
+        proc = subprocess.run(argv, shell=False, capture_output=True, text=True,
                               timeout=timeout_s, cwd=str(cwd or repo_root()))
     except subprocess.TimeoutExpired:
         return {"ok": False, "code": -1, "output": f"timed out after {timeout_s}s",
                 "cmd": cmd, "timed_out": True}
+    except FileNotFoundError as exc:
+        return {"ok": False, "code": -1, "output": f"executable not found: {exc}", "cmd": cmd}
     output = ((proc.stdout or "") + (proc.stderr or "")).strip()
     if len(output) > MAX_OUTPUT_CHARS:
         output = output[:MAX_OUTPUT_CHARS] + "\n… output truncated"

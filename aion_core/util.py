@@ -6,13 +6,27 @@ import json
 import os
 import tempfile
 import uuid
-from datetime import datetime, timezone
+from datetime import datetime, timedelta, timezone
 from pathlib import Path
 
 
 def now() -> str:
     """UTC ISO-8601 timestamp with second precision."""
     return datetime.now(timezone.utc).replace(microsecond=0).isoformat()
+
+
+def ago(**kwargs) -> str:
+    """now() minus a timedelta, same second-precision format as now().
+
+    Pass timedelta keyword arguments, e.g. ago(days=7) or ago(seconds=2700).
+    Callers that build a cutoff by hand (`datetime.now(timezone.utc) -
+    timedelta(...)`) tend to disagree on whether to strip microseconds; two
+    call sites in this codebase once did, comparing a cutoff carrying
+    microseconds against `started_at` values stamped by now() (which never
+    does) — a mismatch that made ISO-string comparison subtly wrong right at
+    the cutoff second. Route both through here so that can't happen again.
+    """
+    return (datetime.now(timezone.utc) - timedelta(**kwargs)).replace(microsecond=0).isoformat()
 
 
 def today() -> str:
@@ -27,8 +41,12 @@ def new_id(prefix: str) -> str:
     return f"{prefix}-{uuid.uuid4().hex[:8].upper()}"
 
 
+def sha256_bytes(data: bytes) -> str:
+    return hashlib.sha256(data).hexdigest()
+
+
 def sha256_text(text: str) -> str:
-    return hashlib.sha256(text.encode("utf-8")).hexdigest()
+    return sha256_bytes(text.encode("utf-8"))
 
 
 def sha256_file(path: Path) -> str:

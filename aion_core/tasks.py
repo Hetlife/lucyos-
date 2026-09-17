@@ -101,8 +101,7 @@ def claim(task_id: str, agent_id: str) -> bool:
 
 def release_stale(max_age_s: int = config.STALE_CLAIM_SECONDS) -> list[str]:
     """Return claimed/running tasks whose owner went silent, back to READY."""
-    from datetime import datetime, timedelta, timezone
-    cutoff = (datetime.now(timezone.utc) - timedelta(seconds=max_age_s)).replace(microsecond=0).isoformat()
+    cutoff = util.ago(seconds=max_age_s)
     conn = db.connect()
     rows = conn.execute(
         "SELECT task_id FROM tasks WHERE status IN ('CLAIMED','RUNNING') "
