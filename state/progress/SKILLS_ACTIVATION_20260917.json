@@ -55,12 +55,28 @@
     {
       "id": "M3",
       "name": "auxiliary_provider_dry_run_without_keys",
-      "status": "READY"
+      "status": "COMPLETED",
+      "evidence": {
+        "providers": [
+          "openrouter_free",
+          "groq_free",
+          "cerebras_free"
+        ],
+        "keys_configured": false,
+        "public_no_key": "fail-closed",
+        "network_calls": 0,
+        "blocked_data_classes": [
+          "INTERNAL",
+          "CONFIDENTIAL",
+          "SECRET"
+        ],
+        "tests": "tests.test_model_gateway: 3 passed"
+      }
     },
     {
       "id": "M4",
       "name": "regression_and_handoff",
-      "status": "PENDING"
+      "status": "READY"
     }
   ],
   "last_safe_sha": "a4c0ffcbb46c40300c01da2e4d5cea819b08f2f2",
@@ -87,6 +103,11 @@
       "milestone": "M2",
       "type": "COMPLETED",
       "note": "ccusage sandboxed and verified supplemental-only; no canonical accounting mutation"
+    },
+    {
+      "milestone": "M3",
+      "type": "COMPLETED",
+      "note": "auxiliary provider gateway verified fail-closed with zero network calls and sensitive data denied"
     }
   ]
 }
