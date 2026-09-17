@@ -1,0 +1,38 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+if [[ "${LUCYOS_OPENCLAW_BRIDGE:-1}" != "1" ]]; then
+  echo '{"status":"disabled","reason":"LUCYOS_OPENCLAW_BRIDGE is not enabled"}'
+  exit 3
+fi
+
+export AION_HOME="${AION_HOME:-/root/openclaw/shared_brain}"
+AION="${LUCYOS_AION_BIN:-/root/lucyos/aion}"
+
+case "${1:-}" in
+  status) exec "$AION" status ;;
+  skills) exec "$AION" skills list ;;
+  health) exec "$AION" health ;;
+  learnrepo-status) exec "$AION" learnrepo-status ;;
+  tasks) exec "$AION" tasks ;;
+  approvals) exec "$AION" approvals ;;
+  context)
+    [[ $# -eq 2 ]] || { echo "usage: lucyosctl context TASK_ID" >&2; exit 2; }
+    exec "$AION" context "$2" ;;
+  route)
+    [[ $# -ge 2 && $# -le 5 ]] || { echo "usage: lucyosctl route KIND [COMPLEXITY] [STAKES] [AMBIGUITY]" >&2; exit 2; }
+    args=(route "$2")
+    [[ $# -ge 3 ]] && args+=(--complexity "$3")
+    [[ $# -ge 4 ]] && args+=(--stakes "$4")
+    [[ $# -ge 5 ]] && args+=(--ambiguity "$5")
+    exec "$AION" "${args[@]}" ;;
+  architecture-check)
+    [[ $# -eq 2 ]] || { echo "usage: lucyosctl architecture-check PROPOSAL_JSON" >&2; exit 2; }
+    exec "$AION" architecture-check "$2" ;;
+  work-dry)
+    max="${2:-1}"
+    exec "$AION" work --max "$max" --dry-run ;;
+  *)
+    echo "usage: lucyosctl {status|skills|health|learnrepo-status|tasks|approvals|context|route|architecture-check|work-dry}" >&2
+    exit 2 ;;
+esac
