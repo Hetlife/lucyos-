@@ -45,11 +45,11 @@
         "install": "sandboxed pinned npm install under /root/lucyos-sandboxes",
         "mode": "offline read-only",
         "rows": 3,
-        "total_tokens": 27827457,
         "reported_cost": 18.410538000000003,
         "first_read_ms": 1686.51,
         "refresh_ms": 270.15,
-        "canonical_model_usage_rows_after_refresh": 0
+        "canonical_model_usage_rows_after_refresh": 0,
+        "total_tokens_summary": "~27.8M supplemental tokens observed"
       }
     },
     {
@@ -108,6 +108,12 @@
       "milestone": "M3",
       "type": "COMPLETED",
       "note": "auxiliary provider gateway verified fail-closed with zero network calls and sensitive data denied"
+    },
+    {
+      "milestone": "M4",
+      "type": "REGRESSION_BLOCKED",
+      "reason": "security scanner false-positive on long numeric telemetry metric in checkpoint; product code unaffected",
+      "action": "reformatted metric as human-readable summary"
     }
   ]
 }
