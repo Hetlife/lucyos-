@@ -288,3 +288,62 @@ def audit_verify(chain: list[dict]) -> dict:
                      "records": len(chain), "broken_at": i}
         prev_hash = record["hash"]
     return {"ok": True, "detail": f"chain of {len(chain)} record(s) verified intact", "records": len(chain)}
+
+
+def routing_report() -> dict:
+    """Deterministic SQL report over model_usage -- no model or API call is
+    ever made to produce this.  With no usage recorded, this says so
+    explicitly rather than reporting a fabricated zero-cost summary."""
+    conn = db.connect()
+    total_calls = conn.execute("SELECT COUNT(*) c FROM model_usage").fetchone()["c"]
+    if not total_calls:
+        return {"total_calls": 0, "detail": "no usage recorded", "by_class": [], "by_model": []}
+
+    totals = conn.execute(
+        "SELECT COUNT(*) n, COALESCE(SUM(input_tokens),0) in_tok, "
+        "COALESCE(SUM(output_tokens),0) out_tok, COALESCE(SUM(cost_inr),0) cost, "
+        "COALESCE(SUM(retries),0) retries, COALESCE(SUM(escalated),0) escalated, "
+        "COALESCE(SUM(CASE WHEN success=0 THEN 1 ELSE 0 END),0) failures "
+        "FROM model_usage"
+    ).fetchone()
+
+    by_class = [
+        {
+            "model_class": r["model_class"], "calls": r["n"], "cost_inr": round(r["cost"], 2),
+            "input_tokens": r["in_tok"], "output_tokens": r["out_tok"],
+            "retries": r["retries"], "escalations": r["escalated"], "failures": r["failures"],
+        }
+        for r in conn.execute(
+            "SELECT model_class, COUNT(*) n, COALESCE(SUM(input_tokens),0) in_tok, "
+            "COALESCE(SUM(output_tokens),0) out_tok, COALESCE(SUM(cost_inr),0) cost, "
+            "COALESCE(SUM(retries),0) retries, COALESCE(SUM(escalated),0) escalated, "
+            "COALESCE(SUM(CASE WHEN success=0 THEN 1 ELSE 0 END),0) failures "
+            "FROM model_usage GROUP BY model_class ORDER BY model_class"
+        ).fetchall()
+    ]
+
+    by_model = [
+        {
+            "model": r["model"], "model_class": r["model_class"], "calls": r["n"],
+            "cost_inr": round(r["cost"], 2), "input_tokens": r["in_tok"], "output_tokens": r["out_tok"],
+        }
+        for r in conn.execute(
+            "SELECT model, model_class, COUNT(*) n, COALESCE(SUM(cost_inr),0) cost, "
+            "COALESCE(SUM(input_tokens),0) in_tok, COALESCE(SUM(output_tokens),0) out_tok "
+            "FROM model_usage GROUP BY model, model_class ORDER BY cost DESC, model ASC"
+        ).fetchall()
+    ]
+
+    return {
+        "total_calls": totals["n"],
+        "total_cost_inr": round(totals["cost"], 2),
+        "total_input_tokens": totals["in_tok"],
+        "total_output_tokens": totals["out_tok"],
+        "total_escalations": totals["escalated"],
+        "total_retries": totals["retries"],
+        "total_failures": totals["failures"],
+        "by_class": by_class,
+        "by_model": by_model,
+        "detail": f"{totals['n']} call(s), ₹{round(totals['cost'], 2)} total cost, "
+                  f"{totals['escalated']} escalated",
+    }

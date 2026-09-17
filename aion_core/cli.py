@@ -112,6 +112,7 @@ def _main(argv=None) -> int:
     ae.add_argument("--out", help="write JSON here instead of AION_HOME/state/AUDIT_EXPORT-<stamp>.json")
     av = sub.add_parser("audit-verify", help="verify a hash-chained audit export")
     av.add_argument("path", help="path to a JSON file produced by 'aion audit-export'")
+    sub.add_parser("routing-report", help="deterministic SQL report over model_usage")
 
     lr = sub.add_parser("learnrepo-run", help="run due deterministic LearnRepo health jobs")
     lr.add_argument("--mode", choices=["nightly", "daily", "weekly", "monthly", "quarterly"], default="nightly")
@@ -370,6 +371,8 @@ def _main(argv=None) -> int:
         result = reports.audit_verify(chain)
         _print(result)
         return 0 if result["ok"] else 1
+    elif cmd == "routing-report":
+        _print(reports.routing_report())
     elif cmd == "learnrepo-run":
         _print(learnrepo.run_due(mode=args.mode))
     elif cmd == "learnrepo-status":
