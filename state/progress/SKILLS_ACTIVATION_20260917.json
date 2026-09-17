@@ -39,12 +39,23 @@
     {
       "id": "M2",
       "name": "telemetry_activation_and_benchmark",
-      "status": "READY"
+      "status": "COMPLETED",
+      "evidence": {
+        "ccusage_version": "20.0.20",
+        "install": "sandboxed pinned npm install under /root/lucyos-sandboxes",
+        "mode": "offline read-only",
+        "rows": 3,
+        "total_tokens": 27827457,
+        "reported_cost": 18.410538000000003,
+        "first_read_ms": 1686.51,
+        "refresh_ms": 270.15,
+        "canonical_model_usage_rows_after_refresh": 0
+      }
     },
     {
       "id": "M3",
       "name": "auxiliary_provider_dry_run_without_keys",
-      "status": "PENDING"
+      "status": "READY"
     },
     {
       "id": "M4",
@@ -71,6 +82,11 @@
       "milestone": "M1",
       "type": "COMPLETED",
       "note": "local semantic recall verified; canonical memory remained source of truth"
+    },
+    {
+      "milestone": "M2",
+      "type": "COMPLETED",
+      "note": "ccusage sandboxed and verified supplemental-only; no canonical accounting mutation"
     }
   ]
 }
