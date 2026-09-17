@@ -5,7 +5,7 @@ from pathlib import Path
 from unittest.mock import patch
 
 from tests.base import AionTest
-from bridges.drive_bridge import Bridge, BridgeError, Rclone, atomic, clean, digest
+from bridges.drive_bridge import Bridge, BridgeError, Rclone, atomic, clean, digest, read_safe
 from aion_core import packets
 
 PACKET = b'# AI SYNC PACKET\nSOURCE: ChatGPT\nPROJECT: default\n## TASKS CREATED\n- Review sample document | 3 | none | Reviewed\nEND AI SYNC PACKET\n'
@@ -123,6 +123,38 @@ class DriveTests(AionTest):
         os.link(source, link)
         with self.assertRaises(BridgeError):
             self.bridge.stage('reports', link)
+
+    def test_read_safe_accepts_file_under_symlinked_ancestor_inside_root(self):
+        # Simulates macOS, where $TMPDIR resolves through /var -> /private/var:
+        # the *root itself* sits behind a symlink, which must not cause a
+        # false rejection of a perfectly normal in-root file.
+        real_root = self.tmp / 'real_root'
+        real_root.mkdir()
+        (real_root / 'doc.md').write_text('safe document')
+        linked_root = self.tmp / 'linked_root'
+        linked_root.symlink_to(real_root)
+        data = read_safe(linked_root / 'doc.md', allowed_root=linked_root)
+        self.assertEqual(data, b'safe document')
+
+    def test_read_safe_rejects_symlink_escaping_allowed_root(self):
+        root = self.tmp / 'contained'
+        root.mkdir()
+        outside = self.tmp / 'outside.md'
+        outside.write_text('not yours')
+        escape = root / 'escape.md'
+        escape.symlink_to(outside)
+        with self.assertRaises(BridgeError):
+            read_safe(escape, allowed_root=root)
+
+    def test_read_safe_without_allowed_root_permits_arbitrary_path(self):
+        # stage() intentionally passes no allowed_root: an operator may stage
+        # any file they can already read from the CLI. Confirms that contract.
+        outside = self.tmp.parent / f'{self.tmp.name}-sibling-{os.getpid()}.md'
+        outside.write_text('operator-supplied file')
+        try:
+            self.assertEqual(read_safe(outside), b'operator-supplied file')
+        finally:
+            outside.unlink()
 
     def test_duplicate_does_not_reprocess(self):
         self.remote.data[('00_INBOX', 'packet.md')] = PACKET
