@@ -123,11 +123,37 @@ def clean(data, name):
     return text
 
 
-def read_safe(path):
+def read_safe(path, *, allowed_root=None):
+    """Read a local file defensively: reject a symlinked/hardlinked leaf, any
+    BLOCK-pattern path segment, and -- only when `allowed_root` is given --
+    a resolved path outside that root.
+
+    `allowed_root` is deliberately optional, not a blanket rule: `stage()`
+    lets an operator point at any file they can already read (that is its
+    whole purpose), so it passes none. `push()` only ever re-reads files this
+    bridge itself wrote under its own tree, so it passes `self.home` and gets
+    real containment.
+
+    Rejecting every ancestor symlink unconditionally (the previous rule) was
+    not a containment check at all -- it broke on any OS whose temp/home path
+    is itself a symlink, which is normal on macOS (`/var` -> `/private/var`),
+    not a sign of tampering.
+    """
     path = Path(path).absolute()
-    for part in (path, *path.parents):
-        if part.is_symlink() or BLOCK.search(part.name):
+    if path.is_symlink() or BLOCK.search(path.name):
+        raise BridgeError('rejected_source')
+    for part in path.parents:
+        if BLOCK.search(part.name):
             raise BridgeError('rejected_source')
+    if allowed_root is not None:
+        try:
+            resolved = path.resolve(strict=True)
+        except (OSError, RuntimeError):
+            raise BridgeError('rejected_source') from None
+        try:
+            resolved.relative_to(Path(allowed_root).resolve())
+        except ValueError:
+            raise BridgeError('rejected_source') from None
     fd = os.open(path, os.O_RDONLY | os.O_NOFOLLOW)
     try:
         info = os.fstat(fd)
@@ -336,7 +362,7 @@ class Bridge:
         for path in sorted(folder.iterdir()):
             if only is not None and path.name != only:
                 continue
-            data = read_safe(path)
+            data = read_safe(path, allowed_root=self.home)
             h = digest(data)
             name = path.name
             if name not in ('MARK2_STATUS.json', 'MARK2_BRIDGE_READY.md'):
