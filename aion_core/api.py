@@ -158,6 +158,7 @@ def costs() -> dict:
         "ORDER BY cost_inr DESC", (month,)).fetchall()]
 
     b = metrics.budget_status()
+    from . import usage_telemetry
     return {
         "today_inr": round(today_inr, 2),
         "month_inr": round(month_inr, 2),
@@ -167,4 +168,33 @@ def costs() -> dict:
         "strong_model_pct": b["strong_model_pct"],
         "strong_model_spend_inr": b["strong_model_spend_inr"],
         "strong_model_cap_inr": b["strong_model_cap_inr"],
+        "supplemental_usage": usage_telemetry.latest(),
     }
+
+
+def events(after_id: int = 0, limit: int = 100) -> list[dict]:
+    """Bounded event stream source for Mission Control. Read-only and local."""
+    limit = max(1, min(int(limit), 250))
+    rows = db.connect().execute(
+        "SELECT id,at,actor,kind,subject,detail FROM events WHERE id>? ORDER BY id LIMIT ?",
+        (max(0, int(after_id)), limit),
+    ).fetchall()
+    return [dict(r) for r in rows]
+
+
+def capability_plan(target: str = "current") -> dict:
+    """Read-only platform capability plan for current machine or future Apple Silicon Mac."""
+    from . import platform_resolver
+    if target == "macos-arm64":
+        profile = {"os": "macos", "arch": "arm64", "ram_gb": None, "apple_silicon": True}
+    elif target == "current":
+        profile = platform_resolver.machine_profile()
+    else:
+        raise ValueError(f"unknown platform target {target}")
+    return platform_resolver.resolve(profile=profile)
+
+
+def auxiliary_providers() -> list[dict]:
+    """Configured/healthy status only; never exposes API key material."""
+    from . import model_gateway
+    return model_gateway.provider_status()

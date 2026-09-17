@@ -32,7 +32,9 @@
   "permissions": [],
   "fallback": [],
   "lifecycle_state": "DISCOVERED",
-  "references": [],
+  "references": [
+    "https://github.com/ccusage/ccusage"
+  ],
   "implementation_notes": "Reuse current governor.",
   "priority": "P0",
   "cost_notes": "Candidate catalog entry only; recurring cost must be re-verified before activation.",
