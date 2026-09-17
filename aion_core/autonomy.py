@@ -12,7 +12,7 @@ def evaluate_day(day: str) -> dict:
         parsed = datetime.strptime(day, "%Y-%m-%d").date()
     except ValueError as exc:
         raise ValueError("day must be YYYY-MM-DD") from exc
-    if parsed >= date.today():
+    if parsed >= date.fromisoformat(util.today()):
         raise ValueError("only completed UTC days may be evaluated")
     conn = db.connect()
     autonomous = conn.execute(
@@ -42,7 +42,7 @@ def evaluate_day(day: str) -> dict:
 
 
 def evaluate_yesterday() -> dict:
-    return evaluate_day((date.today() - timedelta(days=1)).isoformat())
+    return evaluate_day((date.fromisoformat(util.today()) - timedelta(days=1)).isoformat())
 
 
 def consecutive_days() -> int:

@@ -55,6 +55,14 @@ class TestAutonomyDays(AionTest):
         with self.assertRaises(ValueError):
             autonomy.evaluate_day(util.today())
 
+    def test_utc_day_boundary_does_not_follow_host_local_date(self):
+        from unittest.mock import patch
+        from aion_core import autonomy
+        with patch("aion_core.autonomy.util.today", return_value="2026-09-17"):
+            with self.assertRaises(ValueError):
+                autonomy.evaluate_day("2026-09-17")
+            self.assertEqual(autonomy.evaluate_yesterday()["day"], "2026-09-16")
+
 
 if __name__ == "__main__":
     import unittest
