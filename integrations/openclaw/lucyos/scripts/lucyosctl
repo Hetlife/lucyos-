@@ -1,0 +1,99 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+if [[ "${LUCYOS_OPENCLAW_BRIDGE:-1}" != "1" ]]; then
+  echo '{"status":"disabled","reason":"LUCYOS_OPENCLAW_BRIDGE is not enabled"}'
+  exit 3
+fi
+
+export AION_HOME="${AION_HOME:-/root/openclaw/shared_brain}"
+AION="${LUCYOS_AION_BIN:-/root/lucyos/aion}"
+REMOTE_TARGET="${LUCYOS_REMOTE_SSH_TARGET:-}"
+REMOTE_PORT="${LUCYOS_REMOTE_SSH_PORT:-22}"
+REMOTE_KEY="${LUCYOS_REMOTE_SSH_KEY:-}"
+REMOTE_TIMEOUT="${LUCYOS_REMOTE_CONNECT_TIMEOUT:-10}"
+
+remote_exec() {
+  local command="$1"; shift
+  local ssh_args=(
+    -T -o BatchMode=yes -o ClearAllForwardings=yes
+    -o "ConnectTimeout=${REMOTE_TIMEOUT}" -p "${REMOTE_PORT}"
+  )
+  [[ -n "${REMOTE_KEY}" ]] && ssh_args+=(-i "${REMOTE_KEY}")
+  exec ssh "${ssh_args[@]}" "${REMOTE_TARGET}" "${command}" "$@"
+}
+
+remote_architecture_check() {
+  local proposal="$1"
+  local ssh_args=(
+    -T -o BatchMode=yes -o ClearAllForwardings=yes
+    -o "ConnectTimeout=${REMOTE_TIMEOUT}" -p "${REMOTE_PORT}"
+  )
+  [[ -n "${REMOTE_KEY}" ]] && ssh_args+=(-i "${REMOTE_KEY}")
+  exec ssh "${ssh_args[@]}" "${REMOTE_TARGET}" architecture-check < "${proposal}"
+}
+dispatch_local() {
+  case "${1:-}" in
+    status) exec "$AION" status ;;
+    skills) exec "$AION" skills list ;;
+    health) exec "$AION" health ;;
+    learnrepo-status) exec "$AION" learnrepo-status ;;
+    tasks) exec "$AION" tasks ;;
+    approvals) exec "$AION" approvals ;;
+    context)
+      [[ $# -eq 2 ]] || { echo "usage: lucyosctl context TASK_ID" >&2; exit 2; }
+      exec "$AION" context "$2" ;;
+    route)
+      [[ $# -ge 2 && $# -le 5 ]] || { echo "usage: lucyosctl route KIND [COMPLEXITY] [STAKES] [AMBIGUITY]" >&2; exit 2; }
+      args=(route "$2")
+      [[ $# -ge 3 ]] && args+=(--complexity "$3")
+      [[ $# -ge 4 ]] && args+=(--stakes "$4")
+      [[ $# -ge 5 ]] && args+=(--ambiguity "$5")
+      exec "$AION" "${args[@]}" ;;
+    architecture-check)
+      [[ $# -eq 2 ]] || { echo "usage: lucyosctl architecture-check PROPOSAL_JSON" >&2; exit 2; }
+      exec "$AION" architecture-check "$2" ;;
+    work-dry)
+      max="${2:-1}"
+      [[ $# -le 2 ]] || { echo "usage: lucyosctl work-dry [MAX]" >&2; exit 2; }
+      exec "$AION" work --max "$max" --dry-run ;;
+    *)
+      echo "usage: lucyosctl {status|skills|health|learnrepo-status|tasks|approvals|context|route|architecture-check|work-dry}" >&2
+      exit 2 ;;
+  esac
+}
+if [[ -z "${REMOTE_TARGET}" ]]; then
+  dispatch_local "$@"
+fi
+
+case "${1:-}" in
+  status|skills|health|learnrepo-status|tasks|approvals)
+    [[ $# -eq 1 ]] || { echo "${1} takes no arguments" >&2; exit 2; }
+    remote_exec "$1"
+    ;;
+  context)
+    [[ $# -eq 2 && "$2" =~ ^TASK-[A-Z0-9]{6,}$ ]] || { echo "usage: lucyosctl context TASK_ID" >&2; exit 2; }
+    remote_exec context "$2"
+    ;;
+  route)
+    [[ $# -ge 2 && $# -le 5 ]] || { echo "usage: lucyosctl route KIND [COMPLEXITY] [STAKES] [AMBIGUITY]" >&2; exit 2; }
+    for value in "${@:2}"; do
+      [[ "$value" =~ ^[A-Za-z0-9_.:-]{1,64}$ ]] || { echo "invalid route argument" >&2; exit 2; }
+    done
+    remote_exec route "${@:2}"
+    ;;
+  architecture-check)
+    [[ $# -eq 2 && -f "$2" ]] || { echo "usage: lucyosctl architecture-check PROPOSAL_JSON" >&2; exit 2; }
+    remote_architecture_check "$2"
+    ;;
+  work-dry)
+    [[ $# -le 2 ]] || { echo "usage: lucyosctl work-dry [MAX]" >&2; exit 2; }
+    max="${2:-1}"
+    [[ "$max" =~ ^[0-9]+$ ]] && (( max >= 1 && max <= 10 )) || { echo "work-dry max must be 1..10" >&2; exit 2; }
+    remote_exec work-dry "$max"
+    ;;
+  *)
+    echo "usage: lucyosctl {status|skills|health|learnrepo-status|tasks|approvals|context|route|architecture-check|work-dry}" >&2
+    exit 2
+    ;;
+esac
