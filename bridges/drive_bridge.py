@@ -6,7 +6,6 @@ from collections import Counter
 from contextlib import contextmanager
 from datetime import datetime, timezone
 import fcntl
-import hashlib
 import json
 import math
 import os
@@ -20,7 +19,7 @@ import tempfile
 import time
 import urllib.request
 
-from aion_core import config, packets, security
+from aion_core import config, packets, security, util
 
 REPO = Path(__file__).resolve().parents[1]
 FOLDERS = ['00_INBOX', '01_LUCYOS', '02_STRATEGY_FACTORY', '03_CONTEXT',
@@ -41,11 +40,11 @@ class BridgeError(Exception):
 
 
 def now():
-    return datetime.now(timezone.utc).isoformat(timespec='seconds')
+    return util.now()
 
 
 def digest(data):
-    return hashlib.sha256(data).hexdigest()
+    return util.sha256_bytes(data)
 
 
 def atomic(path, data):
