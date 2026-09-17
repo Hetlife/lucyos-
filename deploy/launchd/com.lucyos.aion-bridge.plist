@@ -1,0 +1,29 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+	<key>Label</key>
+	<string>com.lucyos.aion-bridge</string>
+	<key>ProgramArguments</key>
+	<array>
+		<string>/bin/bash</string>
+		<string>-lc</string>
+		<string>set -a; [ -f "@AION_HOME@/private_state/secrets.env" ] &amp;&amp; . "@AION_HOME@/private_state/secrets.env"; set +a; exec /usr/bin/python3 @REPO@/bridges/whatsapp_bridge.py cloud --host 127.0.0.1 --port 8765</string>
+	</array>
+	<key>WorkingDirectory</key>
+	<string>@REPO@</string>
+	<key>EnvironmentVariables</key>
+	<dict>
+		<key>AION_HOME</key>
+		<string>@AION_HOME@</string>
+	</dict>
+	<key>RunAtLoad</key>
+	<true/>
+	<key>KeepAlive</key>
+	<true/>
+	<key>StandardOutPath</key>
+	<string>@AION_HOME@/logs/aion-bridge.out.log</string>
+	<key>StandardErrorPath</key>
+	<string>@AION_HOME@/logs/aion-bridge.err.log</string>
+</dict>
+</plist>
