@@ -21,21 +21,30 @@
 
 ## 1. Session bootstrap
 
-At the start of every Codex integration session:
+At the start of every Codex integration session, fetch both the plan ref and the integration ref. The execution plan lives on the planning branch, not on the integration branch, so read it with `git show` rather than assuming the file exists after checkout:
 
 ```bash
-git fetch --all --prune
-git checkout integration/consolidation-20260916
+PLAN_REF=origin/planning/integration-roadmap-20260917
+PLAN_PATH=.lucy/planning/CODEX_INTEGRATION_EXECUTION_PLAN_20260917.md
+INTEGRATION_BRANCH=integration/consolidation-20260916
+git fetch origin planning/integration-roadmap-20260917 integration/consolidation-20260916 --prune
+git show "$PLAN_REF:$PLAN_PATH" > /tmp/CODEX_INTEGRATION_EXECUTION_PLAN_20260917.md
+git switch "$INTEGRATION_BRANCH"
 git status --porcelain=v1
 git rev-parse HEAD
+git rev-parse "origin/$INTEGRATION_BRANCH"
 git log -1 --oneline
+python3 --version
 ```
 
 Required conditions:
 - working tree clean;
 - current branch exactly `integration/consolidation-20260916`;
 - no unresolved merge/rebase/cherry-pick state;
-- integration HEAD matches the last recorded checkpoint, or the difference is explained by commits already recorded in this plan's execution log.
+- local integration HEAD equals `origin/integration/consolidation-20260916`, unless the difference is exactly the already-recorded supervised integration checkpoint;
+- integration HEAD matches the last recorded checkpoint, or the difference is explained by commits already recorded in the existing session/checkpoint state.
+
+Do not `pull`, reset, or fast-forward merely to make the SHAs match. An unexplained local/remote difference is a hard stop. Mark-2 has `python3`; do not assume a `python` executable exists.
 
 If any condition fails: **STOP**, do not clean/reset blindly. Record the discrepancy and exact Git evidence.
 
@@ -49,16 +58,18 @@ For each candidate PR, record before touching it:
 
 ## 2. Common validation checkpoint
 
-After every individual merge/cherry-pick/conflict-resolution commit, run:
+After every individual candidate integration commit, run the checks against the candidate delta and the accumulated tree. `INTEGRATION_HEAD_BEFORE` must be recorded before starting that candidate; `AUTHORIZED_BASE_SHA` is the exact Wave-0-complete SHA pinned once in section 4:
 
 ```bash
-git diff --check
-python -m compileall -q aion_core bridges tests scripts
-python scripts/check_portability.py
+git diff --check "$INTEGRATION_HEAD_BEFORE"..HEAD
+python3 -m compileall -q aion_core bridges tests scripts
+python3 scripts/check_portability.py
 AION_HOME="$(mktemp -d)" ./aion scan .
-AION_HOME="$(mktemp -d)" python -m unittest discover -s tests -t . -q
-python scripts/verify_authority.py anti-dup --base <POST-WAVE0-AUTHORIZED-BASE>
+AION_HOME="$(mktemp -d)" python3 -m unittest discover -s tests -t . -q
+python3 scripts/verify_authority.py anti-dup --base "$AUTHORIZED_BASE_SHA"
 ```
+
+A bare `git diff --check` after a committed merge checks only uncommitted work and is not sufficient evidence for the integrated candidate.
 
 Then require the repository CI-equivalent checks appropriate to that wave. Do not advance after a local green if GitHub CI for the resulting integration SHA reports a required failure.
 
@@ -66,20 +77,29 @@ Then require the repository CI-equivalent checks appropriate to that wave. Do no
 
 ## 3. Per-candidate authority protocol
 
-Before merging any task branch that touches protected paths:
+Run task-scoped `strict` for **every** candidate, not only candidates believed to touch protected paths. This prevents a stale changed-file classification from skipping authority verification. The verifier checks `HEAD`, so it must execute with `HEAD` at the candidate SHA; `--branch` supplies task identity but does not switch branches. Use the verifier file from the pinned authorized base, never the candidate copy:
 
 ```bash
-python scripts/verify_authority.py strict \
-  --base origin/integration/consolidation-20260916 \
-  --branch <TASK_BRANCH>
+CANDIDATE_ROOT="$(mktemp -d)"
+CANDIDATE_DIR="$CANDIDATE_ROOT/worktree"
+VERIFY_FILE="$(mktemp)"
+git worktree add --detach "$CANDIDATE_DIR" "$CANDIDATE_SHA"
+git show "${AUTHORIZED_BASE_SHA}:scripts/verify_authority.py" > "$VERIFY_FILE"
+( cd "$CANDIDATE_DIR" && python3 "$VERIFY_FILE" strict \
+    --base "$AUTHORIZED_BASE_SHA" --branch "$TASK_BRANCH" )
+STRICT_RC=$?
+git worktree remove "$CANDIDATE_DIR"
+rm -f "$VERIFY_FILE"
+rmdir "$CANDIDATE_ROOT" 2>/dev/null || true
+test "$STRICT_RC" -eq 0
 ```
 
-Use the verifier from the authorized base when reproducing CI semantics. If `strict` fails, stop that candidate. Do not modify the branch or baseline merely to clear the gate.
+If `strict` fails, stop that candidate. Do not modify the candidate or baseline merely to clear the gate.
 
-After the merge into the evolving integration branch:
+After the candidate is integrated into the evolving integration branch:
 
 ```bash
-python scripts/verify_authority.py anti-dup --base <POST-WAVE0-AUTHORIZED-BASE>
+python3 scripts/verify_authority.py anti-dup --base "$AUTHORIZED_BASE_SHA"
 ```
 
 Never run aggregate `strict` over accumulated task commits: multiple `Task-ID` trailers make the command ambiguous by construction.
@@ -102,7 +122,14 @@ Required owner/high-model decisions before autonomous integration:
 
 Codex may inspect and prepare evidence for Wave 0 but **must not perform these semantic governance edits autonomously**.
 
-Wave 0 completion criterion: re-run the previously baseline-blocked PR authority checks and confirm their only known blocker is removed without weakening anti-dup/strict semantics.
+Wave 0 completion criterion: re-run the previously baseline-blocked PR authority checks and confirm their only known blocker is removed without weakening anti-dup/strict semantics. Then pin the exact Wave-0-complete integration SHA once:
+
+```bash
+AUTHORIZED_BASE_SHA="$(git rev-parse HEAD)"
+printf '%s\n' "$AUTHORIZED_BASE_SHA"
+```
+
+Use that immutable SHA as the authority base for every Waves 1–6 `strict` and cumulative `anti-dup` invocation. Do not silently substitute the moving integration branch name.
 
 ## 5. Wave 1 — zero-overlap group
 
@@ -111,10 +138,11 @@ Order:
 
 Procedure per PR:
 1. verify candidate SHA/CI;
-2. trial merge candidate into current integration HEAD;
-3. if conflict exists despite the verified zero-overlap map: stop and report because ground truth changed;
-4. run Common Validation Checkpoint;
-5. record resulting integration SHA before proceeding.
+2. set `INTEGRATION_HEAD_BEFORE=$(git rev-parse HEAD)`;
+3. integrate the **entire candidate head**, one PR at a time. Prefer a normal merge preserving candidate ancestry; do not cherry-pick an arbitrary subset of a PR. If repository policy forbids merge commits, stop before the first candidate and obtain the approved merge method;
+4. if conflict exists despite the verified zero-overlap map: stop and report because ground truth changed;
+5. run Common Validation Checkpoint;
+6. record resulting integration SHA before proceeding.
 
 Do not batch several PRs into one opaque commit. Each PR must remain attributable in history/evidence.
 
@@ -158,7 +186,7 @@ git archive origin/main | tar -x -C "$OLD"
   AION_HOME="$STATE" ./aion seed
 )
 AION_HOME="$STATE" ./aion boot
-AION_HOME="$STATE" python - <<'PY'
+AION_HOME="$STATE" python3 - <<'PY'
 from aion_core import db, skills
 c = db.connect()
 assert c.execute("pragma integrity_check").fetchone()[0] == "ok"
@@ -166,7 +194,7 @@ errs = skills.validate_registry()
 assert errs == [], errs
 print("upgrade ok")
 PY
-AION_HOME="$STATE" python scripts/ci_health_gate.py
+AION_HOME="$STATE" python3 scripts/ci_health_gate.py
 ```
 
 Any migration discrepancy is a hard stop. Do not edit historical migration intent to make the newest branch fit.
@@ -193,11 +221,11 @@ This is the highest textual-conflict wave. One PR at a time only.
 For each PR:
 1. save the pre-merge `cli.py` blob SHA;
 2. inspect the candidate `cli.py` patch before merge;
-3. merge/cherry-pick only that candidate;
+3. integrate only that full candidate head using the same approved merge method as the earlier waves;
 4. resolve conflicts mechanically and additively;
 5. inspect the complete resulting `cli.py` before committing;
 6. check for duplicate parser/subparser names, duplicate registration, handler shadowing, conflicting defaults, duplicate imports, and unreachable dispatch paths;
-7. run `git diff --check`, compile, portability, secret scan and full unit suite;
+7. run the Common Validation Checkpoint, including `git diff --check "$INTEGRATION_HEAD_BEFORE"..HEAD`, compile, portability, secret scan and full unit suite;
 8. run CLI smoke for each subcommand newly introduced by that candidate using non-destructive/help/dry-run forms only;
 9. run cumulative `anti-dup`;
 10. record resulting integration SHA.
@@ -224,6 +252,17 @@ After merge:
 
 If `_validate`, evidence semantics, secret protections, lock semantics, or authority boundaries changed unintentionally: hard stop.
 
+## 10.1 Remote CI / push boundary
+
+GitHub CI on the **accumulated integration SHA** cannot exist until that SHA is present on GitHub. Candidate PR CI is not a substitute because it does not include earlier integrated candidates. Therefore:
+
+- supervised Codex may push only `integration/consolidation-20260916`, never `main`, **after** local validation, and only if the owner has explicitly authorized supervised integration-branch pushes for this run;
+- push must be a normal fast-forward from the last verified remote integration SHA; force-push is forbidden;
+- if supervised push authority has not been granted, stop after local validation and hand the exact SHA to the owner/high model to push; do not claim GitHub CI for that SHA until it actually runs;
+- after any push, fetch the workflow status for that exact SHA and stop on any required red check.
+
+This permission is distinct from unattended-loop push authority, which remains owner-only and disabled.
+
 ## 11. Wave 7 — OWNER boundary
 
 Codex stops before final canonicalization.
@@ -242,9 +281,9 @@ Required evidence packet to owner/high-model:
 Owner/Fable only:
 
 ```bash
-python scripts/verify_authority.py freeze --sha <EXACT_FINAL_SHA>
-python scripts/verify_authority.py self
-python scripts/verify_authority.py deploy
+python3 scripts/verify_authority.py freeze --sha <EXACT_FINAL_SHA>
+python3 scripts/verify_authority.py self
+python3 scripts/verify_authority.py deploy
 ```
 
 Then owner approves integration → `main`. Codex must not merge to `main` under this plan.
@@ -273,21 +312,24 @@ Create/execute through normal task governance after canonical integration:
 
 | Failure | Required response |
 |---|---|
-| Merge conflict | Stop; inspect. Resolve only if mechanical/additive. Semantic conflict → abort candidate merge and escalate. |
+| Merge conflict before commit | Stop; inspect. Resolve only if mechanical/additive. Semantic conflict → `git merge --abort` (only after verifying the merge is the current candidate operation) and escalate. |
+| Required validation fails after an unpushed candidate merge commit | Verify HEAD is exactly that candidate integration commit and the worktree has no unrelated changes; under supervision, return to the recorded `INTEGRATION_HEAD_BEFORE`. Never use an unscoped reset. Preserve failure evidence first. |
+| Required validation fails after the integration SHA was pushed | Do not force-push or rewrite remote history. Stop and escalate for an explicit revert/repair decision. |
 | Dirty tree before candidate | Stop. Do not reset/clean automatically. Identify provenance. |
 | `strict` fails | Candidate blocked. Do not alter authority baseline unless owner-approved Wave 0 change already covers it. |
 | `anti-dup` fails | Stop integration immediately; do not add allowlist entries autonomously. |
 | Portability fails | Stop. Never add suppression solely to get green. Reproduce and classify. |
 | Unit/compile/scan failure | Stop at first failing candidate; preserve exact command/output and pre-merge SHA. |
 | DB upgrade failure | Abort candidate merge; preserve old-state fixture/evidence. Do not edit prior schema history destructively. |
-| GitHub required CI red after local green | Stop; inspect exact job/step logs before any further merge. |
+| GitHub required CI red after local green | Stop; inspect exact job/step logs before any further merge. Never substitute candidate-PR CI for CI on the accumulated integration SHA. |
+| Remote integration branch changed concurrently | Stop. Fetch, compare exact SHAs, and reconcile ownership/checkpoints. Never force-push over an unexplained remote update. |
 | Codex timeout | Preserve work order/worktree evidence; do not claim failure or success without independent validation. |
 | Attempted governance-path write | Reject task result, record exact paths, restore to pre-task state under supervision, escalate. |
 | Unexpected branch/SHA drift | Stop; reconcile against GitHub and canonical shared brain before continuing. |
 
 ## 15. Execution log format
 
-Append one compact checkpoint per attempted PR to the supervised session log / existing canonical reporting seam; do not create another state store.
+Append one compact checkpoint per attempted PR through the existing AION session/checkpoint seam; do not create another state store. `./aion session` and `./aion checkpoint` are the existing CLIs on Mark-2. The implementation session should record the session ID once and log each candidate checkpoint there; use `aion checkpoint` for the resume/bottleneck pointer.
 
 Required fields:
 - `PR`
@@ -310,7 +352,7 @@ A candidate is never considered integrated from a commit exit code alone; its ch
 
 A future Codex session receives only:
 
-> Read `.lucy/planning/CODEX_INTEGRATION_EXECUTION_PLAN_20260917.md` and the canonical shared-brain state. Verify the current branch, HEAD, cleanliness, CI, and last recorded checkpoint. Resume the next uncompleted safe step exactly as written. Do not redesign the plan, weaken gates, modify governance, merge to `main`, or enable unattended autonomy. Stop only on a genuine owner/high-model decision or unexpected semantic conflict, and return exact evidence.
+> Fetch `planning/integration-roadmap-20260917` and read `.lucy/planning/CODEX_INTEGRATION_EXECUTION_PLAN_20260917.md` from `origin/planning/integration-roadmap-20260917` with `git show` (the file is not assumed to exist on the integration branch). Read the canonical shared-brain state. Verify the current branch, local and remote HEADs, cleanliness, CI, and last recorded checkpoint. Resume the next uncompleted safe step exactly as written. Do not redesign the plan, weaken gates, modify governance, merge to `main`, force-push, or enable unattended autonomy. Stop only on a genuine owner/high-model decision or unexpected semantic conflict, and return exact evidence.
 
 ## 17. Definition of integration success
 
