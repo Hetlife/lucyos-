@@ -10,7 +10,7 @@ from pathlib import Path
 from . import (agents, approvals, backup, bootstrap, config, db, errors, fable, health,
                learnrepo, memory, metrics, notebook, owner_setup, packets, reports, resume,
                resource_governor, router, security, seed, sessions, tasks, util, plan, worker,
-               governor, handoff, milestones, deliveries, autonomy)
+               governor, handoff, milestones, deliveries, autonomy, verify)
 
 
 def _print(text):
@@ -106,6 +106,10 @@ def _main(argv=None) -> int:
 
     hc = sub.add_parser("health")
     hc.add_argument("--deep", action="store_true")
+
+    vf = sub.add_parser("verify", help="is LucyOS sound on THIS machine, and what can it do")
+    vf.add_argument("--deep", action="store_true", help="also run the full test suite here")
+    vf.add_argument("--json", action="store_true", help="machine-readable output")
 
     rt = sub.add_parser("route", help="decide which model class should do a task")
     rt.add_argument("kind")
@@ -256,7 +260,10 @@ def _main(argv=None) -> int:
     args = p.parse_args(argv)
     cmd = args.cmd
 
-    if cmd != "init":
+    # `verify` is the diagnostic of last resort: it must still run on a machine
+    # whose shared brain or database is broken, which is exactly when
+    # bootstrap.ensure() would raise.
+    if cmd not in ("init", "verify"):
         bootstrap.ensure()
 
     if cmd == "init":
@@ -349,6 +356,10 @@ def _main(argv=None) -> int:
             print(f"{'OK  ' if c['ok'] else 'FAIL'} {c['name']}: {c['detail']}")
         print("healthy" if r["healthy"] else "FAILING: " + ", ".join(r["failing"]))
         return 0 if r["healthy"] else 1
+    elif cmd == "verify":
+        result = verify.run(deep=args.deep)
+        _print(result if args.json else verify.render(result))
+        return result["exit_code"]
     elif cmd == "route":
         _print(agents.route(args.kind, args.complexity, args.stakes, args.ambiguity))
     elif cmd == "usage":
