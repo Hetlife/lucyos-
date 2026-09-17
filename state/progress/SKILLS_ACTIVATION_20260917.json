@@ -16,12 +16,30 @@
     {
       "id": "M1",
       "name": "baseline_inventory_and_local_semantic_recall",
-      "status": "READY"
+      "status": "COMPLETED",
+      "evidence": {
+        "dependency_status": {
+          "sqlite_vec": true,
+          "fastembed": true,
+          "ready": true
+        },
+        "rebuild_ms": 38.76,
+        "records": 5,
+        "dimension": 5,
+        "quality": "4/4 expected top-1",
+        "search_ms": [
+          1.318,
+          1.419,
+          1.842,
+          1.078
+        ],
+        "real_dependency_smoke": "tests.test_semantic_recall passed"
+      }
     },
     {
       "id": "M2",
       "name": "telemetry_activation_and_benchmark",
-      "status": "PENDING"
+      "status": "READY"
     },
     {
       "id": "M3",
@@ -34,7 +52,7 @@
       "status": "PENDING"
     }
   ],
-  "last_safe_sha": "aabc9a5ba5b75947aa9a377257d9bdb393bcb14a",
+  "last_safe_sha": "a4c0ffcbb46c40300c01da2e4d5cea819b08f2f2",
   "resume_instruction": "Open this file, inspect git status and last_safe_sha, continue from first non-COMPLETED milestone. Never modify integration branch until all gates pass.",
   "events": [
     {
@@ -48,6 +66,11 @@
       "type": "BENCHMARK_ATTEMPT_FAILED",
       "reason": "called nonexistent bootstrap.init(); no integration mutation occurred",
       "resume": "use bootstrap.ensure()"
+    },
+    {
+      "milestone": "M1",
+      "type": "COMPLETED",
+      "note": "local semantic recall verified; canonical memory remained source of truth"
     }
   ]
 }
