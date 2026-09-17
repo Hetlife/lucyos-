@@ -39,6 +39,19 @@ class TestSecretDetection(unittest.TestCase):
         self.assertEqual(security.scan_text("ref 1234567890123456"), [])
         self.assertTrue(security.scan_text("card 4242424242424242"))
 
+    def test_same_name_kwarg_passthrough_is_not_flagged(self):
+        # A kwarg naming its own value (token_budget=token_budget) is passing
+        # an identifier through, not carrying a literal secret.
+        for text in ["token_budget=token_budget,", "password=password"]:
+            self.assertEqual(security.scan_text(text), [], f"false positive on {text!r}")
+
+    def test_same_name_exemption_does_not_widen_real_detection(self):
+        # The exemption must not become a way to smuggle a real credential
+        # past the scanner just by reusing a fixture already known to be caught.
+        self.assertTrue(security.scan_text("password: correcthorsebattery"))
+        self.assertTrue(security.scan_text("api_key=sk-ant-api03-AbCdEfGhIjKlMnOpQrStUvWx"))
+        self.assertTrue(security.scan_text("token=ghp_AbCdEfGhIjKlMnOpQrStUvWxYz012345"))
+
 
 class TestPathScan(AionTest):
     def test_scan_paths_finds_planted_secret(self):
