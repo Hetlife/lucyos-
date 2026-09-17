@@ -160,8 +160,16 @@ def ensure_defaults() -> int:
             register(**spec)
     conn = db.connect()
     # One-time compatibility normalization from pre-Q005 free/external labels.
+    # Must run before the generic uppercasing below, since it maps whole words
+    # ("local" -> "F0"), not case ("f0" -> "F0").
     conn.execute("UPDATE skills SET cost_class='F0' WHERE lower(cost_class) IN ('none','free','local')")
     conn.execute("UPDATE skills SET cost_class='E1' WHERE lower(cost_class)='external'")
+    # Generic case normalization for any other legacy lowercase policy class
+    # (pre-Q005 rows written before register() started uppercasing on write).
+    # validate_registry() compares case-sensitively, so a lowercase-but-
+    # otherwise-valid code stayed invalid forever without this.
+    for column in ("cost_class", "risk_class", "data_class", "priority"):
+        conn.execute(f"UPDATE skills SET {column}=upper({column}) WHERE {column} <> upper({column})")
     conn.commit()
     return len(DEFAULT_SKILLS)
 
