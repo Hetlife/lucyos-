@@ -1,0 +1,130 @@
+# Sonnet Repair Approval Boundaries
+
+This file supplements `docs/internal/LUCYOS_REPO_HEALTH_AUDITOR_TEMP.md` and applies to every Sonnet repair task generated from the LucyOS health audit.
+
+## Principle
+
+Sonnet may execute bounded, reversible, well-specified repairs autonomously only when the change stays inside the approved task scope and does not cross a protected decision boundary.
+
+The high-reasoning model remains responsible for architecture, ambiguous root-cause decisions, security-sensitive behavior, authority policy, persistence/schema decisions, merge reconciliation, and final verification.
+
+## Approval Levels
+
+### LEVEL A — AUTO-APPROVED SONNET REPAIR
+
+Sonnet may implement without asking for additional approval when ALL of the following are true:
+
+- root cause has already been verified by the high-reasoning audit;
+- task has explicit allowed files and acceptance criteria;
+- change is local, reversible, and low-risk;
+- no protected path is touched;
+- no public/external interface contract changes;
+- no database or persistence schema changes;
+- no authority, approval, security, payment, trading, production, credential, or destructive-action logic changes;
+- no new external dependency is introduced;
+- no branch-history rewrite is required;
+- tests clearly define the expected behavior;
+- task does not require choosing between competing architectural approaches.
+
+Examples:
+
+- narrow bug fix in an already-defined implementation;
+- adding or correcting a regression test;
+- fixing an import/path/config typo;
+- deterministic cleanup of verified duplicate code where canonical implementation is already established;
+- documentation sync after verified code behavior;
+- small compatibility fix that preserves existing interfaces.
+
+### LEVEL B — SONNET MAY PREPARE, OPUS MUST APPROVE BEFORE MERGE/PUSH
+
+Sonnet may implement on a repair branch and run tests, but must STOP before final merge or canonical push when ANY of these apply:
+
+- multiple core files or subsystems are modified;
+- behavior changes across a subsystem boundary;
+- a migration is involved but schema intent is already specified;
+- task changes retry/recovery/failsafe behavior;
+- task changes model-routing or delegation behavior;
+- task changes service startup, systemd, launchd, deployment, or runtime orchestration;
+- task changes a shared interface used by several modules;
+- task requires non-trivial conflict resolution;
+- task repairs failed commit/merge history where patch equivalence must be confirmed;
+- full-suite regressions appear even if task-specific tests pass.
+
+Required action: Sonnet produces the diff, test evidence, risk summary, and commit SHA if committed locally/remotely to a repair branch. Opus reviews before merge/promotion.
+
+### LEVEL C — STOP FOR HIGH-MODEL APPROVAL BEFORE CODE CHANGES
+
+Sonnet must NOT modify code until Opus/high-reasoning review explicitly approves the approach when ANY of these apply:
+
+- architecture or module ownership is unclear;
+- root cause is uncertain or there are multiple plausible causes;
+- task would alter authority/approval hierarchy;
+- task touches `.lucy/authority/**`, protected-path policy, or equivalent governance controls;
+- task weakens, bypasses, disables, or changes a safety/security gate;
+- task changes authentication, credentials, secret handling, permissions, or trust boundaries;
+- task changes persistence schema, canonical state format, migration strategy, backup/restore semantics, or data-loss behavior;
+- task affects real-money, trading, payments, production deployment, account creation, signing, destructive actions, or external side effects;
+- task introduces a new dependency, package, binary, service, or downloaded code;
+- task requires deleting a substantial module or replacing the canonical implementation;
+- task requires deciding which competing implementation should become canonical;
+- task changes public API/CLI/protocol contracts;
+- task requires force-push, history rewrite, branch deletion, or bypassing protections;
+- task requires broad refactoring to make a local bug disappear.
+
+Required action: stop, document evidence and options, and escalate to Opus. Do not improvise.
+
+### LEVEL D — OWNER APPROVAL REQUIRED
+
+Sonnet and Opus must stop and request owner approval before actions that create material external, irreversible, financial, or privileged effects, including:
+
+- push/merge directly to protected `main` when not already covered by an approved workflow;
+- force-push or history rewrite;
+- deleting important branches/tags/releases;
+- changing repository protection or required checks;
+- rotating/revoking credentials or changing external accounts;
+- enabling production deployment;
+- enabling real-money/trading/payment actions;
+- purchasing or enabling paid services;
+- destructive data migration or irreversible deletion;
+- weakening security/authority policy for operational convenience.
+
+## Sonnet Task Card Requirement
+
+Every Sonnet task generated by Opus must include:
+
+- `Approval level: A / B / C / D`
+- `Why this level applies`
+- `Allowed autonomous actions`
+- `Actions requiring Opus review`
+- `Actions requiring owner approval`
+- `Stop conditions`
+
+If the task changes during execution and crosses into a higher approval level, Sonnet must immediately adopt the stricter level and stop at the relevant boundary.
+
+## Commit and Push Boundary
+
+Sonnet may create ordinary task commits on an explicitly approved repair branch when the task is Level A or Level B and tests pass.
+
+Sonnet may push to that repair branch only when the task instructions explicitly permit it.
+
+Sonnet must never assume that permission to edit code also implies permission to merge or push to a canonical/protected branch.
+
+Before any final push task, Sonnet must:
+
+1. fetch remote state;
+2. confirm target branch and remote HEAD;
+3. verify ancestry and divergence;
+4. inspect full diff;
+5. confirm every changed file maps to approved task IDs;
+6. run required targeted and full-suite checks;
+7. confirm no secrets or unrelated generated files are included;
+8. confirm no protected boundary was crossed;
+9. stop if remote HEAD changed unexpectedly or conflicts are ambiguous.
+
+Final canonical merge/promotion requires Opus verification, and owner approval where Level D applies.
+
+## Default Rule
+
+When uncertain, do not guess the approval level downward.
+
+Escalate to the stricter boundary and report exactly what changed, why the current task can no longer proceed autonomously, and what decision is needed.
