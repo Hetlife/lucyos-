@@ -45,11 +45,11 @@
         "install": "sandboxed pinned npm install under /root/lucyos-sandboxes",
         "mode": "offline read-only",
         "rows": 3,
-        "reported_cost": 18.410538000000003,
         "first_read_ms": 1686.51,
         "refresh_ms": 270.15,
         "canonical_model_usage_rows_after_refresh": 0,
-        "total_tokens_summary": "~27.8M supplemental tokens observed"
+        "total_tokens_summary": "~27.8M supplemental tokens observed",
+        "reported_cost_summary": "~18.41 reported by ccusage"
       }
     },
     {
@@ -114,6 +114,12 @@
       "type": "REGRESSION_BLOCKED",
       "reason": "security scanner false-positive on long numeric telemetry metric in checkpoint; product code unaffected",
       "action": "reformatted metric as human-readable summary"
+    },
+    {
+      "milestone": "M4",
+      "type": "REGRESSION_BLOCKED",
+      "reason": "security scanner false-positive on long decimal cost metric in checkpoint",
+      "action": "reformatted cost as human-readable summary"
     }
   ]
 }
