@@ -63,6 +63,58 @@ class TestPortabilityGuard(unittest.TestCase):
         self.assertIn("pkg_manager", self._findings(
             "import subprocess\nsubprocess.run(['brew', 'install', 'x'])\n"))
 
+    def test_defensive_denylist_literals_are_not_coupling(self):
+        source = (
+            'FORBIDDEN_COMMANDS = ["systemctl ", "launchctl ", "brew", "apt-get"]\n'
+            'def blocked(command):\n'
+            '    return any(marker in command for marker in FORBIDDEN_COMMANDS)\n'
+        )
+        self.assertEqual(self._findings(source), [])
+
+    def test_real_command_variable_still_fails(self):
+        source = (
+            'import subprocess\n'
+            'command = "systemctl status lucyos"\n'
+            'subprocess.run(command, shell=True)\n'
+        )
+        self.assertIn("init_system", self._findings(source))
+
+    def test_scheduler_mapping_string_still_fails(self):
+        source = 'scheduler = "systemd" if kind == "linux" else "launchd"\n'
+        self.assertIn("init_system", self._findings(source))
+
+    def test_masking_denylist_does_not_hide_real_call_on_same_line(self):
+        source = (
+            'import subprocess\n'
+            'FORBIDDEN = ["systemctl"]; subprocess.run(["launchctl", "list"])\n'
+        )
+        self.assertIn("init_system", self._findings(source))
+
+    def test_policy_name_cannot_hide_indexed_execution(self):
+        source = (
+            'import subprocess\n'
+            'FORBIDDEN = ["systemctl"]\n'
+            'subprocess.run([FORBIDDEN[0], "status", "x"])\n'
+        )
+        self.assertIn("init_system", self._findings(source))
+
+    def test_policy_name_cannot_hide_looped_execution(self):
+        source = (
+            'import subprocess\n'
+            'FORBIDDEN = ["systemctl"]\n'
+            'for command in FORBIDDEN:\n'
+            '    subprocess.run([command, "status", "x"])\n'
+        )
+        self.assertIn("init_system", self._findings(source))
+
+    def test_real_package_manager_variable_still_fails(self):
+        source = (
+            'import subprocess\n'
+            'installer = "apt-get install x"\n'
+            'subprocess.run(installer, shell=True)\n'
+        )
+        self.assertIn("pkg_manager", self._findings(source))
+
     def test_portable_code_passes(self):
         portable = (
             "import os\n"

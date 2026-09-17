@@ -31,6 +31,8 @@ What does NOT count (deliberately allowed anywhere):
   * `os.name`, `pathlib`, `os.path`, `tempfile`, `Path.home()` -- these are
     the portable abstractions we WANT core to use
   * anything inside a string that is plainly a URL path or an API route
+  * platform names inside statically proven rejection-only security policy
+    containers; if such values are propagated/executed, they count again
 
 Exit status: 0 = portable, 1 = violation, 2 = usage error.
 Standard library only, like the rest of LucyOS.
@@ -38,6 +40,7 @@ Standard library only, like the rest of LucyOS.
 from __future__ import annotations
 
 import argparse
+import ast
 import json
 import re
 import sys
@@ -105,6 +108,162 @@ def strip_noise(line: str) -> str:
     return line
 
 
+# Defensive policy data may legitimately name commands that core is explicitly
+# refusing to execute. Keep the scanner conservative: only mask string literals
+# that are statically inside a clearly negative-policy assignment. Everything
+# else remains subject to the existing raw coupling rules.
+_INERT_POLICY_NAME = re.compile(
+    r"(?:forbid|deny|denied|block|disallow|prohibit|reject|blacklist)", re.I)
+_LITERAL_RULES = {"init_system", "pkg_manager"}
+
+
+def _assigned_names(node: ast.AST) -> list[str]:
+    targets = []
+    if isinstance(node, ast.Assign):
+        targets = node.targets
+    elif isinstance(node, ast.AnnAssign):
+        targets = [node.target]
+    out = []
+    for target in targets:
+        if isinstance(target, ast.Name):
+            out.append(target.id)
+    return out
+
+
+def _parent_map(tree: ast.AST) -> dict[ast.AST, ast.AST]:
+    return {child: parent for parent in ast.walk(tree) for child in ast.iter_child_nodes(parent)}
+
+
+def _under(node: ast.AST, kind: type[ast.AST], parents: dict[ast.AST, ast.AST],
+           stop: ast.AST) -> bool:
+    cur = node
+    while cur is not stop and cur in parents:
+        cur = parents[cur]
+        if isinstance(cur, kind):
+            return True
+    return False
+
+
+def _defensive_for_use(loop: ast.For, parents: dict[ast.AST, ast.AST]) -> bool:
+    """True only for rejection loops, never loops that execute policy entries."""
+    if not isinstance(loop.target, ast.Name):
+        return False
+    item = loop.target.id
+    has_raise = any(isinstance(n, ast.Raise) for stmt in loop.body for n in ast.walk(stmt))
+    if not has_raise:
+        return False
+    for stmt in loop.body:
+        for node in ast.walk(stmt):
+            if not (isinstance(node, ast.Name) and isinstance(node.ctx, ast.Load) and node.id == item):
+                continue
+            if _under(node, ast.Raise, parents, loop):
+                continue
+            parent = parents.get(node)
+            if isinstance(parent, ast.Compare):
+                continue
+            # Any other use (especially a call argument) may execute or propagate
+            # the denied value, so keep the original portability finding.
+            return False
+    return True
+
+
+def _defensive_comprehension_use(comp: ast.comprehension,
+                                   parents: dict[ast.AST, ast.AST]) -> bool:
+    if not isinstance(comp.target, ast.Name):
+        return False
+    item = comp.target.id
+    root: ast.AST = comp
+    while root in parents and not isinstance(root, (ast.GeneratorExp, ast.ListComp, ast.SetComp, ast.DictComp)):
+        root = parents[root]
+    if not isinstance(root, (ast.GeneratorExp, ast.ListComp, ast.SetComp, ast.DictComp)):
+        return False
+    for node in ast.walk(root):
+        if not (isinstance(node, ast.Name) and isinstance(node.ctx, ast.Load) and node.id == item):
+            continue
+        if isinstance(parents.get(node), ast.Compare):
+            continue
+        return False
+    return True
+
+
+def _policy_binding_is_defensive(tree: ast.AST, name: str,
+                                  parents: dict[ast.AST, ast.AST]) -> bool:
+    loads = [n for n in ast.walk(tree)
+             if isinstance(n, ast.Name) and isinstance(n.ctx, ast.Load) and n.id == name]
+    for load in loads:
+        parent = parents.get(load)
+        if isinstance(parent, ast.For) and parent.iter is load:
+            if _defensive_for_use(parent, parents):
+                continue
+            return False
+        if isinstance(parent, ast.comprehension) and parent.iter is load:
+            if _defensive_comprehension_use(parent, parents):
+                continue
+            return False
+        if isinstance(parent, ast.Compare):
+            # Direct membership checks are defensive only when the surrounding
+            # branch rejects by raising.
+            cur = parent
+            enclosing_if = None
+            while cur in parents:
+                cur = parents[cur]
+                if isinstance(cur, ast.If):
+                    enclosing_if = cur
+                    break
+            if enclosing_if and any(isinstance(n, ast.Raise)
+                                    for stmt in enclosing_if.body for n in ast.walk(stmt)):
+                continue
+        return False
+    return True
+
+
+def inert_policy_string_spans(text: str) -> dict[int, list[tuple[int, int]]]:
+    """Return spans for literals proven to be defensive rejection policy data.
+
+    Naming alone is insufficient: a FORBIDDEN list passed to subprocess would
+    still be real coupling. A candidate binding is masked only when all of its
+    uses are statically rejection-only (or it is unused).
+    """
+    try:
+        tree = ast.parse(text)
+    except SyntaxError:
+        return {}
+    parents = _parent_map(tree)
+    spans: dict[int, list[tuple[int, int]]] = {}
+    for node in ast.walk(tree):
+        if not isinstance(node, (ast.Assign, ast.AnnAssign)):
+            continue
+        names = [name for name in _assigned_names(node) if _INERT_POLICY_NAME.search(name)]
+        if not names or not all(_policy_binding_is_defensive(tree, name, parents) for name in names):
+            continue
+        value = node.value
+        if value is None:
+            continue
+        for child in ast.walk(value):
+            if not (isinstance(child, ast.Constant) and isinstance(child.value, str)):
+                continue
+            if not all(hasattr(child, a) for a in ("lineno", "col_offset", "end_lineno", "end_col_offset")):
+                continue
+            if child.lineno == child.end_lineno:
+                spans.setdefault(child.lineno, []).append((child.col_offset, child.end_col_offset))
+            else:
+                for line_no in range(child.lineno, child.end_lineno + 1):
+                    start = child.col_offset if line_no == child.lineno else 0
+                    end = child.end_col_offset if line_no == child.end_lineno else 10**9
+                    spans.setdefault(line_no, []).append((start, end))
+    return spans
+
+
+def _mask_columns(line: str, spans: list[tuple[int, int]]) -> str:
+    if not spans:
+        return line
+    chars = list(line)
+    for start, end in spans:
+        for i in range(max(0, start), min(len(chars), end)):
+            chars[i] = " "
+    return "".join(chars)
+
+
 def findings_for(path: Path) -> list[dict]:
     rel = path.relative_to(REPO).as_posix()
     found = []
@@ -113,6 +272,7 @@ def findings_for(path: Path) -> list[dict]:
     except (OSError, UnicodeDecodeError) as exc:
         return [{"file": rel, "rule": "unreadable", "line": 0,
                  "detail": f"could not read: {exc}"}]
+    inert_spans = inert_policy_string_spans(text)
     in_docstring = False
     for number, raw in enumerate(text.splitlines(), start=1):
         # Skip docstrings: documenting the invariant is not violating it.
@@ -132,10 +292,12 @@ def findings_for(path: Path) -> list[dict]:
         line = strip_noise(work)
         if not line.strip():
             continue
+        masked_line = strip_noise(_mask_columns(raw, inert_spans.get(number, [])))
         for rule_id, pattern, explanation in RULES:
-            if pattern.search(line):
+            scan_line = masked_line if rule_id in _LITERAL_RULES else line
+            if pattern.search(scan_line):
                 found.append({"file": rel, "rule": rule_id, "line": number,
-                              "detail": explanation, "text": line.strip()[:120]})
+                              "detail": explanation, "text": scan_line.strip()[:120]})
     return found
 
 
