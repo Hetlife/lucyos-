@@ -1,5 +1,6 @@
 import os
 import subprocess
+import shutil
 import tempfile
 import textwrap
 import unittest
@@ -115,6 +116,7 @@ if __name__ == "__main__":
 # rejects non-files before SSH, so only explicit local proposal files can be sent.
 
 class PublicKeyEnrollmentTest(unittest.TestCase):
+    @unittest.skipUnless(shutil.which("ssh-keygen"), "ssh-keygen not available")
     def test_enrollment_is_restricted_and_idempotent(self):
         with tempfile.TemporaryDirectory() as td:
             root = Path(td)
