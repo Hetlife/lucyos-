@@ -1,0 +1,63 @@
+{
+  "schema_version": 1,
+  "skill_id": "core.free-compute-registry",
+  "name": "Free Compute Registry and Provider Onboarding",
+  "version": "0.1.0",
+  "description": "LearnRepo-managed registry for legitimate free-tier AI providers, owner-approved account/key onboarding, quota/health tracking, and PUBLIC-task auxiliary agent capacity.",
+  "capabilities": [
+    "provider_discovery",
+    "provider_verification",
+    "owner_onboarding",
+    "credential_registration",
+    "quota_tracking",
+    "provider_health",
+    "auxiliary_agent_pool"
+  ],
+  "executor_classes": [
+    "DET"
+  ],
+  "platforms": [
+    "any"
+  ],
+  "requirements": {
+    "network": true,
+    "ai": false,
+    "offline_supported": true
+  },
+  "cost_class": "E0",
+  "risk_class": "R2",
+  "data_class": "PUBLIC",
+  "priority": "P0",
+  "enabled": false,
+  "actions": [
+    "discover",
+    "verify",
+    "plan_onboarding",
+    "register_owner_key",
+    "check_quota",
+    "check_health",
+    "plan_agent_pool"
+  ],
+  "permissions": [
+    "network:provider-metadata",
+    "credential-store:reference-only",
+    "owner-approval:required-for-account-and-key"
+  ],
+  "fallback": [
+    "core.model-gateway",
+    "ai.local",
+    "ai.cloud"
+  ],
+  "feature_flag": "free_compute_registry.enabled",
+  "lifecycle_state": "DISCOVERED",
+  "references": [
+    "https://github.com/OuterSpacee/free-ai-apis",
+    "https://github.com/mnfst/awesome-free-llm-apis",
+    "https://github.com/CYBIRD-D/FREE-LLM-API-Provider",
+    "https://github.com/Alishahryar1/free-claude-code",
+    "https://github.com/zebbern/no-cost-ai",
+    "https://github.com/eudk/awesome-ai-tools"
+  ],
+  "implementation_notes": "Discovery sources are untrusted research inputs only. Prefer official provider accounts/free tiers. Never scrape/shared-leaked keys, automate multi-account quota bypass, or use unofficial access that violates provider terms. This skill does not replace core.model-gateway or Resource Governor.",
+  "cost_notes": "Routine registry and health checks should be deterministic and zero-AI. Provider calls are external and allowed only for PUBLIC low-risk tasks under current provider policy."
+}

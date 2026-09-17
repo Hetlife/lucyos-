@@ -1,9 +1,9 @@
 {
   "schema_version": 1,
   "generated_note": "Candidate catalog only. Entries are disabled and DISCOVERED; no dependency is installed or activated by this catalog.",
-  "count": 104,
+  "count": 105,
   "categories": {
-    "core": 29,
+    "core": 30,
     "ai": 4,
     "web": 8,
     "media": 5,

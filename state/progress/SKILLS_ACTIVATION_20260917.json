@@ -77,6 +77,21 @@
       "id": "M4",
       "name": "regression_and_handoff",
       "status": "READY"
+    },
+    {
+      "id": "M5",
+      "name": "free_compute_registry_skill_and_mass_agent_dry_run",
+      "status": "COMPLETED",
+      "evidence": {
+        "skill_id": "core.free-compute-registry",
+        "catalog_count": 105,
+        "planned_logical_agents": 100,
+        "configured_external_providers": 0,
+        "network_calls": 0,
+        "model_usage_rows": 0,
+        "data_policy": "PUBLIC only; INTERNAL/CONFIDENTIAL/SECRET ineligible",
+        "note": "No accounts or API keys fabricated. Provider onboarding remains owner-approved."
+      }
     }
   ],
   "last_safe_sha": "a4c0ffcbb46c40300c01da2e4d5cea819b08f2f2",
