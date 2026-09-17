@@ -1,0 +1,23 @@
+{
+  "workflow_id": "SKILLS_ACTIVATION_20260917",
+  "status": "IN_PROGRESS",
+  "base_branch": "integration/consolidation-20260916",
+  "base_sha": "aabc9a5ba5b75947aa9a377257d9bdb393bcb14a",
+  "work_branch": "activation/skills-benchmark-20260917",
+  "worktree": "/root/lucyos-wt-activation",
+  "policy": {
+    "integration_branch_untouched_until_verified": true,
+    "commit_each_verified_milestone": true,
+    "no_force_push": true,
+    "no_external_api_keys_without_owner_approval": true,
+    "resume_from_checkpoint": true
+  },
+  "milestones": [
+    {"id":"M1","name":"baseline_inventory_and_local_semantic_recall","status":"READY"},
+    {"id":"M2","name":"telemetry_activation_and_benchmark","status":"PENDING"},
+    {"id":"M3","name":"auxiliary_provider_dry_run_without_keys","status":"PENDING"},
+    {"id":"M4","name":"regression_and_handoff","status":"PENDING"}
+  ],
+  "last_safe_sha": "aabc9a5ba5b75947aa9a377257d9bdb393bcb14a",
+  "resume_instruction": "Open this file, inspect git status and last_safe_sha, continue from first non-COMPLETED milestone. Never modify integration branch until all gates pass."
+}
