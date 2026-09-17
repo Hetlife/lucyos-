@@ -111,8 +111,8 @@ Trial-merge evidence: `git merge-tree --write-tree` — Q006+claude-audit clean;
 ## 6. State / data model
 
 One canonical store: `$AION_HOME/…sqlite3` via `aion_core/db.py`. Rules, now machine-checked:
-- every table is created in `db.py` (`anti-dup`: CREATE TABLE elsewhere fails);
-- no new `sqlite3.connect` outside `db.py`/`backup.py`/`drive_bridge.py` (read-only) (`anti-dup`);
+- canonical tables are created in `db.py`; an owner-explicit `derived_sqlite_allowed` path may create only a disposable/rebuildable non-canonical index whose source of truth remains AION SQLite;
+- no new `sqlite3.connect` outside the canonical/read-only allowlist or the explicit `derived_sqlite_allowed` set (`anti-dup`);
 - migrations are additive (`CREATE TABLE IF NOT EXISTS`, `_ADDED_COLUMNS` + `_migrate`) — a downgrade of code never needs a downgrade of data;
 - **every schema/enum/policy migration ships with an upgrade-from-old-state test** in `tests/test_migrations.py` (owner rule; S-01 creates the file; CI job `upgrade-from-main-schema` proves the main-schema case on every PR).
 - Drive is archive/collaboration, never transactional state. `shared_brain/`, `private_state/` never enter git.

@@ -156,6 +156,7 @@ def cmd_anti_dup(args) -> int:
     mb = merge_base(args.base)
     allow_modules = set(baseline.get("aion_core_modules", []))
     allow_connect = set(baseline.get("sqlite_connect_allowed", []))
+    allow_derived_sqlite = set(baseline.get("derived_sqlite_allowed", []))
     unit_dirs = tuple(baseline.get("service_unit_dirs", []))
     report = {"mode": "anti-dup", "base": args.base, "merge_base": mb[:12], "violations": []}
     v = report["violations"]
@@ -179,10 +180,11 @@ def cmd_anti_dup(args) -> int:
             continue
         if path.startswith("tests/"):
             continue
-        if SQLITE_CONNECT.search(line) and path not in allow_connect:
-            v.append(f"{path}: new sqlite3.connect() outside {sorted(allow_connect)} — a second state store")
-        if CREATE_TABLE.search(line) and path != "aion_core/db.py":
-            v.append(f"{path}: CREATE TABLE outside aion_core/db.py — schema belongs to the canonical store")
+        if SQLITE_CONNECT.search(line) and path not in allow_connect and path not in allow_derived_sqlite:
+            allowed = sorted(allow_connect | allow_derived_sqlite)
+            v.append(f"{path}: new sqlite3.connect() outside {allowed} — a second state store")
+        if CREATE_TABLE.search(line) and path != "aion_core/db.py" and path not in allow_derived_sqlite:
+            v.append(f"{path}: CREATE TABLE outside aion_core/db.py or explicit derived_sqlite_allowed — schema belongs to the canonical store")
         if FORBIDDEN_IMPORTS.search(line):
             v.append(f"{path}: third-party orchestration/scheduler import: {line.strip()[:80]} "
                      "(LucyOS is standard-library only; duplicate control plane)")

@@ -64,8 +64,11 @@ The override never extends to constitutional paths.
 The Q006 architecture guard asks the proposer whether it added a second
 scheduler. The `anti-dup` mode of the verifier reads the diff instead and fails
 on: a new `aion_core` top-level module not in the allowlist, a new
-`sqlite3.connect()` outside `db.py`/`backup.py`/`drive_bridge.py`, a
-`CREATE TABLE` outside `db.py`, a service unit outside `systemd/` or
-`deploy/launchd/`, a third-party orchestration import, or a new file named like
-a governor/scheduler/orchestrator/approval component. None of these need the
-proposer's honesty.
+`sqlite3.connect()` outside the canonical/read-only allowlist, a `CREATE TABLE`
+outside `db.py`, a service unit outside `systemd/` or `deploy/launchd/`, a
+third-party orchestration import, or a new file named like a
+governor/scheduler/orchestrator/approval component. A narrowly scoped exception
+exists only for paths explicitly listed by the owner in `derived_sqlite_allowed`: these
+may create a disposable, rebuildable non-canonical SQLite index whose source of truth
+remains canonical AION SQLite. Unlisted second stores/schemas still fail. None of these
+checks depend on the proposer's honesty.

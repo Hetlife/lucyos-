@@ -86,7 +86,11 @@
     "host",
     "sync_outbox",
     "intake",
-    "bridge"
+    "bridge",
+    "model_gateway",
+    "platform_resolver",
+    "semantic_recall",
+    "usage_telemetry"
   ],
   "sqlite_connect_allowed": [
     "aion_core/db.py",
@@ -209,5 +213,8 @@
   },
   "platform_and_data_contracts": ".lucy/authority/LUCYOS_PLATFORM_AND_DATA_CONTRACTS.md",
   "portability_guard": "scripts/check_portability.py",
-  "public_repo_assumption": "Repository is PUBLIC by owner decision until Mac migration completes. Never commit credentials, private Drive content, customer data, raw sensitive logs, OAuth material or machine secrets."
+  "public_repo_assumption": "Repository is PUBLIC by owner decision until Mac migration completes. Never commit credentials, private Drive content, customer data, raw sensitive logs, OAuth material or machine secrets.",
+  "derived_sqlite_allowed": [
+    "aion_core/semantic_recall.py"
+  ]
 }
