@@ -251,6 +251,11 @@ def _main(argv=None) -> int:
     ctx = sub.add_parser("context", help="build a task-specific context packet")
     ctx.add_argument("task_id")
 
+    cp = sub.add_parser("context-pack", help="build compact repo/runtime context for high-token planners")
+    cp.add_argument("--focus", default="")
+    cp.add_argument("--watermark", default=None)
+    cp.add_argument("--mark-reviewed", action="store_true")
+
     args = p.parse_args(argv)
     cmd = args.cmd
 
@@ -525,6 +530,16 @@ def _main(argv=None) -> int:
     elif cmd == "context":
         from . import context
         _print(context.build(args.task_id))
+    elif cmd == "context-pack":
+        from . import context_pack
+        repo = Path(__file__).resolve().parents[1]
+        result = context_pack.build(repo, focus=args.focus, watermark=args.watermark)
+        if args.mark_reviewed:
+            result["reviewed_commit"] = context_pack.mark_reviewed(repo)
+        _print({"output": result["output"], "bytes": result["bytes"],
+                "head": result["packet"]["head"],
+                "review_watermark": result["packet"]["review_watermark"],
+                "changed_files": result["packet"]["changed_files"]})
     return 0
 
 

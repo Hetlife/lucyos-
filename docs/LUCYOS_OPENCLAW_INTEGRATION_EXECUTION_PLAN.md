@@ -340,3 +340,21 @@ The planner should not delegate M2, M3, or Mac bootstrap work until M1 is indepe
 Opus should plan M1. Sonnet should execute only after the M1 packet is complete and reviewed.
 
 The Linux testbed is currently available and the explicit LucyOS preflight path is healthy, so M1 can begin immediately without waiting for WhatsApp, Telegram changes, SCS private keys, or the future Mac.
+## 17. Token-efficient planner context
+
+Before Opus/another high-token planner scans the repository, generate the deterministic packet:
+
+```bash
+AION_HOME=/root/openclaw/shared_brain ./aion context-pack --focus "M1 automatic LucyOS preflight"
+```
+
+Read `/root/openclaw/shared_brain/context/current/context.md` first. It contains the live branch/HEAD, health, resume state, enabled skills, working-tree delta, review watermark, and hashes of recommended files. Treat it as an index, not unquestionable truth. Cross-check only the changed/recommended files and live runtime evidence. Do not rescan the whole repository unless the packet is missing, inconsistent, or lacks evidence required for the current milestone.
+
+After the high-capability planner has actually reviewed and accepted a commit, update the watermark with:
+
+```bash
+AION_HOME=/root/openclaw/shared_brain ./aion context-pack --focus "review complete" --mark-reviewed
+```
+
+Sonnet should receive only the bounded task packet plus the exact files named by Opus. It should not independently rediscover the repository unless a stated blocker requires additional evidence.
+
