@@ -53,6 +53,7 @@ def _main(argv=None) -> int:
     sub.add_parser("seed", help="seed the opening objective, decisions and task queue")
     bk = sub.add_parser("backup", help="create a backup and restore-test it")
     bk.add_argument("--verify-only", action="store_true")
+    sub.add_parser("openclaw-check", help="loopback reachability probe for an optional OpenClaw gateway")
 
     t = sub.add_parser("tasks", help="list top tasks")
     t.add_argument("--limit", type=int, default=10)
@@ -305,6 +306,9 @@ def _main(argv=None) -> int:
         result = backup.verify()
         _print(result["detail"])
         return 0 if result["ok"] else 1
+    elif cmd == "openclaw-check":
+        from bridges import openclaw_check
+        _print(openclaw_check.check())
     elif cmd == "tasks":
         _print(reports.task_list(args.limit))
     elif cmd == "task-add":
