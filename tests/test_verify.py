@@ -1,5 +1,6 @@
 import os
 import unittest
+from unittest import mock
 
 from aion_core import backup, bootstrap, health, verify
 from tests.base import AionTest
@@ -32,7 +33,11 @@ class TestOpenClawDetection(AionTest):
         (home / "shared_brain").mkdir(parents=True)
         os.environ["OPENCLAW_HOME"] = str(home)
         try:
-            result = verify.openclaw()
+            # This test isolates the synthetic OPENCLAW_HOME fixture. A real
+            # OpenClaw executable on the host is independent installation
+            # evidence and must not make this fixture host-dependent.
+            with mock.patch.object(verify.shutil, "which", return_value=None):
+                result = verify.openclaw()
             self.assertFalse(result["present"])
             self.assertEqual(result["home_contents"], [])
         finally:
