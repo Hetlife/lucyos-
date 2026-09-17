@@ -10,7 +10,7 @@ from __future__ import annotations
 import os
 import platform
 
-from . import skills
+from . import host, skills
 
 ALIASES = {
     "darwin": "macos", "mac": "macos", "macos": "macos",
@@ -21,7 +21,7 @@ PRIORITY_ORDER = {"P0": 0, "P1": 1, "P2": 2}
 
 def machine_profile(*, system: str | None = None, machine: str | None = None,
                     ram_gb: float | None = None) -> dict:
-    raw_system = (system or platform.system()).strip().lower()
+    raw_system = (system if system is not None else host.current().name()).strip().lower()
     os_name = ALIASES.get(raw_system, raw_system)
     arch = (machine or platform.machine()).strip().lower()
     if ram_gb is None:
