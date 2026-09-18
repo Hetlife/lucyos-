@@ -51,3 +51,9 @@ Newest block first. Format: `05_AUTONOMOUS_EXECUTION_LOOP.md` §5. A fresh contr
 - Targeted manifest tests: 6 PASS. Full task suite: 582 PASS, 1 skipped. Credential scan, portability, anti-dup and strict authority gates PASS.
 - Eight-module modular-monolith direction ratified for continued execution.
 - S-45 and S-48 READY_TO_EXECUTE. Main merges remain separately owner-controlled; task branches may be prepared and verified without merging main.
+
+## 2026-09-18 · S-45 verified on integrated baseline
+- S-45 task commit c623517; integrated as fbe2b84.
+- Isolated task branch had one expected prerequisite error because S-41 dependency_graph evidence was absent there; this was not accepted as green.
+- Re-run on the complete research baseline: 10 targeted context tests PASS; full suite 590 PASS, 1 skipped; scan, portability, anti-dup and strict authority PASS.
+- S-45 DONE. S-47 and S-49 READY_TO_EXECUTE for bounded M3 pilots; main remains untouched.
