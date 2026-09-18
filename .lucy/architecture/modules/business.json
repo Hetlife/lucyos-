@@ -1,0 +1,15 @@
+{
+  "module": "business",
+  "purpose": "Business experiments, delivery, intake and owner setup.",
+  "public_api": ["CLI: ./aion money*", "CLI: ./aion experiment-*"],
+  "owned_files": ["aion_core/fable.py", "aion_core/experiments.py", "aion_core/money_path.py", "aion_core/deliveries.py", "aion_core/intake.py", "aion_core/sync_outbox.py", "aion_core/seed.py", "aion_core/owner_setup.py"],
+  "allowed_dependencies": ["execution", "governance", "kernel.state", "kernel.tasks", "memory", "skills"],
+  "forbidden_dependencies": [],
+  "state_touched": ["Business, experiment, delivery and intake records in canonical SQLite", "Outbox and owner setup artifacts"],
+  "side_effects": ["Business record writes and outbox synchronization"],
+  "tests": ["tests/test_money_path.py", "tests/test_experiments.py", "tests/test_delivery_economics.py", "tests/test_intake.py", "tests/test_sync_outbox.py", "tests/test_seed.py"],
+  "invariants": ["Real financial commitments require owner approval."],
+  "adrs": [],
+  "risk_level": "medium",
+  "protected_paths": []
+}

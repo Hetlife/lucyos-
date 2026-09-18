@@ -1,0 +1,15 @@
+{
+  "module": "kernel.tasks",
+  "purpose": "Task lifecycle, approvals, recovery, sessions and work packets.",
+  "public_api": ["aion_core.tasks.create", "aion_core.tasks.claim", "aion_core.tasks.complete", "aion_core.tasks.fail", "aion_core.tasks.ready", "aion_core.approvals.create", "aion_core.approvals.decide", "aion_core.resume.checkpoint", "aion_core.resume.boot"],
+  "owned_files": ["aion_core/tasks.py", "aion_core/approvals.py", "aion_core/errors.py", "aion_core/resume.py", "aion_core/sessions.py", "aion_core/packets.py", "aion_core/notebook.py"],
+  "allowed_dependencies": ["execution", "governance", "kernel.state", "memory"],
+  "forbidden_dependencies": [],
+  "state_touched": ["Tasks, approvals, sessions, packets and checkpoints in canonical SQLite"],
+  "side_effects": ["Database writes and lifecycle audit events"],
+  "tests": ["tests/test_tasks.py", "tests/test_approvals.py", "tests/test_recovery_injection.py", "tests/test_notebook_sessions.py", "tests/test_packets.py"],
+  "invariants": ["Approval decisions and completion evidence remain enforced."],
+  "adrs": [],
+  "risk_level": "high",
+  "protected_paths": ["aion_core/approvals.py", "aion_core/resume.py"]
+}
