@@ -1,0 +1,4094 @@
+{
+  "modules": {
+    "aion_core": {
+      "classes": 0,
+      "functions": [],
+      "functions_over_120": [],
+      "importers_in": [],
+      "imports_out": [],
+      "loc": 7,
+      "path": "aion_core/__init__.py"
+    },
+    "aion_core.agents": {
+      "classes": 0,
+      "functions": [
+        {
+          "line": 59,
+          "loc": 9,
+          "name": "register"
+        },
+        {
+          "line": 70,
+          "loc": 4,
+          "name": "seed_defaults"
+        },
+        {
+          "line": 76,
+          "loc": 2,
+          "name": "all_agents"
+        },
+        {
+          "line": 80,
+          "loc": 2,
+          "name": "get"
+        },
+        {
+          "line": 84,
+          "loc": 25,
+          "name": "route"
+        },
+        {
+          "line": 111,
+          "loc": 3,
+          "name": "preferred"
+        },
+        {
+          "line": 116,
+          "loc": 3,
+          "name": "set_preferred"
+        },
+        {
+          "line": 121,
+          "loc": 12,
+          "name": "_pick"
+        },
+        {
+          "line": 135,
+          "loc": 8,
+          "name": "escalate"
+        },
+        {
+          "line": 145,
+          "loc": 13,
+          "name": "record_run"
+        }
+      ],
+      "functions_over_120": [],
+      "importers_in": [
+        "aion_core.bootstrap",
+        "aion_core.cli",
+        "aion_core.context",
+        "aion_core.fable",
+        "aion_core.handoff",
+        "aion_core.plan",
+        "aion_core.reports",
+        "aion_core.seed",
+        "aion_core.worker"
+      ],
+      "imports_out": [
+        "aion_core.db",
+        "aion_core.util"
+      ],
+      "loc": 157,
+      "path": "aion_core/agents.py"
+    },
+    "aion_core.api": {
+      "classes": 0,
+      "functions": [
+        {
+          "line": 25,
+          "loc": 3,
+          "name": "_row"
+        },
+        {
+          "line": 30,
+          "loc": 17,
+          "name": "system_snapshot"
+        },
+        {
+          "line": 49,
+          "loc": 36,
+          "name": "money_split"
+        },
+        {
+          "line": 87,
+          "loc": 40,
+          "name": "projects"
+        },
+        {
+          "line": 129,
+          "loc": 9,
+          "name": "tasks_ranked"
+        },
+        {
+          "line": 140,
+          "loc": 33,
+          "name": "costs"
+        },
+        {
+          "line": 175,
+          "loc": 8,
+          "name": "events"
+        },
+        {
+          "line": 185,
+          "loc": 10,
+          "name": "capability_plan"
+        },
+        {
+          "line": 197,
+          "loc": 4,
+          "name": "auxiliary_providers"
+        }
+      ],
+      "functions_over_120": [],
+      "importers_in": [
+        "bridges.http_server"
+      ],
+      "imports_out": [
+        "aion_core.approvals",
+        "aion_core.db",
+        "aion_core.health",
+        "aion_core.metrics",
+        "aion_core.milestones",
+        "aion_core.model_gateway",
+        "aion_core.platform_resolver",
+        "aion_core.resume",
+        "aion_core.tasks",
+        "aion_core.usage_telemetry",
+        "aion_core.util"
+      ],
+      "loc": 200,
+      "path": "aion_core/api.py"
+    },
+    "aion_core.approvals": {
+      "classes": 1,
+      "functions": [
+        {
+          "line": 21,
+          "loc": 6,
+          "name": "next_id"
+        },
+        {
+          "line": 29,
+          "loc": 18,
+          "name": "create"
+        },
+        {
+          "line": 49,
+          "loc": 3,
+          "name": "get"
+        },
+        {
+          "line": 54,
+          "loc": 3,
+          "name": "pending"
+        },
+        {
+          "line": 59,
+          "loc": 25,
+          "name": "decide"
+        },
+        {
+          "line": 86,
+          "loc": 17,
+          "name": "render"
+        }
+      ],
+      "functions_over_120": [],
+      "importers_in": [
+        "aion_core.api",
+        "aion_core.cli",
+        "aion_core.fable",
+        "aion_core.handoff",
+        "aion_core.packets",
+        "aion_core.reports",
+        "aion_core.resume",
+        "aion_core.router",
+        "aion_core.worker",
+        "bridges.http_server"
+      ],
+      "imports_out": [
+        "aion_core.db",
+        "aion_core.security",
+        "aion_core.tasks",
+        "aion_core.util"
+      ],
+      "loc": 102,
+      "path": "aion_core/approvals.py"
+    },
+    "aion_core.architecture": {
+      "classes": 1,
+      "functions": [
+        {
+          "line": 39,
+          "loc": 16,
+          "name": "validate_proposal"
+        },
+        {
+          "line": 56,
+          "loc": 12,
+          "name": "audit"
+        },
+        {
+          "line": 69,
+          "loc": 14,
+          "name": "audit_and_record"
+        },
+        {
+          "line": 84,
+          "loc": 6,
+          "name": "load_proposal"
+        }
+      ],
+      "functions_over_120": [],
+      "importers_in": [
+        "aion_core.cli"
+      ],
+      "imports_out": [
+        "aion_core.learnrepo",
+        "aion_core.skills"
+      ],
+      "loc": 89,
+      "path": "aion_core/architecture.py"
+    },
+    "aion_core.autonomy": {
+      "classes": 0,
+      "functions": [
+        {
+          "line": 9,
+          "loc": 33,
+          "name": "evaluate_day"
+        },
+        {
+          "line": 44,
+          "loc": 2,
+          "name": "evaluate_yesterday"
+        },
+        {
+          "line": 48,
+          "loc": 11,
+          "name": "consecutive_days"
+        }
+      ],
+      "functions_over_120": [],
+      "importers_in": [
+        "aion_core.cli",
+        "aion_core.milestones"
+      ],
+      "imports_out": [
+        "aion_core.db",
+        "aion_core.util"
+      ],
+      "loc": 58,
+      "path": "aion_core/autonomy.py"
+    },
+    "aion_core.backup": {
+      "classes": 1,
+      "functions": [
+        {
+          "line": 41,
+          "loc": 13,
+          "name": "_read_secret"
+        },
+        {
+          "line": 56,
+          "loc": 3,
+          "name": "_derive_keys"
+        },
+        {
+          "line": 61,
+          "loc": 7,
+          "name": "_keystream"
+        },
+        {
+          "line": 70,
+          "loc": 2,
+          "name": "_xor"
+        },
+        {
+          "line": 74,
+          "loc": 7,
+          "name": "encrypt_bytes"
+        },
+        {
+          "line": 83,
+          "loc": 14,
+          "name": "decrypt_bytes"
+        },
+        {
+          "line": 99,
+          "loc": 3,
+          "name": "is_encrypted"
+        },
+        {
+          "line": 104,
+          "loc": 40,
+          "name": "create"
+        },
+        {
+          "line": 146,
+          "loc": 4,
+          "name": "_prune"
+        },
+        {
+          "line": 152,
+          "loc": 42,
+          "name": "verify"
+        }
+      ],
+      "functions_over_120": [],
+      "importers_in": [
+        "aion_core.cli",
+        "aion_core.portability"
+      ],
+      "imports_out": [
+        "aion_core.config",
+        "aion_core.db",
+        "aion_core.util"
+      ],
+      "loc": 193,
+      "path": "aion_core/backup.py"
+    },
+    "aion_core.bootstrap": {
+      "classes": 0,
+      "functions": [
+        {
+          "line": 96,
+          "loc": 49,
+          "name": "ensure"
+        },
+        {
+          "line": 147,
+          "loc": 8,
+          "name": "_write_gitignore"
+        },
+        {
+          "line": 157,
+          "loc": 10,
+          "name": "init_secret_store"
+        },
+        {
+          "line": 169,
+          "loc": 9,
+          "name": "set_secret"
+        },
+        {
+          "line": 180,
+          "loc": 6,
+          "name": "has_secret"
+        }
+      ],
+      "functions_over_120": [],
+      "importers_in": [
+        "aion_core.cli",
+        "aion_core.money_path",
+        "aion_core.owner_setup",
+        "aion_core.resume",
+        "bridges.http_server",
+        "bridges.whatsapp_bridge"
+      ],
+      "imports_out": [
+        "aion_core.agents",
+        "aion_core.config",
+        "aion_core.db",
+        "aion_core.notebook",
+        "aion_core.skills",
+        "aion_core.util"
+      ],
+      "loc": 185,
+      "path": "aion_core/bootstrap.py"
+    },
+    "aion_core.cli": {
+      "classes": 1,
+      "functions": [
+        {
+          "line": 16,
+          "loc": 2,
+          "name": "_print"
+        },
+        {
+          "line": 24,
+          "loc": 8,
+          "name": "main"
+        },
+        {
+          "line": 34,
+          "loc": 564,
+          "name": "_main"
+        }
+      ],
+      "functions_over_120": [
+        {
+          "line": 34,
+          "loc": 564,
+          "name": "_main"
+        }
+      ],
+      "importers_in": [],
+      "imports_out": [
+        "aion_core.agents",
+        "aion_core.approvals",
+        "aion_core.architecture",
+        "aion_core.autonomy",
+        "aion_core.backup",
+        "aion_core.bootstrap",
+        "aion_core.config",
+        "aion_core.context",
+        "aion_core.db",
+        "aion_core.deliveries",
+        "aion_core.errors",
+        "aion_core.experiments",
+        "aion_core.fable",
+        "aion_core.governor",
+        "aion_core.handoff",
+        "aion_core.health",
+        "aion_core.learnrepo",
+        "aion_core.memory",
+        "aion_core.metrics",
+        "aion_core.milestones",
+        "aion_core.money_path",
+        "aion_core.notebook",
+        "aion_core.owner_setup",
+        "aion_core.packets",
+        "aion_core.plan",
+        "aion_core.platform_resolver",
+        "aion_core.portability",
+        "aion_core.reports",
+        "aion_core.resume",
+        "aion_core.router",
+        "aion_core.security",
+        "aion_core.seed",
+        "aion_core.sessions",
+        "aion_core.skills",
+        "aion_core.tasks",
+        "aion_core.util",
+        "aion_core.worker",
+        "bridges.drive_bridge",
+        "bridges.openclaw_check"
+      ],
+      "loc": 601,
+      "path": "aion_core/cli.py"
+    },
+    "aion_core.config": {
+      "classes": 0,
+      "functions": [
+        {
+          "line": 18,
+          "loc": 3,
+          "name": "home"
+        },
+        {
+          "line": 23,
+          "loc": 2,
+          "name": "db_path"
+        },
+        {
+          "line": 27,
+          "loc": 3,
+          "name": "secrets_file"
+        }
+      ],
+      "functions_over_120": [],
+      "importers_in": [
+        "aion_core.backup",
+        "aion_core.bootstrap",
+        "aion_core.cli",
+        "aion_core.db",
+        "aion_core.errors",
+        "aion_core.fable",
+        "aion_core.handoff",
+        "aion_core.health",
+        "aion_core.learnrepo",
+        "aion_core.metrics",
+        "aion_core.model_gateway",
+        "aion_core.notebook",
+        "aion_core.owner_setup",
+        "aion_core.packets",
+        "aion_core.plan",
+        "aion_core.portability",
+        "aion_core.reports",
+        "aion_core.resume",
+        "aion_core.semantic_recall",
+        "aion_core.sessions",
+        "aion_core.tasks",
+        "aion_core.worker",
+        "bridges.drive_bridge",
+        "bridges.http_server",
+        "bridges.whatsapp_bridge"
+      ],
+      "imports_out": [],
+      "loc": 83,
+      "path": "aion_core/config.py"
+    },
+    "aion_core.context": {
+      "classes": 0,
+      "functions": [
+        {
+          "line": 12,
+          "loc": 50,
+          "name": "build"
+        }
+      ],
+      "functions_over_120": [],
+      "importers_in": [
+        "aion_core.cli",
+        "aion_core.worker"
+      ],
+      "imports_out": [
+        "aion_core.agents",
+        "aion_core.db",
+        "aion_core.errors",
+        "aion_core.memory",
+        "aion_core.resume",
+        "aion_core.security",
+        "aion_core.tasks"
+      ],
+      "loc": 61,
+      "path": "aion_core/context.py"
+    },
+    "aion_core.db": {
+      "classes": 0,
+      "functions": [
+        {
+          "line": 446,
+          "loc": 29,
+          "name": "connect"
+        },
+        {
+          "line": 515,
+          "loc": 8,
+          "name": "_migrate"
+        },
+        {
+          "line": 525,
+          "loc": 5,
+          "name": "close"
+        },
+        {
+          "line": 532,
+          "loc": 3,
+          "name": "get_meta"
+        },
+        {
+          "line": 537,
+          "loc": 8,
+          "name": "set_meta"
+        },
+        {
+          "line": 547,
+          "loc": 8,
+          "name": "log_event"
+        },
+        {
+          "line": 557,
+          "loc": 13,
+          "name": "seen"
+        }
+      ],
+      "functions_over_120": [],
+      "importers_in": [
+        "aion_core.agents",
+        "aion_core.api",
+        "aion_core.approvals",
+        "aion_core.autonomy",
+        "aion_core.backup",
+        "aion_core.bootstrap",
+        "aion_core.cli",
+        "aion_core.context",
+        "aion_core.deliveries",
+        "aion_core.errors",
+        "aion_core.experiments",
+        "aion_core.fable",
+        "aion_core.governor",
+        "aion_core.handoff",
+        "aion_core.health",
+        "aion_core.intake",
+        "aion_core.learnrepo",
+        "aion_core.memory",
+        "aion_core.metrics",
+        "aion_core.milestones",
+        "aion_core.model_gateway",
+        "aion_core.money_path",
+        "aion_core.notebook",
+        "aion_core.packets",
+        "aion_core.plan",
+        "aion_core.portability",
+        "aion_core.recall.lexical",
+        "aion_core.reports",
+        "aion_core.resume",
+        "aion_core.router",
+        "aion_core.seed",
+        "aion_core.semantic_recall",
+        "aion_core.sessions",
+        "aion_core.skills",
+        "aion_core.sync_outbox",
+        "aion_core.tasks",
+        "aion_core.tempworker",
+        "aion_core.usage_telemetry",
+        "aion_core.worker",
+        "bridges.http_server",
+        "bridges.openclaw_check",
+        "bridges.whatsapp_bridge",
+        "scripts.ci_health_gate"
+      ],
+      "imports_out": [
+        "aion_core.config",
+        "aion_core.security",
+        "aion_core.util"
+      ],
+      "loc": 569,
+      "path": "aion_core/db.py"
+    },
+    "aion_core.deliveries": {
+      "classes": 0,
+      "functions": [
+        {
+          "line": 14,
+          "loc": 23,
+          "name": "record"
+        },
+        {
+          "line": 39,
+          "loc": 3,
+          "name": "get"
+        },
+        {
+          "line": 44,
+          "loc": 15,
+          "name": "attribute_finance"
+        },
+        {
+          "line": 61,
+          "loc": 26,
+          "name": "economics"
+        },
+        {
+          "line": 89,
+          "loc": 18,
+          "name": "close_month"
+        },
+        {
+          "line": 109,
+          "loc": 34,
+          "name": "closed_portfolio_months"
+        }
+      ],
+      "functions_over_120": [],
+      "importers_in": [
+        "aion_core.cli",
+        "aion_core.metrics",
+        "aion_core.milestones"
+      ],
+      "imports_out": [
+        "aion_core.db",
+        "aion_core.util"
+      ],
+      "loc": 142,
+      "path": "aion_core/deliveries.py"
+    },
+    "aion_core.errors": {
+      "classes": 0,
+      "functions": [
+        {
+          "line": 20,
+          "loc": 5,
+          "name": "classify"
+        },
+        {
+          "line": 27,
+          "loc": 11,
+          "name": "record"
+        },
+        {
+          "line": 40,
+          "loc": 12,
+          "name": "resolve"
+        },
+        {
+          "line": 54,
+          "loc": 4,
+          "name": "open_errors"
+        },
+        {
+          "line": 60,
+          "loc": 6,
+          "name": "repeated"
+        }
+      ],
+      "functions_over_120": [],
+      "importers_in": [
+        "aion_core.cli",
+        "aion_core.context",
+        "aion_core.fable",
+        "aion_core.health",
+        "aion_core.learnrepo",
+        "aion_core.notebook",
+        "aion_core.packets",
+        "aion_core.reports",
+        "aion_core.resume",
+        "aion_core.worker",
+        "bridges.whatsapp_bridge"
+      ],
+      "imports_out": [
+        "aion_core.config",
+        "aion_core.db",
+        "aion_core.memory",
+        "aion_core.security",
+        "aion_core.util"
+      ],
+      "loc": 65,
+      "path": "aion_core/errors.py"
+    },
+    "aion_core.experiments": {
+      "classes": 1,
+      "functions": [
+        {
+          "line": 37,
+          "loc": 6,
+          "name": "root"
+        },
+        {
+          "line": 45,
+          "loc": 5,
+          "name": "_folders"
+        },
+        {
+          "line": 52,
+          "loc": 6,
+          "name": "find"
+        },
+        {
+          "line": 60,
+          "loc": 5,
+          "name": "_load_spec"
+        },
+        {
+          "line": 67,
+          "loc": 6,
+          "name": "_rows"
+        },
+        {
+          "line": 75,
+          "loc": 8,
+          "name": "_parse_day"
+        },
+        {
+          "line": 85,
+          "loc": 7,
+          "name": "_evidenced_payments"
+        },
+        {
+          "line": 94,
+          "loc": 90,
+          "name": "status"
+        },
+        {
+          "line": 186,
+          "loc": 9,
+          "name": "_decision_text"
+        },
+        {
+          "line": 197,
+          "loc": 9,
+          "name": "all_status"
+        },
+        {
+          "line": 208,
+          "loc": 5,
+          "name": "line"
+        },
+        {
+          "line": 215,
+          "loc": 17,
+          "name": "report"
+        },
+        {
+          "line": 234,
+          "loc": 21,
+          "name": "decide"
+        }
+      ],
+      "functions_over_120": [],
+      "importers_in": [
+        "aion_core.cli",
+        "aion_core.money_path"
+      ],
+      "imports_out": [
+        "aion_core.db",
+        "aion_core.util"
+      ],
+      "loc": 254,
+      "path": "aion_core/experiments.py"
+    },
+    "aion_core.fable": {
+      "classes": 0,
+      "functions": [
+        {
+          "line": 31,
+          "loc": 4,
+          "name": "pack_dir"
+        },
+        {
+          "line": 37,
+          "loc": 2,
+          "name": "current_phase"
+        },
+        {
+          "line": 41,
+          "loc": 7,
+          "name": "set_phase"
+        },
+        {
+          "line": 50,
+          "loc": 32,
+          "name": "budget"
+        },
+        {
+          "line": 84,
+          "loc": 36,
+          "name": "readiness"
+        },
+        {
+          "line": 94,
+          "loc": 2,
+          "name": "readiness.state"
+        },
+        {
+          "line": 122,
+          "loc": 12,
+          "name": "is_ready"
+        },
+        {
+          "line": 136,
+          "loc": 32,
+          "name": "readiness_report"
+        },
+        {
+          "line": 174,
+          "loc": 89,
+          "name": "_offline_prompt"
+        },
+        {
+          "line": 265,
+          "loc": 32,
+          "name": "build_pack"
+        },
+        {
+          "line": 299,
+          "loc": 21,
+          "name": "_readme"
+        },
+        {
+          "line": 322,
+          "loc": 41,
+          "name": "_master_prompt"
+        },
+        {
+          "line": 365,
+          "loc": 111,
+          "name": "_start_prompt"
+        },
+        {
+          "line": 478,
+          "loc": 49,
+          "name": "_context"
+        },
+        {
+          "line": 529,
+          "loc": 20,
+          "name": "_task_queue"
+        },
+        {
+          "line": 551,
+          "loc": 8,
+          "name": "_decisions"
+        },
+        {
+          "line": 561,
+          "loc": 24,
+          "name": "_files_index"
+        },
+        {
+          "line": 587,
+          "loc": 20,
+          "name": "_completion_criteria"
+        },
+        {
+          "line": 609,
+          "loc": 25,
+          "name": "_handoff"
+        },
+        {
+          "line": 636,
+          "loc": 22,
+          "name": "_resume_doc"
+        },
+        {
+          "line": 660,
+          "loc": 19,
+          "name": "_no_waste"
+        }
+      ],
+      "functions_over_120": [],
+      "importers_in": [
+        "aion_core.cli"
+      ],
+      "imports_out": [
+        "aion_core.agents",
+        "aion_core.approvals",
+        "aion_core.config",
+        "aion_core.db",
+        "aion_core.errors",
+        "aion_core.health",
+        "aion_core.memory",
+        "aion_core.metrics",
+        "aion_core.packets",
+        "aion_core.resume",
+        "aion_core.security",
+        "aion_core.tasks",
+        "aion_core.util"
+      ],
+      "loc": 678,
+      "path": "aion_core/fable.py"
+    },
+    "aion_core.governor": {
+      "classes": 0,
+      "functions": [
+        {
+          "line": 32,
+          "loc": 2,
+          "name": "state"
+        },
+        {
+          "line": 36,
+          "loc": 45,
+          "name": "enforce"
+        },
+        {
+          "line": 83,
+          "loc": 13,
+          "name": "_message"
+        },
+        {
+          "line": 98,
+          "loc": 6,
+          "name": "pending_alert"
+        }
+      ],
+      "functions_over_120": [],
+      "importers_in": [
+        "aion_core.cli",
+        "aion_core.learnrepo",
+        "aion_core.reports",
+        "aion_core.resume",
+        "aion_core.worker"
+      ],
+      "imports_out": [
+        "aion_core.db",
+        "aion_core.handoff",
+        "aion_core.memory",
+        "aion_core.metrics",
+        "aion_core.tasks",
+        "aion_core.util"
+      ],
+      "loc": 103,
+      "path": "aion_core/governor.py"
+    },
+    "aion_core.guardian": {
+      "classes": 2,
+      "functions": [
+        {
+          "line": 36,
+          "loc": 5,
+          "name": "Pipeline.__init__"
+        },
+        {
+          "line": 42,
+          "loc": 2,
+          "name": "Pipeline.current_stage"
+        },
+        {
+          "line": 45,
+          "loc": 38,
+          "name": "Pipeline.advance"
+        },
+        {
+          "line": 84,
+          "loc": 14,
+          "name": "Pipeline.rollback"
+        }
+      ],
+      "functions_over_120": [],
+      "importers_in": [],
+      "imports_out": [
+        "aion_core.util"
+      ],
+      "loc": 97,
+      "path": "aion_core/guardian.py"
+    },
+    "aion_core.handoff": {
+      "classes": 0,
+      "functions": [
+        {
+          "line": 20,
+          "loc": 4,
+          "name": "pack_dir"
+        },
+        {
+          "line": 26,
+          "loc": 2,
+          "name": "prompt_path"
+        },
+        {
+          "line": 30,
+          "loc": 71,
+          "name": "build_prompt"
+        },
+        {
+          "line": 103,
+          "loc": 30,
+          "name": "execute"
+        },
+        {
+          "line": 135,
+          "loc": 4,
+          "name": "status"
+        }
+      ],
+      "functions_over_120": [],
+      "importers_in": [
+        "aion_core.cli",
+        "aion_core.governor"
+      ],
+      "imports_out": [
+        "aion_core.agents",
+        "aion_core.approvals",
+        "aion_core.config",
+        "aion_core.db",
+        "aion_core.memory",
+        "aion_core.metrics",
+        "aion_core.resume",
+        "aion_core.security",
+        "aion_core.tasks",
+        "aion_core.util"
+      ],
+      "loc": 138,
+      "path": "aion_core/handoff.py"
+    },
+    "aion_core.health": {
+      "classes": 0,
+      "functions": [
+        {
+          "line": 12,
+          "loc": 6,
+          "name": "_run"
+        },
+        {
+          "line": 20,
+          "loc": 6,
+          "name": "check_disk"
+        },
+        {
+          "line": 28,
+          "loc": 9,
+          "name": "check_db"
+        },
+        {
+          "line": 39,
+          "loc": 6,
+          "name": "check_shared_brain"
+        },
+        {
+          "line": 47,
+          "loc": 6,
+          "name": "check_inbox"
+        },
+        {
+          "line": 55,
+          "loc": 7,
+          "name": "check_tasks"
+        },
+        {
+          "line": 64,
+          "loc": 3,
+          "name": "check_errors"
+        },
+        {
+          "line": 69,
+          "loc": 5,
+          "name": "check_openclaw"
+        },
+        {
+          "line": 76,
+          "loc": 7,
+          "name": "check_budget"
+        },
+        {
+          "line": 85,
+          "loc": 8,
+          "name": "check_git"
+        },
+        {
+          "line": 95,
+          "loc": 8,
+          "name": "check_ollama"
+        },
+        {
+          "line": 105,
+          "loc": 6,
+          "name": "check_network"
+        },
+        {
+          "line": 113,
+          "loc": 8,
+          "name": "check_secrets"
+        },
+        {
+          "line": 123,
+          "loc": 10,
+          "name": "check_backup"
+        },
+        {
+          "line": 135,
+          "loc": 11,
+          "name": "check_learnrepo"
+        },
+        {
+          "line": 148,
+          "loc": 15,
+          "name": "check_skill_registry"
+        },
+        {
+          "line": 166,
+          "loc": 6,
+          "name": "check_drive_bridge"
+        },
+        {
+          "line": 182,
+          "loc": 22,
+          "name": "run_all"
+        }
+      ],
+      "functions_over_120": [],
+      "importers_in": [
+        "aion_core.api",
+        "aion_core.cli",
+        "aion_core.fable",
+        "aion_core.owner_setup",
+        "aion_core.router",
+        "scripts.ci_health_gate"
+      ],
+      "imports_out": [
+        "aion_core.config",
+        "aion_core.db",
+        "aion_core.errors",
+        "aion_core.learnrepo",
+        "aion_core.metrics",
+        "aion_core.packets",
+        "aion_core.skills",
+        "aion_core.tasks",
+        "aion_core.util",
+        "bridges.drive_bridge",
+        "bridges.openclaw_check"
+      ],
+      "loc": 203,
+      "path": "aion_core/health.py"
+    },
+    "aion_core.host": {
+      "classes": 0,
+      "functions": [
+        {
+          "line": 16,
+          "loc": 12,
+          "name": "current"
+        }
+      ],
+      "functions_over_120": [],
+      "importers_in": [
+        "aion_core.platform_resolver",
+        "scripts.runtime_inventory"
+      ],
+      "imports_out": [
+        "aion_core.host.base",
+        "aion_core.host.linux",
+        "aion_core.host.macos"
+      ],
+      "loc": 27,
+      "path": "aion_core/host/__init__.py"
+    },
+    "aion_core.host.base": {
+      "classes": 2,
+      "functions": [
+        {
+          "line": 20,
+          "loc": 3,
+          "name": "HostAdapter.name"
+        },
+        {
+          "line": 24,
+          "loc": 3,
+          "name": "HostAdapter.scheduler_kind"
+        },
+        {
+          "line": 28,
+          "loc": 3,
+          "name": "HostAdapter.service_unit_dir"
+        },
+        {
+          "line": 32,
+          "loc": 6,
+          "name": "HostAdapter.service_active"
+        },
+        {
+          "line": 39,
+          "loc": 3,
+          "name": "HostAdapter.service_install_hint"
+        },
+        {
+          "line": 43,
+          "loc": 8,
+          "name": "HostAdapter.probe"
+        },
+        {
+          "line": 58,
+          "loc": 2,
+          "name": "NullHostAdapter.name"
+        },
+        {
+          "line": 61,
+          "loc": 2,
+          "name": "NullHostAdapter.scheduler_kind"
+        },
+        {
+          "line": 64,
+          "loc": 2,
+          "name": "NullHostAdapter.service_unit_dir"
+        },
+        {
+          "line": 67,
+          "loc": 2,
+          "name": "NullHostAdapter.service_active"
+        },
+        {
+          "line": 70,
+          "loc": 4,
+          "name": "NullHostAdapter.service_install_hint"
+        }
+      ],
+      "functions_over_120": [],
+      "importers_in": [
+        "aion_core.host",
+        "aion_core.host.linux",
+        "aion_core.host.macos"
+      ],
+      "imports_out": [],
+      "loc": 73,
+      "path": "aion_core/host/base.py"
+    },
+    "aion_core.host.linux": {
+      "classes": 1,
+      "functions": [
+        {
+          "line": 11,
+          "loc": 2,
+          "name": "LinuxHost.name"
+        },
+        {
+          "line": 14,
+          "loc": 2,
+          "name": "LinuxHost.scheduler_kind"
+        },
+        {
+          "line": 17,
+          "loc": 2,
+          "name": "LinuxHost.service_unit_dir"
+        },
+        {
+          "line": 20,
+          "loc": 15,
+          "name": "LinuxHost.service_active"
+        },
+        {
+          "line": 36,
+          "loc": 4,
+          "name": "LinuxHost.service_install_hint"
+        }
+      ],
+      "functions_over_120": [],
+      "importers_in": [
+        "aion_core.host"
+      ],
+      "imports_out": [
+        "aion_core.host.base"
+      ],
+      "loc": 39,
+      "path": "aion_core/host/linux.py"
+    },
+    "aion_core.host.macos": {
+      "classes": 1,
+      "functions": [
+        {
+          "line": 11,
+          "loc": 2,
+          "name": "MacOSHost.name"
+        },
+        {
+          "line": 14,
+          "loc": 2,
+          "name": "MacOSHost.scheduler_kind"
+        },
+        {
+          "line": 17,
+          "loc": 2,
+          "name": "MacOSHost.service_unit_dir"
+        },
+        {
+          "line": 20,
+          "loc": 12,
+          "name": "MacOSHost.service_active"
+        },
+        {
+          "line": 33,
+          "loc": 3,
+          "name": "MacOSHost.service_install_hint"
+        }
+      ],
+      "functions_over_120": [],
+      "importers_in": [
+        "aion_core.host"
+      ],
+      "imports_out": [
+        "aion_core.host.base"
+      ],
+      "loc": 35,
+      "path": "aion_core/host/macos.py"
+    },
+    "aion_core.intake": {
+      "classes": 1,
+      "functions": [
+        {
+          "line": 25,
+          "loc": 32,
+          "name": "record"
+        },
+        {
+          "line": 59,
+          "loc": 3,
+          "name": "get"
+        }
+      ],
+      "functions_over_120": [],
+      "importers_in": [],
+      "imports_out": [
+        "aion_core.db",
+        "aion_core.security",
+        "aion_core.skills",
+        "aion_core.util"
+      ],
+      "loc": 61,
+      "path": "aion_core/intake.py"
+    },
+    "aion_core.learnrepo": {
+      "classes": 0,
+      "functions": [
+        {
+          "line": 42,
+          "loc": 5,
+          "name": "_utc"
+        },
+        {
+          "line": 49,
+          "loc": 2,
+          "name": "_iso"
+        },
+        {
+          "line": 53,
+          "loc": 4,
+          "name": "_parse"
+        },
+        {
+          "line": 59,
+          "loc": 2,
+          "name": "repo_root"
+        },
+        {
+          "line": 63,
+          "loc": 2,
+          "name": "learnrepo_root"
+        },
+        {
+          "line": 67,
+          "loc": 43,
+          "name": "ensure_defaults"
+        },
+        {
+          "line": 112,
+          "loc": 32,
+          "name": "next_run"
+        },
+        {
+          "line": 146,
+          "loc": 7,
+          "name": "due_schedules"
+        },
+        {
+          "line": 155,
+          "loc": 30,
+          "name": "acquire"
+        },
+        {
+          "line": 187,
+          "loc": 18,
+          "name": "recover_stale_leases"
+        },
+        {
+          "line": 207,
+          "loc": 18,
+          "name": "classify_timing"
+        },
+        {
+          "line": 227,
+          "loc": 10,
+          "name": "_run_command"
+        },
+        {
+          "line": 239,
+          "loc": 7,
+          "name": "_git_head"
+        },
+        {
+          "line": 248,
+          "loc": 21,
+          "name": "trigger_on_change_if_needed"
+        },
+        {
+          "line": 271,
+          "loc": 8,
+          "name": "cleanup_history"
+        },
+        {
+          "line": 281,
+          "loc": 19,
+          "name": "change_score"
+        },
+        {
+          "line": 302,
+          "loc": 4,
+          "name": "_level0"
+        },
+        {
+          "line": 308,
+          "loc": 14,
+          "name": "_level1"
+        },
+        {
+          "line": 324,
+          "loc": 5,
+          "name": "_level2"
+        },
+        {
+          "line": 331,
+          "loc": 8,
+          "name": "_level3"
+        },
+        {
+          "line": 341,
+          "loc": 5,
+          "name": "_default_fetch"
+        },
+        {
+          "line": 348,
+          "loc": 16,
+          "name": "level4_external"
+        },
+        {
+          "line": 366,
+          "loc": 5,
+          "name": "_needs_reasoning"
+        },
+        {
+          "line": 373,
+          "loc": 3,
+          "name": "_fingerprint"
+        },
+        {
+          "line": 378,
+          "loc": 49,
+          "name": "escalate"
+        },
+        {
+          "line": 429,
+          "loc": 9,
+          "name": "safe_repair"
+        },
+        {
+          "line": 440,
+          "loc": 2,
+          "name": "_usage_count"
+        },
+        {
+          "line": 444,
+          "loc": 63,
+          "name": "execute_run"
+        },
+        {
+          "line": 509,
+          "loc": 28,
+          "name": "run_due"
+        },
+        {
+          "line": 539,
+          "loc": 3,
+          "name": "latest_summary"
+        },
+        {
+          "line": 544,
+          "loc": 7,
+          "name": "status"
+        },
+        {
+          "line": 553,
+          "loc": 3,
+          "name": "os_adapter_name"
+        },
+        {
+          "line": 558,
+          "loc": 4,
+          "name": "quarantine"
+        },
+        {
+          "line": 580,
+          "loc": 51,
+          "name": "record_skill_review"
+        },
+        {
+          "line": 633,
+          "loc": 8,
+          "name": "skill_review_status"
+        },
+        {
+          "line": 643,
+          "loc": 12,
+          "name": "review_gate"
+        },
+        {
+          "line": 656,
+          "loc": 14,
+          "name": "log_future_whole_lucyos_task"
+        }
+      ],
+      "functions_over_120": [],
+      "importers_in": [
+        "aion_core.architecture",
+        "aion_core.cli",
+        "aion_core.health",
+        "aion_core.skills"
+      ],
+      "imports_out": [
+        "aion_core.config",
+        "aion_core.db",
+        "aion_core.errors",
+        "aion_core.governor",
+        "aion_core.security",
+        "aion_core.skills",
+        "aion_core.tasks",
+        "aion_core.util"
+      ],
+      "loc": 669,
+      "path": "aion_core/learnrepo.py"
+    },
+    "aion_core.memory": {
+      "classes": 0,
+      "functions": [
+        {
+          "line": 11,
+          "loc": 24,
+          "name": "remember"
+        },
+        {
+          "line": 37,
+          "loc": 25,
+          "name": "search"
+        },
+        {
+          "line": 64,
+          "loc": 6,
+          "name": "recent"
+        },
+        {
+          "line": 72,
+          "loc": 13,
+          "name": "decide"
+        },
+        {
+          "line": 87,
+          "loc": 3,
+          "name": "decisions"
+        },
+        {
+          "line": 92,
+          "loc": 28,
+          "name": "why"
+        }
+      ],
+      "functions_over_120": [],
+      "importers_in": [
+        "aion_core.cli",
+        "aion_core.context",
+        "aion_core.errors",
+        "aion_core.fable",
+        "aion_core.governor",
+        "aion_core.handoff",
+        "aion_core.milestones",
+        "aion_core.notebook",
+        "aion_core.packets",
+        "aion_core.plan",
+        "aion_core.reports",
+        "aion_core.router",
+        "aion_core.seed"
+      ],
+      "imports_out": [
+        "aion_core.db",
+        "aion_core.security",
+        "aion_core.util"
+      ],
+      "loc": 119,
+      "path": "aion_core/memory.py"
+    },
+    "aion_core.metrics": {
+      "classes": 0,
+      "functions": [
+        {
+          "line": 9,
+          "loc": 16,
+          "name": "record_usage"
+        },
+        {
+          "line": 27,
+          "loc": 5,
+          "name": "spend"
+        },
+        {
+          "line": 34,
+          "loc": 15,
+          "name": "budget_status"
+        },
+        {
+          "line": 51,
+          "loc": 15,
+          "name": "_governor"
+        },
+        {
+          "line": 68,
+          "loc": 29,
+          "name": "record_money"
+        },
+        {
+          "line": 99,
+          "loc": 19,
+          "name": "money"
+        }
+      ],
+      "functions_over_120": [],
+      "importers_in": [
+        "aion_core.api",
+        "aion_core.cli",
+        "aion_core.fable",
+        "aion_core.governor",
+        "aion_core.handoff",
+        "aion_core.health",
+        "aion_core.milestones",
+        "aion_core.reports",
+        "aion_core.resume",
+        "aion_core.router",
+        "aion_core.worker"
+      ],
+      "imports_out": [
+        "aion_core.config",
+        "aion_core.db",
+        "aion_core.deliveries",
+        "aion_core.util"
+      ],
+      "loc": 117,
+      "path": "aion_core/metrics.py"
+    },
+    "aion_core.milestones": {
+      "classes": 0,
+      "functions": [
+        {
+          "line": 15,
+          "loc": 4,
+          "name": "_actual_revenue_rows"
+        },
+        {
+          "line": 21,
+          "loc": 13,
+          "name": "_consecutive_months_at"
+        },
+        {
+          "line": 36,
+          "loc": 30,
+          "name": "check"
+        },
+        {
+          "line": 68,
+          "loc": 11,
+          "name": "_projects_at_m2"
+        },
+        {
+          "line": 81,
+          "loc": 16,
+          "name": "newly_reached"
+        },
+        {
+          "line": 99,
+          "loc": 2,
+          "name": "reached"
+        },
+        {
+          "line": 103,
+          "loc": 15,
+          "name": "report"
+        }
+      ],
+      "functions_over_120": [],
+      "importers_in": [
+        "aion_core.api",
+        "aion_core.cli",
+        "aion_core.money_path",
+        "aion_core.reports"
+      ],
+      "imports_out": [
+        "aion_core.autonomy",
+        "aion_core.db",
+        "aion_core.deliveries",
+        "aion_core.memory",
+        "aion_core.metrics",
+        "aion_core.util"
+      ],
+      "loc": 117,
+      "path": "aion_core/milestones.py"
+    },
+    "aion_core.model_gateway": {
+      "classes": 0,
+      "functions": [
+        {
+          "line": 41,
+          "loc": 11,
+          "name": "_secret"
+        },
+        {
+          "line": 54,
+          "loc": 3,
+          "name": "_model"
+        },
+        {
+          "line": 59,
+          "loc": 17,
+          "name": "provider_status"
+        },
+        {
+          "line": 78,
+          "loc": 5,
+          "name": "eligible"
+        },
+        {
+          "line": 85,
+          "loc": 3,
+          "name": "_mark_success"
+        },
+        {
+          "line": 90,
+          "loc": 6,
+          "name": "_mark_failure"
+        },
+        {
+          "line": 98,
+          "loc": 3,
+          "name": "_http_json"
+        },
+        {
+          "line": 103,
+          "loc": 46,
+          "name": "complete"
+        }
+      ],
+      "functions_over_120": [],
+      "importers_in": [
+        "aion_core.api",
+        "aion_core.worker"
+      ],
+      "imports_out": [
+        "aion_core.config",
+        "aion_core.db",
+        "aion_core.security"
+      ],
+      "loc": 148,
+      "path": "aion_core/model_gateway.py"
+    },
+    "aion_core.money_path": {
+      "classes": 0,
+      "functions": [
+        {
+          "line": 36,
+          "loc": 2,
+          "name": "repo_root"
+        },
+        {
+          "line": 40,
+          "loc": 5,
+          "name": "_paths"
+        },
+        {
+          "line": 47,
+          "loc": 2,
+          "name": "_load"
+        },
+        {
+          "line": 51,
+          "loc": 8,
+          "name": "_resolve"
+        },
+        {
+          "line": 68,
+          "loc": 31,
+          "name": "check"
+        },
+        {
+          "line": 101,
+          "loc": 30,
+          "name": "project_status"
+        },
+        {
+          "line": 133,
+          "loc": 10,
+          "name": "all_status"
+        },
+        {
+          "line": 145,
+          "loc": 7,
+          "name": "owner_line"
+        },
+        {
+          "line": 154,
+          "loc": 22,
+          "name": "report"
+        }
+      ],
+      "functions_over_120": [],
+      "importers_in": [
+        "aion_core.cli"
+      ],
+      "imports_out": [
+        "aion_core.bootstrap",
+        "aion_core.db",
+        "aion_core.experiments",
+        "aion_core.milestones"
+      ],
+      "loc": 175,
+      "path": "aion_core/money_path.py"
+    },
+    "aion_core.notebook": {
+      "classes": 0,
+      "functions": [
+        {
+          "line": 83,
+          "loc": 2,
+          "name": "path"
+        },
+        {
+          "line": 87,
+          "loc": 2,
+          "name": "archive_path"
+        },
+        {
+          "line": 91,
+          "loc": 5,
+          "name": "ensure"
+        },
+        {
+          "line": 98,
+          "loc": 35,
+          "name": "_split_entries"
+        },
+        {
+          "line": 135,
+          "loc": 48,
+          "name": "sync"
+        },
+        {
+          "line": 185,
+          "loc": 3,
+          "name": "_stamp"
+        },
+        {
+          "line": 190,
+          "loc": 25,
+          "name": "_apply"
+        },
+        {
+          "line": 217,
+          "loc": 21,
+          "name": "_archive_if_long"
+        },
+        {
+          "line": 240,
+          "loc": 3,
+          "name": "recent"
+        }
+      ],
+      "functions_over_120": [],
+      "importers_in": [
+        "aion_core.bootstrap",
+        "aion_core.cli",
+        "aion_core.resume"
+      ],
+      "imports_out": [
+        "aion_core.config",
+        "aion_core.db",
+        "aion_core.errors",
+        "aion_core.memory",
+        "aion_core.security",
+        "aion_core.tasks",
+        "aion_core.util"
+      ],
+      "loc": 242,
+      "path": "aion_core/notebook.py"
+    },
+    "aion_core.owner_setup": {
+      "classes": 0,
+      "functions": [
+        {
+          "line": 65,
+          "loc": 32,
+          "name": "render"
+        },
+        {
+          "line": 99,
+          "loc": 4,
+          "name": "write"
+        }
+      ],
+      "functions_over_120": [],
+      "importers_in": [
+        "aion_core.cli"
+      ],
+      "imports_out": [
+        "aion_core.bootstrap",
+        "aion_core.config",
+        "aion_core.health",
+        "aion_core.util"
+      ],
+      "loc": 102,
+      "path": "aion_core/owner_setup.py"
+    },
+    "aion_core.packets": {
+      "classes": 1,
+      "functions": [
+        {
+          "line": 25,
+          "loc": 27,
+          "name": "parse"
+        },
+        {
+          "line": 54,
+          "loc": 7,
+          "name": "_lines"
+        },
+        {
+          "line": 63,
+          "loc": 61,
+          "name": "ingest"
+        },
+        {
+          "line": 126,
+          "loc": 15,
+          "name": "_ingest_memory"
+        },
+        {
+          "line": 143,
+          "loc": 27,
+          "name": "_ingest_tasks"
+        },
+        {
+          "line": 172,
+          "loc": 15,
+          "name": "_ingest_approvals"
+        },
+        {
+          "line": 189,
+          "loc": 8,
+          "name": "_ingest_resume"
+        },
+        {
+          "line": 199,
+          "loc": 11,
+          "name": "_detect_conflicts"
+        },
+        {
+          "line": 212,
+          "loc": 3,
+          "name": "is_packet_file"
+        },
+        {
+          "line": 217,
+          "loc": 3,
+          "name": "pending_files"
+        },
+        {
+          "line": 222,
+          "loc": 28,
+          "name": "ingest_inbox"
+        },
+        {
+          "line": 252,
+          "loc": 4,
+          "name": "stats"
+        }
+      ],
+      "functions_over_120": [],
+      "importers_in": [
+        "aion_core.cli",
+        "aion_core.fable",
+        "aion_core.health",
+        "aion_core.reports",
+        "aion_core.resume",
+        "bridges.drive_bridge"
+      ],
+      "imports_out": [
+        "aion_core.approvals",
+        "aion_core.config",
+        "aion_core.db",
+        "aion_core.errors",
+        "aion_core.memory",
+        "aion_core.security",
+        "aion_core.tasks",
+        "aion_core.util"
+      ],
+      "loc": 255,
+      "path": "aion_core/packets.py"
+    },
+    "aion_core.plan": {
+      "classes": 1,
+      "functions": [
+        {
+          "line": 53,
+          "loc": 40,
+          "name": "validate"
+        },
+        {
+          "line": 95,
+          "loc": 20,
+          "name": "_cycles"
+        },
+        {
+          "line": 99,
+          "loc": 11,
+          "name": "_cycles.visit"
+        },
+        {
+          "line": 117,
+          "loc": 52,
+          "name": "apply"
+        },
+        {
+          "line": 171,
+          "loc": 16,
+          "name": "_topological"
+        },
+        {
+          "line": 176,
+          "loc": 7,
+          "name": "_topological.visit"
+        },
+        {
+          "line": 189,
+          "loc": 7,
+          "name": "_write_plan_file"
+        },
+        {
+          "line": 198,
+          "loc": 6,
+          "name": "load"
+        },
+        {
+          "line": 206,
+          "loc": 3,
+          "name": "write_schema"
+        },
+        {
+          "line": 211,
+          "loc": 8,
+          "name": "status"
+        }
+      ],
+      "functions_over_120": [],
+      "importers_in": [
+        "aion_core.cli"
+      ],
+      "imports_out": [
+        "aion_core.agents",
+        "aion_core.config",
+        "aion_core.db",
+        "aion_core.memory",
+        "aion_core.security",
+        "aion_core.tasks",
+        "aion_core.util"
+      ],
+      "loc": 218,
+      "path": "aion_core/plan.py"
+    },
+    "aion_core.platform_resolver": {
+      "classes": 0,
+      "functions": [
+        {
+          "line": 22,
+          "loc": 18,
+          "name": "machine_profile"
+        },
+        {
+          "line": 42,
+          "loc": 3,
+          "name": "_platform_fit"
+        },
+        {
+          "line": 47,
+          "loc": 40,
+          "name": "resolve"
+        }
+      ],
+      "functions_over_120": [],
+      "importers_in": [
+        "aion_core.api",
+        "aion_core.cli"
+      ],
+      "imports_out": [
+        "aion_core.host",
+        "aion_core.skills"
+      ],
+      "loc": 86,
+      "path": "aion_core/platform_resolver.py"
+    },
+    "aion_core.portability": {
+      "classes": 1,
+      "functions": [
+        {
+          "line": 27,
+          "loc": 18,
+          "name": "_safe_extract"
+        },
+        {
+          "line": 47,
+          "loc": 39,
+          "name": "export"
+        },
+        {
+          "line": 88,
+          "loc": 74,
+          "name": "import_"
+        }
+      ],
+      "functions_over_120": [],
+      "importers_in": [
+        "aion_core.cli"
+      ],
+      "imports_out": [
+        "aion_core.backup",
+        "aion_core.config",
+        "aion_core.db",
+        "aion_core.util"
+      ],
+      "loc": 161,
+      "path": "aion_core/portability.py"
+    },
+    "aion_core.recall": {
+      "classes": 0,
+      "functions": [],
+      "functions_over_120": [],
+      "importers_in": [],
+      "imports_out": [],
+      "loc": 7,
+      "path": "aion_core/recall/__init__.py"
+    },
+    "aion_core.recall.lexical": {
+      "classes": 0,
+      "functions": [
+        {
+          "line": 31,
+          "loc": 19,
+          "name": "extract_keywords"
+        },
+        {
+          "line": 52,
+          "loc": 4,
+          "name": "fts_query_string"
+        },
+        {
+          "line": 58,
+          "loc": 18,
+          "name": "from_task"
+        },
+        {
+          "line": 78,
+          "loc": 7,
+          "name": "_confidence_clause"
+        },
+        {
+          "line": 87,
+          "loc": 59,
+          "name": "candidates"
+        }
+      ],
+      "functions_over_120": [],
+      "importers_in": [],
+      "imports_out": [
+        "aion_core.db",
+        "aion_core.recall.models"
+      ],
+      "loc": 145,
+      "path": "aion_core/recall/lexical.py"
+    },
+    "aion_core.recall.models": {
+      "classes": 4,
+      "functions": [
+        {
+          "line": 20,
+          "loc": 6,
+          "name": "confidence_rank"
+        }
+      ],
+      "functions_over_120": [],
+      "importers_in": [
+        "aion_core.recall.lexical"
+      ],
+      "imports_out": [],
+      "loc": 81,
+      "path": "aion_core/recall/models.py"
+    },
+    "aion_core.reports": {
+      "classes": 0,
+      "functions": [
+        {
+          "line": 18,
+          "loc": 2,
+          "name": "_clean"
+        },
+        {
+          "line": 22,
+          "loc": 34,
+          "name": "status"
+        },
+        {
+          "line": 58,
+          "loc": 11,
+          "name": "_nothing_runnable"
+        },
+        {
+          "line": 71,
+          "loc": 16,
+          "name": "today"
+        },
+        {
+          "line": 89,
+          "loc": 30,
+          "name": "money"
+        },
+        {
+          "line": 121,
+          "loc": 9,
+          "name": "task_list"
+        },
+        {
+          "line": 132,
+          "loc": 16,
+          "name": "blockers"
+        },
+        {
+          "line": 150,
+          "loc": 8,
+          "name": "error_list"
+        },
+        {
+          "line": 160,
+          "loc": 7,
+          "name": "agent_list"
+        },
+        {
+          "line": 169,
+          "loc": 11,
+          "name": "full_report"
+        },
+        {
+          "line": 182,
+          "loc": 53,
+          "name": "render_markdown_surfaces"
+        },
+        {
+          "line": 237,
+          "loc": 3,
+          "name": "_audit_record_hash"
+        },
+        {
+          "line": 242,
+          "loc": 19,
+          "name": "audit_export"
+        },
+        {
+          "line": 263,
+          "loc": 28,
+          "name": "audit_verify"
+        },
+        {
+          "line": 293,
+          "loc": 57,
+          "name": "routing_report"
+        }
+      ],
+      "functions_over_120": [],
+      "importers_in": [
+        "aion_core.cli",
+        "aion_core.router"
+      ],
+      "imports_out": [
+        "aion_core.agents",
+        "aion_core.approvals",
+        "aion_core.config",
+        "aion_core.db",
+        "aion_core.errors",
+        "aion_core.governor",
+        "aion_core.memory",
+        "aion_core.metrics",
+        "aion_core.milestones",
+        "aion_core.packets",
+        "aion_core.resume",
+        "aion_core.security",
+        "aion_core.tasks",
+        "aion_core.util"
+      ],
+      "loc": 349,
+      "path": "aion_core/reports.py"
+    },
+    "aion_core.resume": {
+      "classes": 0,
+      "functions": [
+        {
+          "line": 15,
+          "loc": 30,
+          "name": "checkpoint"
+        },
+        {
+          "line": 50,
+          "loc": 11,
+          "name": "_fresh_bottleneck"
+        },
+        {
+          "line": 63,
+          "loc": 2,
+          "name": "load"
+        },
+        {
+          "line": 67,
+          "loc": 2,
+          "name": "_path"
+        },
+        {
+          "line": 71,
+          "loc": 27,
+          "name": "_render_markdown"
+        },
+        {
+          "line": 100,
+          "loc": 64,
+          "name": "boot"
+        },
+        {
+          "line": 166,
+          "loc": 12,
+          "name": "identify_bottleneck"
+        }
+      ],
+      "functions_over_120": [],
+      "importers_in": [
+        "aion_core.api",
+        "aion_core.cli",
+        "aion_core.context",
+        "aion_core.fable",
+        "aion_core.handoff",
+        "aion_core.reports",
+        "aion_core.router",
+        "aion_core.seed",
+        "aion_core.tasks",
+        "bridges.whatsapp_bridge"
+      ],
+      "imports_out": [
+        "aion_core.approvals",
+        "aion_core.bootstrap",
+        "aion_core.config",
+        "aion_core.db",
+        "aion_core.errors",
+        "aion_core.governor",
+        "aion_core.metrics",
+        "aion_core.notebook",
+        "aion_core.packets",
+        "aion_core.sessions",
+        "aion_core.tasks",
+        "aion_core.util"
+      ],
+      "loc": 177,
+      "path": "aion_core/resume.py"
+    },
+    "aion_core.router": {
+      "classes": 0,
+      "functions": [
+        {
+          "line": 60,
+          "loc": 57,
+          "name": "handle"
+        },
+        {
+          "line": 119,
+          "loc": 2,
+          "name": "_status"
+        },
+        {
+          "line": 123,
+          "loc": 18,
+          "name": "_decide"
+        },
+        {
+          "line": 143,
+          "loc": 8,
+          "name": "_pause"
+        },
+        {
+          "line": 153,
+          "loc": 6,
+          "name": "_resume"
+        },
+        {
+          "line": 161,
+          "loc": 10,
+          "name": "_safe_mode"
+        },
+        {
+          "line": 173,
+          "loc": 9,
+          "name": "_deep_check"
+        },
+        {
+          "line": 184,
+          "loc": 2,
+          "name": "is_paused"
+        },
+        {
+          "line": 188,
+          "loc": 2,
+          "name": "is_safe_mode"
+        }
+      ],
+      "functions_over_120": [],
+      "importers_in": [
+        "aion_core.cli",
+        "aion_core.worker",
+        "bridges.http_server",
+        "bridges.whatsapp_bridge"
+      ],
+      "imports_out": [
+        "aion_core.approvals",
+        "aion_core.db",
+        "aion_core.health",
+        "aion_core.memory",
+        "aion_core.metrics",
+        "aion_core.reports",
+        "aion_core.resume",
+        "aion_core.security",
+        "aion_core.tasks",
+        "aion_core.util"
+      ],
+      "loc": 189,
+      "path": "aion_core/router.py"
+    },
+    "aion_core.security": {
+      "classes": 1,
+      "functions": [
+        {
+          "line": 53,
+          "loc": 11,
+          "name": "_is_placeholder"
+        },
+        {
+          "line": 66,
+          "loc": 26,
+          "name": "scan_text"
+        },
+        {
+          "line": 94,
+          "loc": 14,
+          "name": "_luhn"
+        },
+        {
+          "line": 110,
+          "loc": 5,
+          "name": "_mask"
+        },
+        {
+          "line": 117,
+          "loc": 18,
+          "name": "redact"
+        },
+        {
+          "line": 123,
+          "loc": 10,
+          "name": "redact._sub"
+        },
+        {
+          "line": 137,
+          "loc": 6,
+          "name": "assert_clean"
+        },
+        {
+          "line": 156,
+          "loc": 11,
+          "name": "_ignore_globs"
+        },
+        {
+          "line": 169,
+          "loc": 25,
+          "name": "scan_paths"
+        }
+      ],
+      "functions_over_120": [],
+      "importers_in": [
+        "aion_core.approvals",
+        "aion_core.cli",
+        "aion_core.context",
+        "aion_core.db",
+        "aion_core.errors",
+        "aion_core.fable",
+        "aion_core.handoff",
+        "aion_core.intake",
+        "aion_core.learnrepo",
+        "aion_core.memory",
+        "aion_core.model_gateway",
+        "aion_core.notebook",
+        "aion_core.packets",
+        "aion_core.plan",
+        "aion_core.reports",
+        "aion_core.router",
+        "aion_core.sessions",
+        "aion_core.skills",
+        "aion_core.sync_outbox",
+        "aion_core.tasks",
+        "aion_core.usage_telemetry",
+        "aion_core.worker",
+        "bridges.drive_bridge",
+        "bridges.http_server",
+        "bridges.whatsapp_bridge",
+        "scripts.scan_history"
+      ],
+      "imports_out": [],
+      "loc": 193,
+      "path": "aion_core/security.py"
+    },
+    "aion_core.seed": {
+      "classes": 0,
+      "functions": [
+        {
+          "line": 212,
+          "loc": 41,
+          "name": "apply"
+        }
+      ],
+      "functions_over_120": [],
+      "importers_in": [
+        "aion_core.cli"
+      ],
+      "imports_out": [
+        "aion_core.agents",
+        "aion_core.db",
+        "aion_core.memory",
+        "aion_core.resume",
+        "aion_core.tasks",
+        "aion_core.util"
+      ],
+      "loc": 252,
+      "path": "aion_core/seed.py"
+    },
+    "aion_core.semantic_recall": {
+      "classes": 0,
+      "functions": [
+        {
+          "line": 18,
+          "loc": 12,
+          "name": "dependency_status"
+        },
+        {
+          "line": 32,
+          "loc": 4,
+          "name": "index_path"
+        },
+        {
+          "line": 38,
+          "loc": 4,
+          "name": "model_cache"
+        },
+        {
+          "line": 44,
+          "loc": 4,
+          "name": "_load_deps"
+        },
+        {
+          "line": 50,
+          "loc": 6,
+          "name": "_embedder"
+        },
+        {
+          "line": 58,
+          "loc": 38,
+          "name": "rebuild"
+        },
+        {
+          "line": 98,
+          "loc": 25,
+          "name": "search"
+        }
+      ],
+      "functions_over_120": [],
+      "importers_in": [],
+      "imports_out": [
+        "aion_core.config",
+        "aion_core.db",
+        "aion_core.util"
+      ],
+      "loc": 122,
+      "path": "aion_core/semantic_recall.py"
+    },
+    "aion_core.sessions": {
+      "classes": 0,
+      "functions": [
+        {
+          "line": 26,
+          "loc": 4,
+          "name": "log_dir"
+        },
+        {
+          "line": 32,
+          "loc": 24,
+          "name": "start"
+        },
+        {
+          "line": 58,
+          "loc": 18,
+          "name": "log"
+        },
+        {
+          "line": 78,
+          "loc": 28,
+          "name": "end"
+        },
+        {
+          "line": 108,
+          "loc": 4,
+          "name": "summary"
+        },
+        {
+          "line": 114,
+          "loc": 5,
+          "name": "index"
+        },
+        {
+          "line": 121,
+          "loc": 3,
+          "name": "open_sessions"
+        },
+        {
+          "line": 126,
+          "loc": 12,
+          "name": "_write_index"
+        },
+        {
+          "line": 140,
+          "loc": 21,
+          "name": "compact_old"
+        }
+      ],
+      "functions_over_120": [],
+      "importers_in": [
+        "aion_core.cli",
+        "aion_core.resume",
+        "aion_core.worker"
+      ],
+      "imports_out": [
+        "aion_core.config",
+        "aion_core.db",
+        "aion_core.security",
+        "aion_core.util"
+      ],
+      "loc": 160,
+      "path": "aion_core/sessions.py"
+    },
+    "aion_core.skills": {
+      "classes": 1,
+      "functions": [
+        {
+          "line": 89,
+          "loc": 7,
+          "name": "_clean_csv"
+        },
+        {
+          "line": 98,
+          "loc": 56,
+          "name": "register"
+        },
+        {
+          "line": 156,
+          "loc": 19,
+          "name": "ensure_defaults"
+        },
+        {
+          "line": 177,
+          "loc": 2,
+          "name": "get"
+        },
+        {
+          "line": 181,
+          "loc": 7,
+          "name": "all_skills"
+        },
+        {
+          "line": 190,
+          "loc": 11,
+          "name": "set_enabled"
+        },
+        {
+          "line": 203,
+          "loc": 17,
+          "name": "validate_registry"
+        },
+        {
+          "line": 222,
+          "loc": 13,
+          "name": "_available"
+        },
+        {
+          "line": 237,
+          "loc": 16,
+          "name": "report"
+        },
+        {
+          "line": 255,
+          "loc": 64,
+          "name": "validate_manifest"
+        },
+        {
+          "line": 321,
+          "loc": 22,
+          "name": "register_manifest"
+        },
+        {
+          "line": 345,
+          "loc": 10,
+          "name": "load_manifest"
+        },
+        {
+          "line": 357,
+          "loc": 27,
+          "name": "set_lifecycle"
+        },
+        {
+          "line": 386,
+          "loc": 8,
+          "name": "activate"
+        },
+        {
+          "line": 396,
+          "loc": 3,
+          "name": "catalog_root"
+        },
+        {
+          "line": 401,
+          "loc": 5,
+          "name": "catalog_manifests"
+        },
+        {
+          "line": 408,
+          "loc": 18,
+          "name": "validate_catalog"
+        },
+        {
+          "line": 428,
+          "loc": 28,
+          "name": "sync_catalog"
+        }
+      ],
+      "functions_over_120": [],
+      "importers_in": [
+        "aion_core.architecture",
+        "aion_core.bootstrap",
+        "aion_core.cli",
+        "aion_core.health",
+        "aion_core.intake",
+        "aion_core.learnrepo",
+        "aion_core.platform_resolver",
+        "aion_core.worker"
+      ],
+      "imports_out": [
+        "aion_core.db",
+        "aion_core.learnrepo",
+        "aion_core.security",
+        "aion_core.util"
+      ],
+      "loc": 455,
+      "path": "aion_core/skills.py"
+    },
+    "aion_core.sync_outbox": {
+      "classes": 1,
+      "functions": [
+        {
+          "line": 30,
+          "loc": 19,
+          "name": "queue"
+        },
+        {
+          "line": 51,
+          "loc": 6,
+          "name": "_row"
+        },
+        {
+          "line": 59,
+          "loc": 10,
+          "name": "_set_status"
+        },
+        {
+          "line": 71,
+          "loc": 4,
+          "name": "claim"
+        },
+        {
+          "line": 77,
+          "loc": 3,
+          "name": "mark_synced"
+        },
+        {
+          "line": 82,
+          "loc": 3,
+          "name": "mark_conflict"
+        },
+        {
+          "line": 87,
+          "loc": 4,
+          "name": "pending"
+        },
+        {
+          "line": 93,
+          "loc": 7,
+          "name": "backlog"
+        }
+      ],
+      "functions_over_120": [],
+      "importers_in": [],
+      "imports_out": [
+        "aion_core.db",
+        "aion_core.security",
+        "aion_core.util"
+      ],
+      "loc": 99,
+      "path": "aion_core/sync_outbox.py"
+    },
+    "aion_core.tasks": {
+      "classes": 1,
+      "functions": [
+        {
+          "line": 36,
+          "loc": 27,
+          "name": "create"
+        },
+        {
+          "line": 65,
+          "loc": 2,
+          "name": "get"
+        },
+        {
+          "line": 69,
+          "loc": 16,
+          "name": "update"
+        },
+        {
+          "line": 87,
+          "loc": 13,
+          "name": "claim"
+        },
+        {
+          "line": 102,
+          "loc": 16,
+          "name": "release_stale"
+        },
+        {
+          "line": 120,
+          "loc": 29,
+          "name": "requeue_available_executor_waits"
+        },
+        {
+          "line": 151,
+          "loc": 18,
+          "name": "complete"
+        },
+        {
+          "line": 171,
+          "loc": 13,
+          "name": "fail"
+        },
+        {
+          "line": 186,
+          "loc": 11,
+          "name": "_nothing_runnable_note"
+        },
+        {
+          "line": 199,
+          "loc": 7,
+          "name": "value"
+        },
+        {
+          "line": 208,
+          "loc": 8,
+          "name": "ready"
+        },
+        {
+          "line": 218,
+          "loc": 7,
+          "name": "_deps_met"
+        },
+        {
+          "line": 227,
+          "loc": 3,
+          "name": "next_task"
+        },
+        {
+          "line": 232,
+          "loc": 3,
+          "name": "by_status"
+        },
+        {
+          "line": 237,
+          "loc": 5,
+          "name": "blocked"
+        },
+        {
+          "line": 244,
+          "loc": 3,
+          "name": "counts"
+        }
+      ],
+      "functions_over_120": [],
+      "importers_in": [
+        "aion_core.api",
+        "aion_core.approvals",
+        "aion_core.cli",
+        "aion_core.context",
+        "aion_core.fable",
+        "aion_core.governor",
+        "aion_core.handoff",
+        "aion_core.health",
+        "aion_core.learnrepo",
+        "aion_core.notebook",
+        "aion_core.packets",
+        "aion_core.plan",
+        "aion_core.reports",
+        "aion_core.resume",
+        "aion_core.router",
+        "aion_core.seed",
+        "aion_core.worker"
+      ],
+      "imports_out": [
+        "aion_core.config",
+        "aion_core.db",
+        "aion_core.resume",
+        "aion_core.security",
+        "aion_core.util"
+      ],
+      "loc": 246,
+      "path": "aion_core/tasks.py"
+    },
+    "aion_core.tempworker": {
+      "classes": 1,
+      "functions": [
+        {
+          "line": 28,
+          "loc": 2,
+          "name": "_parse_scope"
+        },
+        {
+          "line": 32,
+          "loc": 4,
+          "name": "_coerce_scope"
+        },
+        {
+          "line": 38,
+          "loc": 21,
+          "name": "derive"
+        },
+        {
+          "line": 61,
+          "loc": 13,
+          "name": "_load"
+        },
+        {
+          "line": 76,
+          "loc": 7,
+          "name": "is_expired"
+        },
+        {
+          "line": 85,
+          "loc": 11,
+          "name": "assert_can_claim"
+        }
+      ],
+      "functions_over_120": [],
+      "importers_in": [],
+      "imports_out": [
+        "aion_core.db"
+      ],
+      "loc": 95,
+      "path": "aion_core/tempworker.py"
+    },
+    "aion_core.usage_telemetry": {
+      "classes": 0,
+      "functions": [
+        {
+          "line": 22,
+          "loc": 10,
+          "name": "_command"
+        },
+        {
+          "line": 34,
+          "loc": 36,
+          "name": "read_ccusage"
+        },
+        {
+          "line": 72,
+          "loc": 9,
+          "name": "refresh"
+        },
+        {
+          "line": 83,
+          "loc": 8,
+          "name": "latest"
+        }
+      ],
+      "functions_over_120": [],
+      "importers_in": [
+        "aion_core.api"
+      ],
+      "imports_out": [
+        "aion_core.db",
+        "aion_core.security",
+        "aion_core.util"
+      ],
+      "loc": 90,
+      "path": "aion_core/usage_telemetry.py"
+    },
+    "aion_core.util": {
+      "classes": 0,
+      "functions": [
+        {
+          "line": 13,
+          "loc": 3,
+          "name": "now"
+        },
+        {
+          "line": 18,
+          "loc": 12,
+          "name": "ago"
+        },
+        {
+          "line": 32,
+          "loc": 2,
+          "name": "today"
+        },
+        {
+          "line": 36,
+          "loc": 2,
+          "name": "month"
+        },
+        {
+          "line": 40,
+          "loc": 2,
+          "name": "new_id"
+        },
+        {
+          "line": 44,
+          "loc": 2,
+          "name": "sha256_bytes"
+        },
+        {
+          "line": 48,
+          "loc": 2,
+          "name": "sha256_text"
+        },
+        {
+          "line": 52,
+          "loc": 6,
+          "name": "sha256_file"
+        },
+        {
+          "line": 60,
+          "loc": 15,
+          "name": "atomic_write"
+        },
+        {
+          "line": 77,
+          "loc": 2,
+          "name": "write_json"
+        },
+        {
+          "line": 81,
+          "loc": 8,
+          "name": "read_json"
+        },
+        {
+          "line": 91,
+          "loc": 6,
+          "name": "append_jsonl"
+        },
+        {
+          "line": 99,
+          "loc": 14,
+          "name": "read_jsonl"
+        }
+      ],
+      "functions_over_120": [],
+      "importers_in": [
+        "aion_core.agents",
+        "aion_core.api",
+        "aion_core.approvals",
+        "aion_core.autonomy",
+        "aion_core.backup",
+        "aion_core.bootstrap",
+        "aion_core.cli",
+        "aion_core.db",
+        "aion_core.deliveries",
+        "aion_core.errors",
+        "aion_core.experiments",
+        "aion_core.fable",
+        "aion_core.governor",
+        "aion_core.guardian",
+        "aion_core.handoff",
+        "aion_core.health",
+        "aion_core.intake",
+        "aion_core.learnrepo",
+        "aion_core.memory",
+        "aion_core.metrics",
+        "aion_core.milestones",
+        "aion_core.notebook",
+        "aion_core.owner_setup",
+        "aion_core.packets",
+        "aion_core.plan",
+        "aion_core.portability",
+        "aion_core.reports",
+        "aion_core.resume",
+        "aion_core.router",
+        "aion_core.seed",
+        "aion_core.semantic_recall",
+        "aion_core.sessions",
+        "aion_core.skills",
+        "aion_core.sync_outbox",
+        "aion_core.tasks",
+        "aion_core.usage_telemetry",
+        "aion_core.worker",
+        "bridges.drive_bridge",
+        "bridges.whatsapp_bridge"
+      ],
+      "imports_out": [],
+      "loc": 112,
+      "path": "aion_core/util.py"
+    },
+    "aion_core.worker": {
+      "classes": 1,
+      "functions": [
+        {
+          "line": 74,
+          "loc": 18,
+          "name": "_argv_allow_names"
+        },
+        {
+          "line": 94,
+          "loc": 3,
+          "name": "allowed_commands"
+        },
+        {
+          "line": 99,
+          "loc": 19,
+          "name": "allow_command"
+        },
+        {
+          "line": 120,
+          "loc": 2,
+          "name": "_has_path_traversal"
+        },
+        {
+          "line": 124,
+          "loc": 20,
+          "name": "_check_binary_constraints"
+        },
+        {
+          "line": 146,
+          "loc": 32,
+          "name": "check_command"
+        },
+        {
+          "line": 180,
+          "loc": 22,
+          "name": "run_command"
+        },
+        {
+          "line": 204,
+          "loc": 2,
+          "name": "repo_root"
+        },
+        {
+          "line": 210,
+          "loc": 6,
+          "name": "ollama_available"
+        },
+        {
+          "line": 218,
+          "loc": 13,
+          "name": "run_ollama"
+        },
+        {
+          "line": 233,
+          "loc": 8,
+          "name": "cloud_command"
+        },
+        {
+          "line": 243,
+          "loc": 12,
+          "name": "run_cloud"
+        },
+        {
+          "line": 260,
+          "loc": 16,
+          "name": "_execution_lock"
+        },
+        {
+          "line": 278,
+          "loc": 22,
+          "name": "work"
+        },
+        {
+          "line": 302,
+          "loc": 82,
+          "name": "_work_locked"
+        },
+        {
+          "line": 386,
+          "loc": 4,
+          "name": "_next_resume_point"
+        },
+        {
+          "line": 392,
+          "loc": 9,
+          "name": "_raise_approval"
+        },
+        {
+          "line": 406,
+          "loc": 7,
+          "name": "auxiliary_eligible"
+        },
+        {
+          "line": 415,
+          "loc": 27,
+          "name": "_preview"
+        },
+        {
+          "line": 444,
+          "loc": 66,
+          "name": "_execute"
+        },
+        {
+          "line": 512,
+          "loc": 43,
+          "name": "_do_work"
+        },
+        {
+          "line": 557,
+          "loc": 21,
+          "name": "_validate"
+        },
+        {
+          "line": 580,
+          "loc": 14,
+          "name": "_fail"
+        },
+        {
+          "line": 596,
+          "loc": 20,
+          "name": "capability_report"
+        }
+      ],
+      "functions_over_120": [],
+      "importers_in": [
+        "aion_core.cli"
+      ],
+      "imports_out": [
+        "aion_core.agents",
+        "aion_core.approvals",
+        "aion_core.config",
+        "aion_core.context",
+        "aion_core.db",
+        "aion_core.errors",
+        "aion_core.governor",
+        "aion_core.metrics",
+        "aion_core.model_gateway",
+        "aion_core.router",
+        "aion_core.security",
+        "aion_core.sessions",
+        "aion_core.skills",
+        "aion_core.tasks",
+        "aion_core.util"
+      ],
+      "loc": 615,
+      "path": "aion_core/worker.py"
+    },
+    "bridges": {
+      "classes": 0,
+      "functions": [],
+      "functions_over_120": [],
+      "importers_in": [],
+      "imports_out": [],
+      "loc": 0,
+      "path": "bridges/__init__.py"
+    },
+    "bridges.drive_bridge": {
+      "classes": 3,
+      "functions": [
+        {
+          "line": 42,
+          "loc": 2,
+          "name": "now"
+        },
+        {
+          "line": 46,
+          "loc": 2,
+          "name": "digest"
+        },
+        {
+          "line": 50,
+          "loc": 18,
+          "name": "atomic"
+        },
+        {
+          "line": 70,
+          "loc": 2,
+          "name": "json_bytes"
+        },
+        {
+          "line": 74,
+          "loc": 9,
+          "name": "safe_path"
+        },
+        {
+          "line": 85,
+          "loc": 9,
+          "name": "check_json"
+        },
+        {
+          "line": 96,
+          "loc": 27,
+          "name": "clean"
+        },
+        {
+          "line": 125,
+          "loc": 42,
+          "name": "read_safe"
+        },
+        {
+          "line": 170,
+          "loc": 2,
+          "name": "Rclone.__init__"
+        },
+        {
+          "line": 173,
+          "loc": 17,
+          "name": "Rclone.run"
+        },
+        {
+          "line": 191,
+          "loc": 3,
+          "name": "Rclone.folders"
+        },
+        {
+          "line": 195,
+          "loc": 9,
+          "name": "Rclone.listing"
+        },
+        {
+          "line": 205,
+          "loc": 3,
+          "name": "Rclone.get"
+        },
+        {
+          "line": 209,
+          "loc": 3,
+          "name": "Rclone.put"
+        },
+        {
+          "line": 213,
+          "loc": 8,
+          "name": "Rclone.exists"
+        },
+        {
+          "line": 222,
+          "loc": 2,
+          "name": "Rclone.delete"
+        },
+        {
+          "line": 230,
+          "loc": 12,
+          "name": "_probe_ok"
+        },
+        {
+          "line": 244,
+          "loc": 25,
+          "name": "capability"
+        },
+        {
+          "line": 272,
+          "loc": 9,
+          "name": "Bridge.__init__"
+        },
+        {
+          "line": 283,
+          "loc": 18,
+          "name": "Bridge.locked"
+        },
+        {
+          "line": 302,
+          "loc": 2,
+          "name": "Bridge.save"
+        },
+        {
+          "line": 305,
+          "loc": 7,
+          "name": "Bridge.stage"
+        },
+        {
+          "line": 313,
+          "loc": 88,
+          "name": "Bridge.pull"
+        },
+        {
+          "line": 402,
+          "loc": 29,
+          "name": "Bridge.push"
+        },
+        {
+          "line": 432,
+          "loc": 57,
+          "name": "Bridge.status"
+        },
+        {
+          "line": 490,
+          "loc": 19,
+          "name": "Bridge.ready_handoff"
+        },
+        {
+          "line": 510,
+          "loc": 3,
+          "name": "Bridge.push_status"
+        },
+        {
+          "line": 514,
+          "loc": 27,
+          "name": "Bridge.test"
+        },
+        {
+          "line": 542,
+          "loc": 20,
+          "name": "Bridge.sync"
+        },
+        {
+          "line": 564,
+          "loc": 35,
+          "name": "main"
+        }
+      ],
+      "functions_over_120": [],
+      "importers_in": [
+        "aion_core.cli",
+        "aion_core.health",
+        "scripts.authorize_drive"
+      ],
+      "imports_out": [
+        "aion_core.config",
+        "aion_core.packets",
+        "aion_core.security",
+        "aion_core.util"
+      ],
+      "loc": 602,
+      "path": "bridges/drive_bridge.py"
+    },
+    "bridges.http_server": {
+      "classes": 1,
+      "functions": [
+        {
+          "line": 51,
+          "loc": 12,
+          "name": "read_secret"
+        },
+        {
+          "line": 68,
+          "loc": 2,
+          "name": "InterfaceHandler.log_message"
+        },
+        {
+          "line": 71,
+          "loc": 11,
+          "name": "InterfaceHandler._security_headers"
+        },
+        {
+          "line": 83,
+          "loc": 9,
+          "name": "InterfaceHandler._json"
+        },
+        {
+          "line": 93,
+          "loc": 29,
+          "name": "InterfaceHandler._sse"
+        },
+        {
+          "line": 123,
+          "loc": 8,
+          "name": "InterfaceHandler._authorized"
+        },
+        {
+          "line": 132,
+          "loc": 18,
+          "name": "InterfaceHandler._serve_asset"
+        },
+        {
+          "line": 151,
+          "loc": 40,
+          "name": "InterfaceHandler.do_GET"
+        },
+        {
+          "line": 192,
+          "loc": 20,
+          "name": "InterfaceHandler.do_POST"
+        },
+        {
+          "line": 214,
+          "loc": 8,
+          "name": "build_server"
+        },
+        {
+          "line": 224,
+          "loc": 19,
+          "name": "main"
+        }
+      ],
+      "functions_over_120": [],
+      "importers_in": [],
+      "imports_out": [
+        "aion_core.api",
+        "aion_core.approvals",
+        "aion_core.bootstrap",
+        "aion_core.config",
+        "aion_core.db",
+        "aion_core.router",
+        "aion_core.security"
+      ],
+      "loc": 246,
+      "path": "bridges/http_server.py"
+    },
+    "bridges.openclaw_check": {
+      "classes": 0,
+      "functions": [
+        {
+          "line": 20,
+          "loc": 28,
+          "name": "check"
+        }
+      ],
+      "functions_over_120": [],
+      "importers_in": [
+        "aion_core.cli",
+        "aion_core.health"
+      ],
+      "imports_out": [
+        "aion_core.db"
+      ],
+      "loc": 47,
+      "path": "bridges/openclaw_check.py"
+    },
+    "bridges.whatsapp_bridge": {
+      "classes": 3,
+      "functions": [
+        {
+          "line": 39,
+          "loc": 3,
+          "name": "cloud_sender_allowed"
+        },
+        {
+          "line": 45,
+          "loc": 14,
+          "name": "reply_to"
+        },
+        {
+          "line": 61,
+          "loc": 10,
+          "name": "run_stdin"
+        },
+        {
+          "line": 73,
+          "loc": 24,
+          "name": "run_file"
+        },
+        {
+          "line": 102,
+          "loc": 2,
+          "name": "Handler.log_message"
+        },
+        {
+          "line": 105,
+          "loc": 7,
+          "name": "Handler._send"
+        },
+        {
+          "line": 113,
+          "loc": 25,
+          "name": "Handler.do_POST"
+        },
+        {
+          "line": 139,
+          "loc": 2,
+          "name": "Handler.do_GET"
+        },
+        {
+          "line": 143,
+          "loc": 12,
+          "name": "cloud_messages"
+        },
+        {
+          "line": 160,
+          "loc": 4,
+          "name": "CloudAPI.__init__"
+        },
+        {
+          "line": 165,
+          "loc": 23,
+          "name": "CloudAPI.send_text"
+        },
+        {
+          "line": 196,
+          "loc": 2,
+          "name": "CloudHandler.log_message"
+        },
+        {
+          "line": 199,
+          "loc": 7,
+          "name": "CloudHandler._json"
+        },
+        {
+          "line": 207,
+          "loc": 14,
+          "name": "CloudHandler.do_GET"
+        },
+        {
+          "line": 222,
+          "loc": 32,
+          "name": "CloudHandler.do_POST"
+        },
+        {
+          "line": 256,
+          "loc": 15,
+          "name": "run_webhook"
+        },
+        {
+          "line": 273,
+          "loc": 22,
+          "name": "run_cloud"
+        },
+        {
+          "line": 297,
+          "loc": 18,
+          "name": "main"
+        }
+      ],
+      "functions_over_120": [],
+      "importers_in": [],
+      "imports_out": [
+        "aion_core.bootstrap",
+        "aion_core.config",
+        "aion_core.db",
+        "aion_core.errors",
+        "aion_core.resume",
+        "aion_core.router",
+        "aion_core.security",
+        "aion_core.util"
+      ],
+      "loc": 318,
+      "path": "bridges/whatsapp_bridge.py"
+    },
+    "scripts.authorize_drive": {
+      "classes": 0,
+      "functions": [
+        {
+          "line": 20,
+          "loc": 53,
+          "name": "main"
+        }
+      ],
+      "functions_over_120": [],
+      "importers_in": [],
+      "imports_out": [
+        "bridges.drive_bridge"
+      ],
+      "loc": 80,
+      "path": "scripts/authorize_drive.py"
+    },
+    "scripts.check_portability": {
+      "classes": 0,
+      "functions": [
+        {
+          "line": 85,
+          "loc": 14,
+          "name": "scanned_files"
+        },
+        {
+          "line": 101,
+          "loc": 8,
+          "name": "strip_noise"
+        },
+        {
+          "line": 120,
+          "loc": 11,
+          "name": "_assigned_names"
+        },
+        {
+          "line": 133,
+          "loc": 2,
+          "name": "_parent_map"
+        },
+        {
+          "line": 137,
+          "loc": 8,
+          "name": "_under"
+        },
+        {
+          "line": 147,
+          "loc": 21,
+          "name": "_defensive_for_use"
+        },
+        {
+          "line": 170,
+          "loc": 17,
+          "name": "_defensive_comprehension_use"
+        },
+        {
+          "line": 189,
+          "loc": 29,
+          "name": "_policy_binding_is_defensive"
+        },
+        {
+          "line": 220,
+          "loc": 35,
+          "name": "inert_policy_string_spans"
+        },
+        {
+          "line": 257,
+          "loc": 8,
+          "name": "_mask_columns"
+        },
+        {
+          "line": 267,
+          "loc": 35,
+          "name": "findings_for"
+        },
+        {
+          "line": 304,
+          "loc": 45,
+          "name": "main"
+        }
+      ],
+      "functions_over_120": [],
+      "importers_in": [],
+      "imports_out": [],
+      "loc": 352,
+      "path": "scripts/check_portability.py"
+    },
+    "scripts.ci_health_gate": {
+      "classes": 0,
+      "functions": [
+        {
+          "line": 22,
+          "loc": 15,
+          "name": "main"
+        }
+      ],
+      "functions_over_120": [],
+      "importers_in": [],
+      "imports_out": [
+        "aion_core.db",
+        "aion_core.health"
+      ],
+      "loc": 40,
+      "path": "scripts/ci_health_gate.py"
+    },
+    "scripts.complexity_map": {
+      "classes": 0,
+      "functions": [
+        {
+          "line": 14,
+          "loc": 20,
+          "name": "cycles_for"
+        },
+        {
+          "line": 18,
+          "loc": 11,
+          "name": "cycles_for.visit"
+        },
+        {
+          "line": 36,
+          "loc": 15,
+          "name": "functions_for"
+        },
+        {
+          "line": 39,
+          "loc": 9,
+          "name": "functions_for.visit"
+        },
+        {
+          "line": 53,
+          "loc": 48,
+          "name": "collect"
+        },
+        {
+          "line": 103,
+          "loc": 31,
+          "name": "render_hotspots"
+        },
+        {
+          "line": 136,
+          "loc": 22,
+          "name": "main"
+        }
+      ],
+      "functions_over_120": [],
+      "importers_in": [],
+      "imports_out": [],
+      "loc": 161,
+      "path": "scripts/complexity_map.py"
+    },
+    "scripts.render_protected_paths": {
+      "classes": 0,
+      "functions": [
+        {
+          "line": 19,
+          "loc": 2,
+          "name": "load_baseline"
+        },
+        {
+          "line": 23,
+          "loc": 32,
+          "name": "render"
+        },
+        {
+          "line": 57,
+          "loc": 3,
+          "name": "missing_from_doc"
+        },
+        {
+          "line": 62,
+          "loc": 4,
+          "name": "main"
+        }
+      ],
+      "functions_over_120": [],
+      "importers_in": [],
+      "imports_out": [],
+      "loc": 69,
+      "path": "scripts/render_protected_paths.py"
+    },
+    "scripts.runtime_inventory": {
+      "classes": 0,
+      "functions": [
+        {
+          "line": 33,
+          "loc": 2,
+          "name": "_tool_presence"
+        },
+        {
+          "line": 37,
+          "loc": 15,
+          "name": "_host_adapter_facts"
+        },
+        {
+          "line": 54,
+          "loc": 16,
+          "name": "collect"
+        },
+        {
+          "line": 72,
+          "loc": 2,
+          "name": "_has_gzip_tar_support"
+        },
+        {
+          "line": 76,
+          "loc": 2,
+          "name": "render"
+        },
+        {
+          "line": 80,
+          "loc": 3,
+          "name": "main"
+        }
+      ],
+      "functions_over_120": [],
+      "importers_in": [],
+      "imports_out": [
+        "aion_core.host"
+      ],
+      "loc": 86,
+      "path": "scripts/runtime_inventory.py"
+    },
+    "scripts.scan_history": {
+      "classes": 0,
+      "functions": [
+        {
+          "line": 35,
+          "loc": 22,
+          "name": "iter_all_blobs"
+        },
+        {
+          "line": 59,
+          "loc": 13,
+          "name": "owning_commit"
+        },
+        {
+          "line": 74,
+          "loc": 19,
+          "name": "scan_history"
+        },
+        {
+          "line": 95,
+          "loc": 20,
+          "name": "main"
+        }
+      ],
+      "functions_over_120": [],
+      "importers_in": [],
+      "imports_out": [
+        "aion_core.security"
+      ],
+      "loc": 118,
+      "path": "scripts/scan_history.py"
+    },
+    "scripts.touch_marker": {
+      "classes": 0,
+      "functions": [
+        {
+          "line": 15,
+          "loc": 8,
+          "name": "main"
+        }
+      ],
+      "functions_over_120": [],
+      "importers_in": [],
+      "imports_out": [],
+      "loc": 26,
+      "path": "scripts/touch_marker.py"
+    },
+    "scripts.verify_authority": {
+      "classes": 0,
+      "functions": [
+        {
+          "line": 54,
+          "loc": 5,
+          "name": "git"
+        },
+        {
+          "line": 61,
+          "loc": 2,
+          "name": "sha256_file"
+        },
+        {
+          "line": 65,
+          "loc": 4,
+          "name": "matches"
+        },
+        {
+          "line": 71,
+          "loc": 2,
+          "name": "any_match"
+        },
+        {
+          "line": 75,
+          "loc": 11,
+          "name": "load_baseline_from"
+        },
+        {
+          "line": 88,
+          "loc": 2,
+          "name": "merge_base"
+        },
+        {
+          "line": 92,
+          "loc": 2,
+          "name": "changed_paths"
+        },
+        {
+          "line": 96,
+          "loc": 2,
+          "name": "added_paths"
+        },
+        {
+          "line": 100,
+          "loc": 8,
+          "name": "added_lines"
+        },
+        {
+          "line": 110,
+          "loc": 10,
+          "name": "detect_task_ids"
+        },
+        {
+          "line": 124,
+          "loc": 26,
+          "name": "cmd_strict"
+        },
+        {
+          "line": 154,
+          "loc": 38,
+          "name": "cmd_anti_dup"
+        },
+        {
+          "line": 196,
+          "loc": 9,
+          "name": "hash_drift"
+        },
+        {
+          "line": 207,
+          "loc": 5,
+          "name": "cmd_self"
+        },
+        {
+          "line": 214,
+          "loc": 15,
+          "name": "cmd_deploy"
+        },
+        {
+          "line": 233,
+          "loc": 14,
+          "name": "cmd_freeze"
+        },
+        {
+          "line": 249,
+          "loc": 4,
+          "name": "finish"
+        },
+        {
+          "line": 255,
+          "loc": 12,
+          "name": "main"
+        }
+      ],
+      "functions_over_120": [],
+      "importers_in": [],
+      "imports_out": [],
+      "loc": 270,
+      "path": "scripts/verify_authority.py"
+    }
+  }
+}
