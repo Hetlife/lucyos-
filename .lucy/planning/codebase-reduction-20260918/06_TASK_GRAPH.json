@@ -207,7 +207,7 @@
       "milestone": "M2",
       "level": "L1",
       "priority": "P3",
-      "status": "READY_TO_EXECUTE",
+      "status": "DONE",
       "executor": "claude-code",
       "reviewer": "codex",
       "depends_on": [
@@ -249,7 +249,7 @@
       "milestone": "M3",
       "level": "L2",
       "priority": "P3",
-      "status": "NEW",
+      "status": "READY_TO_EXECUTE",
       "executor": "codex",
       "reviewer": "claude-code",
       "depends_on": [
@@ -335,7 +335,7 @@
       "milestone": "M4",
       "level": "L2",
       "priority": "P3",
-      "status": "NEW",
+      "status": "READY_TO_EXECUTE",
       "executor": "codex",
       "reviewer": "claude-code",
       "depends_on": [
