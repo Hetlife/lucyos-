@@ -271,6 +271,10 @@ def _main(argv=None) -> int:
 
     ctx = sub.add_parser("context", help="build a task-specific context packet")
     ctx.add_argument("task_id")
+    ctx.add_argument("--module")
+    ctx.add_argument("--budget-bytes", type=int)
+    ctx.add_argument("--since")
+    ctx.add_argument("--json", action="store_true")
 
     args = p.parse_args(argv)
     cmd = args.cmd
@@ -593,7 +597,11 @@ def _main(argv=None) -> int:
         _print(f"cloud worker: {args.template}")
     elif cmd == "context":
         from . import context
-        _print(context.build(args.task_id))
+        try:
+            _print(context.build(args.task_id, module=args.module, budget_bytes=args.budget_bytes,
+                                 since=args.since, json_output=args.json))
+        except (ValueError, OSError) as exc:
+            raise CliError(security.redact(str(exc))) from None
     return 0
 
 
