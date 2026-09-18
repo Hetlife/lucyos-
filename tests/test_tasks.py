@@ -72,6 +72,27 @@ class TestCompletionRefreshesResume(AionTest):
         self.assertIn(second, state["next_action"])
         self.assertIn("it worked", state["last_verified_success"])
 
+    def test_completion_redacts_evidence_before_resume_persistence(self):
+        from aion_core import config, resume
+        task_id = tasks.create("redact completion proof")
+        token = "ghp_AbCdEfGhIjKlMnOpQrStUvWxYz012345"
+        tasks.complete(task_id, f"verified with {token}")
+        self.assertNotIn(token, tasks.get(task_id)["evidence"])
+        self.assertNotIn(token, resume.load()["last_verified_success"])
+        self.assertNotIn(token, (config.home() / "state" / "RESUME.json").read_text())
+        self.assertNotIn(token, (config.home() / "RESUME.md").read_text())
+
+    def test_claimed_compare_and_set_refuses_wrong_owner_and_terminal_replay(self):
+        task_id = tasks.create("claimed CAS")
+        self.assertTrue(tasks.claim(task_id, "worker-a"))
+        self.assertFalse(tasks.update_if_claimed(task_id, "worker-b", status="BLOCKED"))
+        self.assertEqual(tasks.get(task_id)["status"], "CLAIMED")
+        self.assertTrue(tasks.complete_if_claimed(task_id, "worker-a", "validated"))
+        self.assertEqual(tasks.get(task_id)["status"], "DONE")
+        self.assertFalse(tasks.update_if_claimed(task_id, "worker-a", status="FAILED"))
+        self.assertFalse(tasks.complete_if_claimed(task_id, "worker-a", "late replay"))
+        self.assertEqual(tasks.get(task_id)["status"], "DONE")
+
     def test_empty_queue_after_completion_says_so(self):
         from aion_core import resume
         only = tasks.create("the only job")

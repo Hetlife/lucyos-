@@ -84,6 +84,36 @@ def update(task_id: str, **kw) -> None:
     db.log_event("aion", "task.update", task_id, kw.get("status", ""))
 
 
+def update_if_claimed(task_id: str, agent_id: str, **kw) -> bool:
+    """Atomically update only while ``agent_id`` still owns an active claim.
+
+    This is the result-ingest CAS boundary for external workers.  A cancelled,
+    completed, reviewed, blocked or reassigned task must never be overwritten by
+    a late result packet.
+    """
+    allowed = set(FIELDS) | {"retry_count", "claimed_at", "started_at", "completed_at", "owner_agent"}
+    bad = set(kw) - allowed
+    if bad:
+        raise TaskError(f"unknown task fields: {sorted(bad)}")
+    if "status" in kw and kw["status"] not in STATES:
+        raise TaskError(f"invalid status {kw['status']!r}")
+    kw = {k: (security.redact(v) if isinstance(v, str) else v) for k, v in kw.items()}
+    kw["updated_at"] = util.now()
+    sets = ", ".join(f"{k}=?" for k in kw)
+    placeholders = ",".join("?" for _ in ACTIVE_STATES)
+    conn = db.connect()
+    cur = conn.execute(
+        f"UPDATE tasks SET {sets} WHERE task_id=? AND owner_agent=? "
+        f"AND status IN ({placeholders})",
+        list(kw.values()) + [task_id, agent_id, *ACTIVE_STATES],
+    )
+    conn.commit()
+    if not cur.rowcount:
+        return False
+    db.log_event(agent_id, "task.claimed_update", task_id, kw.get("status", ""))
+    return True
+
+
 def claim(task_id: str, agent_id: str) -> bool:
     """Atomically take ownership.  False if another agent already owns it."""
     conn = db.connect()
@@ -148,17 +178,7 @@ def requeue_available_executor_waits(available_classes: set[str]) -> list[str]:
     return requeued
 
 
-def complete(task_id: str, evidence: str, next_action: str = "") -> None:
-    """DONE requires evidence.  Refuses an empty proof string.
-
-    Completing a task is the SAVE step of the execution loop, so the resume
-    point is refreshed here — otherwise a crash right after a completion would
-    resume from work that is already finished.
-    """
-    if not evidence or not evidence.strip():
-        raise TaskError("cannot mark DONE without evidence (test run, measurement or observation)")
-    update(task_id, status="DONE", evidence=evidence, next_action=next_action,
-           blockers="", last_error="", completed_at=util.now())
+def _checkpoint_completion(task_id: str, evidence: str) -> None:
     from . import resume  # late import: resume depends on this module
     nxt = next_task()
     resume.checkpoint(
@@ -166,6 +186,32 @@ def complete(task_id: str, evidence: str, next_action: str = "") -> None:
         next_action=(f"work {nxt['task_id']}: {nxt['next_action'] or nxt['title']}"
                      if nxt else _nothing_runnable_note()),
     )
+
+
+def complete(task_id: str, evidence: str, next_action: str = "") -> None:
+    """DONE requires evidence and never persists unredacted proof text."""
+    if not evidence or not evidence.strip():
+        raise TaskError("cannot mark DONE without evidence (test run, measurement or observation)")
+    evidence = security.redact(evidence)
+    update(task_id, status="DONE", evidence=evidence, next_action=next_action,
+           blockers="", last_error="", completed_at=util.now())
+    _checkpoint_completion(task_id, evidence)
+
+
+def complete_if_claimed(task_id: str, agent_id: str, evidence: str,
+                        next_action: str = "") -> bool:
+    """Atomically complete only the active claim still owned by ``agent_id``."""
+    if not evidence or not evidence.strip():
+        raise TaskError("cannot mark DONE without evidence (test run, measurement or observation)")
+    evidence = security.redact(evidence)
+    applied = update_if_claimed(
+        task_id, agent_id, status="DONE", evidence=evidence, next_action=next_action,
+        blockers="", last_error="", completed_at=util.now(),
+    )
+    if not applied:
+        return False
+    _checkpoint_completion(task_id, evidence)
+    return True
 
 
 def fail(task_id: str, error: str) -> str:
@@ -205,14 +251,14 @@ def value(row) -> float:
     return round(num / den, 3)
 
 
-def ready(limit: int = 10) -> list:
+def ready(limit: int | None = 10) -> list:
     rows = db.connect().execute(
         "SELECT * FROM tasks WHERE status IN ('READY','TRIAGE','INBOX') "
         "AND (blockers IS NULL OR blockers='')"
     ).fetchall()
     rows = [r for r in rows if _deps_met(r)]
     rows.sort(key=lambda r: (-value(r), r["priority"], r["created_at"]))
-    return rows[:limit]
+    return rows if limit is None else rows[:limit]
 
 
 def _deps_met(row) -> bool:

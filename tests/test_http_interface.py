@@ -137,6 +137,82 @@ class TestPhoneInterface(AionTest):
         self.assertEqual(tasks.get(d_task)["status"], "READY")
         self.assertEqual(tasks.get(b_task)["status"], "READY")
 
+    def test_scs_claim_scans_past_excluded_first_page(self):
+        for index in range(30):
+            tasks.create(
+                f"excluded secret {index}", data_class="SECRET", model_class="A",
+                impact=5, probability=1, info_gain=2, unlocks=2,
+                time_est=0.1, cost=0.1, risk=0.1, human_dependence=0.1,
+            )
+        eligible = tasks.create(
+            "eligible after excluded page", model_class="A", data_class="INTERNAL",
+            impact=1, probability=1, info_gain=1, unlocks=1,
+        )
+        with mock.patch.dict(os.environ, {"AION_SCS_HANDOFF_ENABLED": "1"}, clear=False):
+            _, payload = self.request(http_server.SCS_TASK_PATH, token=self.token)
+        self.assertEqual(payload["data"]["task_id"], eligible)
+        self.assertEqual(tasks.get(eligible)["status"], "CLAIMED")
+
+    def test_scs_different_result_keys_cannot_overwrite_terminal_state(self):
+        task_id = tasks.create("concurrent result", model_class="A")
+        base = {
+            "task_id": task_id,
+            "ACTIONS": "bounded action",
+            "FILES_CHANGED": "artifact.txt",
+            "TESTS": "validation passed",
+            "RESULTS": "result verified",
+            "BLOCKERS": "",
+            "NEXT_ACTION": "continue",
+        }
+        with mock.patch.dict(os.environ, {"AION_SCS_HANDOFF_ENABLED": "1"}, clear=False):
+            self.request(http_server.SCS_TASK_PATH, token=self.token)
+            packets = []
+            for key, status in (("race-done", "DONE"), ("race-blocked", "BLOCKED")):
+                packet = dict(base)
+                packet["idempotency_key"] = key
+                packet["STATUS"] = status
+                packet["BLOCKERS"] = "blocked" if status == "BLOCKED" else ""
+                packets.append(packet)
+
+            def submit(packet):
+                try:
+                    response, payload = self.request(
+                        http_server.SCS_RESULT_PATH, token=self.token, payload=packet
+                    )
+                    return response.status, payload
+                except HTTPError as exc:
+                    return exc.code, json.loads(exc.read().decode("utf-8"))
+
+            with ThreadPoolExecutor(max_workers=2) as pool:
+                results = list(pool.map(submit, packets))
+
+        codes = sorted(code for code, _ in results)
+        self.assertEqual(codes, [200, 409], results)
+        final = tasks.get(task_id)["status"]
+        self.assertIn(final, {"DONE", "BLOCKED"})
+        self.assertNotEqual(final, "CLAIMED")
+
+    def test_scs_result_refuses_lost_or_cancelled_claim(self):
+        task_id = tasks.create("cancel before result", model_class="A")
+        packet = {
+            "task_id": task_id,
+            "idempotency_key": "cancelled-result",
+            "STATUS": "DONE",
+            "ACTIONS": "work finished late",
+            "FILES_CHANGED": "artifact.txt",
+            "TESTS": "tests passed",
+            "RESULTS": "late result",
+            "BLOCKERS": "",
+            "NEXT_ACTION": "",
+        }
+        with mock.patch.dict(os.environ, {"AION_SCS_HANDOFF_ENABLED": "1"}, clear=False):
+            self.request(http_server.SCS_TASK_PATH, token=self.token)
+            tasks.update(task_id, status="CANCELLED", owner_agent=None)
+            with self.assertRaises(HTTPError) as caught:
+                self.request(http_server.SCS_RESULT_PATH, token=self.token, payload=packet)
+        self.assertEqual(caught.exception.code, 409)
+        self.assertEqual(tasks.get(task_id)["status"], "CANCELLED")
+
     def test_scs_result_is_replay_safe_conflict_safe_and_redacted(self):
         task_id = tasks.create("handoff result")
         packet = {
@@ -170,6 +246,10 @@ class TestPhoneInterface(AionTest):
         ).fetchone()
         self.assertNotIn("result-001", stored_row["key"])
         self.assertNotIn("ghp_AbCdEf", stored_row["result"])
+        from aion_core import config, resume
+        self.assertNotIn("ghp_AbCdEf", resume.load().get("last_verified_success", ""))
+        self.assertNotIn("ghp_AbCdEf", (config.home() / "state" / "RESUME.json").read_text())
+        self.assertNotIn("ghp_AbCdEf", (config.home() / "RESUME.md").read_text())
 
     def test_scs_post_commit_failure_keeps_idempotency_pending(self):
         from aion_core import resume

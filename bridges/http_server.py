@@ -85,7 +85,7 @@ def _claim_scs_task() -> dict | None:
         or governor_state in {"RESERVE", "CRITICAL-ONLY", "HANDOFF", "STOP"}
     )
     agent = scs_agent_id()
-    for row in tasks.ready(25):
+    for row in tasks.ready(None):
         data_class = str(row["data_class"] or "INTERNAL").upper()
         model_class = str(row["model_class"] or "B").upper()
         if data_class == "SECRET" or model_class in {"C", "D"}:
@@ -343,11 +343,14 @@ class InterfaceHandler(BaseHTTPRequestHandler):
         for key in ("ACTIONS", "FILES_CHANGED", "TESTS", "RESULTS"):
             if normalized[key]:
                 evidence_parts.append(f"{key}: {normalized[key]}")
-        evidence = "\n".join(evidence_parts)
+        evidence = security.redact("\n".join(evidence_parts))
         mutated = False
         try:
             if status == "DONE":
-                tasks.complete(task_id, evidence=evidence, next_action=normalized["NEXT_ACTION"])
+                applied = tasks.complete_if_claimed(
+                    task_id, scs_agent_id(), evidence=evidence,
+                    next_action=normalized["NEXT_ACTION"],
+                )
             else:
                 updates = {
                     "status": status,
@@ -358,7 +361,10 @@ class InterfaceHandler(BaseHTTPRequestHandler):
                     updates["blockers"] = normalized["BLOCKERS"]
                 if status == "FAILED":
                     updates["last_error"] = normalized["RESULTS"] or normalized["BLOCKERS"] or "reported by SCS"
-                tasks.update(task_id, **updates)
+                applied = tasks.update_if_claimed(task_id, scs_agent_id(), **updates)
+            if not applied:
+                _release_pending_submission(idempotency_key, pending)
+                return self._json(409, {"error": "task claim changed before result commit"})
             mutated = True
             response = {"task_id": task_id, "status": status, "replayed": False}
             _finish_submission(idempotency_key, fingerprint, response)
