@@ -32,3 +32,13 @@ Newest block first. Format: `05_AUTONOMOUS_EXECUTION_LOOP.md` §5. A fresh contr
 - Claude Code unavailable due subscription/spend limit; work rerouted to Codex without paid upgrade.
 - Mark-2 runtime/state authority unchanged. No main merge or production deployment performed.
 - WhatsApp delivery: NOT ACTIVE. Repo contains Meta WhatsApp Cloud API bridge, but Mark-2 currently has required WhatsApp environment credentials unset and no active aion-bridge service was observed.
+
+## 2026-09-18 · M1 gate PASS
+- S-41 DONE: task commit 88f9e4f; integrated as 6888b12.
+- S-42 DONE: task commit 90a8eae; integrated as f28097c.
+- S-43 DONE: task commit 1166a03; integrated as 0304323.
+- Combined research-branch regression/gates PASS.
+- FABLE-06 DONE: evidence/M1_GATE.md; eight-module cut confirmed.
+- S-44 READY_TO_EXECUTE.
+- Independent Codex review command was attempted but its bubblewrap review sandbox could not initialize; no false PASS was recorded. Acceptance is supported by task-local full gates plus a second combined-branch regression/gate run.
+- No merge to main; Mark-2 runtime/state unchanged.
