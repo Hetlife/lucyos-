@@ -24,7 +24,7 @@ from aion_core import config, packets, security
 
 REPO = Path(__file__).resolve().parents[1]
 FOLDERS = ['00_INBOX', '01_LUCYOS', '02_STRATEGY_FACTORY', '03_CONTEXT',
-           '04_REPORTS', '05_HANDOFFS', '06_APPROVALS', '99_ARCHIVE']
+           '04_REPORTS', '05_HANDOFFS', '06_APPROVALS', '07_PROMPTS', '99_ARCHIVE']
 KINDS = {'handoffs': '05_HANDOFFS', 'reports': '04_REPORTS', 'context': '03_CONTEXT'}
 LIMIT = 256 * 1024
 BLOCK = re.compile(r'(?i)(private_state|secrets?\.env|^\.env|\.pem$|\.key$|id_(?:ed25519|rsa)|'
