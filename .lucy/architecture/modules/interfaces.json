@@ -1,0 +1,15 @@
+{
+  "module": "interfaces",
+  "purpose": "CLI, HTTP, messaging and external integration interfaces.",
+  "public_api": ["CLI: ./aion", "HTTP: /v1", "aion_core.router"],
+  "owned_files": ["aion_core/router.py", "aion_core/api.py", "aion_core/reports.py", "aion_core/cli.py", "bridges/**/*.py", "web/**/*", "integrations/openclaw/**/*"],
+  "allowed_dependencies": ["business", "execution", "governance", "kernel.state", "kernel.tasks", "memory", "skills"],
+  "forbidden_dependencies": [],
+  "state_touched": ["Canonical state through kernel APIs", "Bridge cursors and synchronization artifacts"],
+  "side_effects": ["HTTP serving, messaging, Drive synchronization and CLI output"],
+  "tests": ["tests/test_api.py", "tests/test_router.py", "tests/test_http_v1.py", "tests/test_bridge.py", "tests/test_drive_bridge.py", "tests/test_openclaw_lucyos_bridge.py"],
+  "invariants": ["Existing CLI and HTTP contracts remain unchanged."],
+  "adrs": [],
+  "risk_level": "high",
+  "protected_paths": ["aion_core/router.py"]
+}
