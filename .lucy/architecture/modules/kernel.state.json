@@ -1,0 +1,15 @@
+{
+  "module": "kernel.state",
+  "purpose": "Canonical state, configuration, redaction, bootstrap and backups.",
+  "public_api": ["aion_core.db.connect", "aion_core.db.get_meta", "aion_core.db.set_meta", "aion_core.db.log_event", "aion_core.security.redact", "aion_core.security.scan_text"],
+  "owned_files": ["aion_core/__init__.py", "aion_core/db.py", "aion_core/config.py", "aion_core/util.py", "aion_core/security.py", "aion_core/bootstrap.py", "aion_core/backup.py"],
+  "allowed_dependencies": ["execution", "kernel.tasks", "skills"],
+  "forbidden_dependencies": [],
+  "state_touched": ["Canonical SQLite database and audit events", "Configuration and backup files"],
+  "side_effects": ["Database writes, migrations and backup file I/O"],
+  "tests": ["tests/test_migrations.py", "tests/test_security.py", "tests/test_backup_encryption.py", "tests/test_util.py"],
+  "invariants": ["One canonical SQLite store; redact sensitive output."],
+  "adrs": [],
+  "risk_level": "high",
+  "protected_paths": ["aion_core/security.py", "aion_core/db.py", "aion_core/config.py"]
+}

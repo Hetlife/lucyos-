@@ -1,0 +1,146 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "LucyOS logical module contract",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "module",
+    "purpose",
+    "public_api",
+    "owned_files",
+    "allowed_dependencies",
+    "forbidden_dependencies",
+    "state_touched",
+    "side_effects",
+    "tests",
+    "invariants",
+    "adrs",
+    "risk_level",
+    "protected_paths"
+  ],
+  "properties": {
+    "module": {
+      "enum": [
+        "kernel.state",
+        "kernel.tasks",
+        "execution",
+        "memory",
+        "skills",
+        "interfaces",
+        "governance",
+        "business"
+      ]
+    },
+    "purpose": {
+      "type": "string",
+      "minLength": 1
+    },
+    "public_api": {
+      "type": "array",
+      "uniqueItems": true,
+      "items": {
+        "type": "string",
+        "minLength": 1
+      },
+      "minItems": 1
+    },
+    "owned_files": {
+      "type": "array",
+      "uniqueItems": true,
+      "items": {
+        "type": "string",
+        "minLength": 1
+      },
+      "minItems": 1
+    },
+    "allowed_dependencies": {
+      "type": "array",
+      "uniqueItems": true,
+      "items": {
+        "enum": [
+          "kernel.state",
+          "kernel.tasks",
+          "execution",
+          "memory",
+          "skills",
+          "interfaces",
+          "governance",
+          "business"
+        ]
+      }
+    },
+    "forbidden_dependencies": {
+      "type": "array",
+      "uniqueItems": true,
+      "items": {
+        "enum": [
+          "kernel.state",
+          "kernel.tasks",
+          "execution",
+          "memory",
+          "skills",
+          "interfaces",
+          "governance",
+          "business"
+        ]
+      }
+    },
+    "state_touched": {
+      "type": "array",
+      "uniqueItems": true,
+      "items": {
+        "type": "string",
+        "minLength": 1
+      }
+    },
+    "side_effects": {
+      "type": "array",
+      "uniqueItems": true,
+      "items": {
+        "type": "string",
+        "minLength": 1
+      }
+    },
+    "tests": {
+      "type": "array",
+      "uniqueItems": true,
+      "items": {
+        "type": "string",
+        "minLength": 1
+      },
+      "minItems": 1
+    },
+    "invariants": {
+      "type": "array",
+      "uniqueItems": true,
+      "items": {
+        "type": "string",
+        "minLength": 1
+      },
+      "minItems": 1
+    },
+    "adrs": {
+      "type": "array",
+      "uniqueItems": true,
+      "items": {
+        "type": "string",
+        "minLength": 1
+      }
+    },
+    "risk_level": {
+      "enum": [
+        "low",
+        "medium",
+        "high"
+      ]
+    },
+    "protected_paths": {
+      "type": "array",
+      "uniqueItems": true,
+      "items": {
+        "type": "string",
+        "minLength": 1
+      }
+    }
+  }
+}
