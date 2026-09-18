@@ -23,3 +23,12 @@ Newest block first. Format: `05_AUTONOMOUS_EXECUTION_LOOP.md` §5. A fresh contr
 - risk: R-01 node divergence (2cd3cc5 vs 66e3a4e) unresolved until OWNER-06
 - rollback: delete the folder
 - next_unlocked: S-40
+
+## 2026-09-18 · M1 execution checkpoint
+- S-40: DONE; canonical M0 baseline locked at main 66e3a4ef1b8242123555af5a7c9d80115ab23d82.
+- S-41: IN PROGRESS in isolated worktree; targeted fixture tests PASS; measured 68 modules, db fan-in 43, cli._main only >120-line function; cycle count 11 vs planned reference 14 requires verifier review; full regression/gates running.
+- S-42: IN PROGRESS in isolated worktree; scanner/evidence generated; scan + portability PASS; known stale planning docs identified; final tracked-diff authority gate and commit pending.
+- S-43: IN PROGRESS in isolated worktree; 5 targeted tests PASS; reinvention check clean; six-reference evidence/full regression pending.
+- Claude Code unavailable due subscription/spend limit; work rerouted to Codex without paid upgrade.
+- Mark-2 runtime/state authority unchanged. No main merge or production deployment performed.
+- WhatsApp delivery: NOT ACTIVE. Repo contains Meta WhatsApp Cloud API bridge, but Mark-2 currently has required WhatsApp environment credentials unset and no active aion-bridge service was observed.
