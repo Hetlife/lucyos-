@@ -1,301 +1,291 @@
-# Sonnet Repair Execution Queue — 2026-09-17
+# Sonnet Execution Queue — 2026-09-17
 
-Format and approval-level rules per `docs/internal/SONNET_REPAIR_APPROVAL_BOUNDARIES_TEMP.md`.
-Order per the auditor spec §7 (repo/branch/commit reconciliation before
-functional work). Only two repair tasks are needed — the repo is
-substantively healthy; see `HEALTH_REPORT.md` for why this queue is short on
-purpose ("do not manufacture work").
+Execute **strictly in order**. TASK-003 is an owner decision and gates TASK-004 and the
+final push. Do not start a task whose dependency is unresolved.
 
-**Repo-only constraint applies to every task below**: Sonnet has access only
-to this Git repository and GitHub-visible state. No task in this queue
-requires local-machine, OpenClaw-host, or other out-of-repo evidence. None
-are BLOCKED for that reason.
+Standing rules for every task below: never weaken a test or gate, never force-push, never
+push to `main`, never invent architecture, and stop rather than improvise.
+
+| Order | Task | Sev | Owner decision? | Depends on |
+|---|---|---|---|---|
+| 1 | TASK-001 record the canonical branch | P1 | no | NONE |
+| 2 | TASK-002 allowlist the four owner modules | P1 | no | NONE |
+| 3 | TASK-003 rule on derived index + external providers | P1/P2 | **YES** | TASK-002 |
+| 4 | TASK-004 execute the reconciling merge | P1 | no | 001, 002, 003 |
+| 5 | FINAL-SONNET-PUSH | — | no | 004 |
 
 ---
 
-## TASK-R1 — Promote the already-fixed authority allowlist onto `main`
+## TASK `TASK-001` — Record the canonical branch and fix `origin/HEAD`
 
-**Priority:** P1
-**Subsystem:** `.lucy/authority`
-**Confidence:** 95%
-**Depends on:** NONE
-
-**Approval level: A**
-**Repo-only: YES**
-**Base branch/ref:** `origin/main`
-**Expected base SHA:** `0720a9209923bde9652833c4c7a9271041daa855`
-**Why this level applies:** Root cause fully verified (ISSUE-1); fix already
-exists, committed, and independently confirmed correct (`57f0e4c` on
-`repair/reconcile-20260917` — diff is exactly 4 allowlist string additions to
-`aion_core_modules` in `.lucy/authority/HIGH_MODEL_BASELINE.json`, nothing
-else). Purely additive to an allowlist, reversible, no protected-path
-*behavior* change (only a data entry), no interface change, no new
-dependency, no schema change, tests already exist for all 4 modules on
-`audit/health-20260917`/reconcile-wave.
-**Evidence available in repo:** `docs/internal/health-audit/ISSUE_REGISTER.md`
-ISSUE-1; `docs/internal/health-audit/COMMIT_AND_PUSH_RECONCILIATION.md` §2;
-commit `57f0e4c` itself (`git show 57f0e4c`).
+**Priority:** P1 · **Subsystem:** repo integrity · **Confidence:** 100% · **Depends on:** NONE
 
 ### Problem
-`main`'s `.lucy/authority/HIGH_MODEL_BASELINE.json` does not list
-`model_gateway`, `platform_resolver`, `semantic_recall`, `usage_telemetry` in
-`aion_core_modules`, so any branch introducing those modules (all of which
-are already fully implemented and tested elsewhere in this repo) fails
-`verify_authority.py anti-dup`.
+`origin/main` @ `0720a92` is the frozen candidate carrying all 23 task PRs, but
+`.lucy/planning/INTEGRATION_ROADMAP_20260917.md` and `INTEGRATION_ROADMAP_V2_20260917.md`
+both still name `integration/consolidation-20260916` as the target. Every later reader
+inherits the wrong mental model.
+
+### Evidence
+`git rev-list --left-right --count origin/main...origin/integration/consolidation-20260916`
+returns `27 8`. All 23 task tips are ancestors of `origin/main`. `origin/HEAD` is unset.
 
 ### Root cause
-Baseline was never updated when commit `60b2dc7` added the four modules on
-`integration/consolidation-20260916`; that branch diverged from `main`
-before the modules or a baseline update could land there.
+The owner promoted `main` to frozen candidate mid-flight; no artifact was updated to say so.
 
 ### Objective
-`aion_core_modules` in `.lucy/authority/HIGH_MODEL_BASELINE.json` on the
-target repair branch contains exactly the same 4 additional entries as
-commit `57f0e4c` adds, and nothing else in that file changes.
+A reader of the repo can determine the canonical branch in one step, and the two roadmap
+files no longer assert the inverted relationship.
 
 ### Allowed files
-`.lucy/authority/HIGH_MODEL_BASELINE.json` — and *only* the `aion_core_modules`
-array within it.
+- `.lucy/planning/INTEGRATION_ROADMAP_V2_20260917.md` — append a dated "SUPERSEDED / branch
+  role correction" note at the end. Do not rewrite its body.
+- `docs/internal/health-audit/HEALTH_REPORT.md` — no edit needed; referenced only.
+- New file `.lucy/planning/CANONICAL_BRANCH.md` — three to six lines naming
+  `origin/main` as canonical as of `0720a92`, why, and the date.
 
 ### Do not change
-Any other key in `HIGH_MODEL_BASELINE.json` (in particular
-`sqlite_connect_allowed` — that is ISSUE-2/TASK-C1, a separate, higher-level
-decision; do not fold it into this task). Do not touch
-`.lucy/authority/PROTECTED_PATHS.md` or `LUCYOS_PLATFORM_AND_DATA_CONTRACTS.md`.
+`.lucy/authority/**` (constitutional). `INTEGRATION_ROADMAP_20260917.md` (V1 is history).
+Any code. Any test.
 
 ### Implementation instructions
-1. Create branch `task/R1-allowlist-owner-modules` from `origin/main` at `0720a92`.
-2. Apply exactly the diff in commit `57f0e4c` (`git show 57f0e4c -- .lucy/authority/HIGH_MODEL_BASELINE.json | git apply`, or hand-edit to match it verbatim) to `.lucy/authority/HIGH_MODEL_BASELINE.json`.
-3. Commit with trailer `Task-ID: R1`.
-4. Do not touch any other file.
+1. Create `.lucy/planning/CANONICAL_BRANCH.md` stating: canonical branch is `origin/main`;
+   frozen at `0720a92` by "owner: freeze supervised integration candidate";
+   `integration/consolidation-20260916` is retained for history and for the pending
+   reconciliation merge; dated 2026-09-17.
+2. Append to `INTEGRATION_ROADMAP_V2_20260917.md` a section
+   `## SUPERSEDED 2026-09-17 — branch roles inverted` with two or three sentences pointing at
+   `CANONICAL_BRANCH.md` and at this audit.
+3. Do not attempt to set `origin/HEAD`; that is a remote setting. Note it in
+   `CANONICAL_BRANCH.md` as an owner action instead.
 
 ### Required tests
-No new tests required — this task adds a registry entry, it does not add
-behavior. Confirm the JSON parses (`python3 -c "import json; json.load(open('.lucy/authority/HIGH_MODEL_BASELINE.json'))"`).
+None. Documentation only.
 
 ### Verification commands
 ```
-python3 -c "import json; json.load(open('.lucy/authority/HIGH_MODEL_BASELINE.json'))"
-git diff origin/main -- .lucy/authority/HIGH_MODEL_BASELINE.json
+python3 -m unittest discover -s tests -t . -q
+./aion scan .
 ```
-Confirm the diff output matches `git show 57f0e4c -- .lucy/authority/HIGH_MODEL_BASELINE.json` exactly.
 
 ### Completion criteria
-Diff is byte-for-byte the same allowlist addition as `57f0e4c`; no other
-file changed; JSON is valid.
+Both files exist, suite still OK, scan clean, no code file touched.
 
 ### Rollback
-`git revert <commit>` on the repair branch; nothing downstream depends on
-this yet since it hasn't reached `main`.
+`git revert` the single commit.
 
 ### Stop and escalate if
-The diff needed is not a pure allowlist-array addition (e.g. if `main`'s
-`HIGH_MODEL_BASELINE.json` has itself changed shape since this audit and a
-naive apply doesn't cleanly match) — then this is no longer a mechanical
-task and must go to Level B for Opus review.
-
-**Allowed autonomous actions:** create the repair branch, make the one-file
-edit, commit, run the two verification commands above.
-**Actions requiring Opus review:** none for this task in isolation.
-**Actions requiring owner approval:** merging/pushing to `main` — that is
-covered by FINAL-SONNET-PUSH, not by this task card.
-**Stop conditions:** as above.
+Either roadmap file is missing, or setting the canonical branch appears to require editing
+anything under `.lucy/authority/`.
 
 ---
 
-## TASK-C1 — Rule on `semantic_recall.py`'s second SQLite store
+## TASK `TASK-002` — Add the four owner modules to the baseline allowlist
 
-**Priority:** P2
-**Subsystem:** `aion_core/semantic_recall.py`, `.lucy/authority`
-**Confidence:** n/a (decision task, not implementation)
-**Depends on:** NONE
-
-**Approval level: C — Sonnet must NOT modify code until Opus/high-reasoning review explicitly approves the approach**
-**Repo-only: YES**
-**Base branch/ref:** `origin/main` (or the reconcile-wave branch, once R1/R2 land)
-**Expected base SHA:** `0720a9209923bde9652833c4c7a9271041daa855`
-**Why this level applies:** Per `SONNET_REPAIR_APPROVAL_BOUNDARIES_TEMP.md`
-Level C triggers directly: this touches persistence-schema/canonical-state
-boundaries (`aion_core/db.py` is the named owner of "every table, every
-migration"), and it requires **deciding which of several competing
-resolutions is canonical** — exactly the "requires deciding which competing
-implementation should become canonical" and "changes persistence schema...
-or data-loss behavior" triggers. Sonnet must not pick between the three
-options below.
-**Evidence available in repo:** ISSUE-2; `.lucy/authority/PROTECTED_PATHS.md`
-(`aion_core/db.py` protected-path entry); `.lucy/authority/LUCYOS_PLATFORM_AND_DATA_CONTRACTS.md`
-(C1–C10, needs re-reading by the reviewer to check whether a "rebuildable
-derived cache" carve-out already exists or must be added);
-`aion_core/semantic_recall.py` itself (the 2 `sqlite3.connect()` + 2
-`CREATE TABLE` call sites, findable via `verify_authority.py anti-dup`'s
-output).
+**Priority:** P1 · **Subsystem:** authority · **Confidence:** 100% · **Depends on:** NONE
 
 ### Problem
-`aion_core/semantic_recall.py` maintains its own SQLite connection and
-schema (a `sqlite-vec` + `fastembed` derived vector index) outside the
-canonical store owned by `aion_core/db.py`.
+`verify_authority.py anti-dup` rejects the reconciling merge with four
+"not in baseline allowlist" violations.
+
+### Evidence
+Exact violations, reproduced against the real merged state:
+```
+aion_core/model_gateway.py: new aion_core top-level module/package 'model_gateway' not in baseline allowlist
+aion_core/platform_resolver.py: ... 'platform_resolver' not in baseline allowlist
+aion_core/semantic_recall.py: ... 'semantic_recall' not in baseline allowlist
+aion_core/usage_telemetry.py: ... 'usage_telemetry' not in baseline allowlist
+```
+All four files are present on `integration` and absent on `main`, introduced by `60b2dc7`
+(owner-authored). All four have dedicated passing tests.
 
 ### Root cause
-The module was written and merged (`60b2dc7`, owner-authored) before/without
-a recorded ruling on whether a derived, rebuildable index is allowed to
-bypass `db.py`.
+The baseline was not updated alongside the code. Same omission class that blocked five PRs
+earlier the same day and was fixed for `portability`, `guardian`, `experiments`,
+`money_path`, `tempworker`.
 
 ### Objective
-A recorded decision (in `.lucy/authority/LUCYOS_PLATFORM_AND_DATA_CONTRACTS.md`
-or an equivalent authority doc) on exactly one of:
-- **(a)** allowlist `aion_core/semantic_recall.py` in `sqlite_connect_allowed`
-  *and* record in the data contract that it is a rebuildable derived index,
-  never a source of truth;
-- **(b)** teach `scripts/verify_authority.py` to recognize a declared-derived
-  marker in code (more work, prevents recurrence for future modules);
-- **(c)** move the index outside `aion_core` entirely.
+`anti-dup` reports zero "not in baseline allowlist" violations for these four modules.
 
 ### Allowed files
-None for Sonnet at this stage — this task produces a written recommendation
-only, for Opus/owner sign-off. Once a decision is made, a follow-up Level A
-or B task implements it with `.lucy/authority/HIGH_MODEL_BASELINE.json`
-(`sqlite_connect_allowed`) and/or `LUCYOS_PLATFORM_AND_DATA_CONTRACTS.md` and/or
-`aion_core/semantic_recall.py` as the allowed files, scoped by the decision.
+`.lucy/authority/HIGH_MODEL_BASELINE.json` — **only** the `aion_core_modules` array, adding
+exactly four strings.
 
 ### Do not change
-`aion_core/db.py`, `.lucy/authority/**`, `aion_core/semantic_recall.py` —
-not until the decision above is made and recorded.
+Anything else in the baseline: not `protected_paths`, not
+`constitutional_paths_no_override_possible`, not `task_overrides`, not
+`sqlite_connect_allowed`, not `fable_freeze_sha`. Not `scripts/verify_authority.py`. No code.
 
 ### Implementation instructions
-1. Do not write code. Produce a short decision memo under
-   `docs/internal/health-audit/tasks/ISSUE-2-semantic-recall-decision.md`
-   summarizing the three options above with their tradeoffs (already listed
-   in ISSUE_REGISTER.md / HEALTH_REPORT.md §4) for Opus/owner to pick from.
-2. Stop. Wait for the decision to be recorded.
+1. Confirm you are on the repair branch and `git status` is clean.
+2. Add exactly `"model_gateway"`, `"platform_resolver"`, `"semantic_recall"`,
+   `"usage_telemetry"` to `aion_core_modules`.
+3. Do **not** add `semantic_recall` to `sqlite_connect_allowed`. Those four remaining
+   violations are TASK-003's owner decision, not yours.
+4. Verify the JSON still parses: `python3 -c "import json;json.load(open('.lucy/authority/HIGH_MODEL_BASELINE.json'))"`.
 
 ### Required tests
-None until a decision authorizes an implementation task.
+No new test. The existing authority tests must still pass.
 
 ### Verification commands
-None (decision task).
+```
+python3 -c "import json;json.load(open('.lucy/authority/HIGH_MODEL_BASELINE.json'))"
+python3 -m unittest discover -s tests -t . -q
+python3 scripts/verify_authority.py anti-dup --base origin/main
+```
 
 ### Completion criteria
-A decision is recorded by an authorized reviewer; this task then closes and
-a new Level A/B task is opened to implement it.
+JSON parses. Suite OK. `anti-dup` no longer lists any of the four as "not in baseline
+allowlist". Exactly four `sqlite3.connect` / `CREATE TABLE` violations for
+`semantic_recall.py` remain — that is expected and correct at this stage.
 
 ### Rollback
-N/A — no code changes made by this task.
+`git revert` the single commit; the baseline returns to its prior state.
 
 ### Stop and escalate if
-Always — this entire task is a stop-and-escalate by definition.
-
-**Allowed autonomous actions:** write the decision memo summarizing options;
-nothing else.
-**Actions requiring Opus review:** the entire resolution choice.
-**Actions requiring owner approval:** if the chosen option (a) or (c) is
-judged to touch data-loss/backup semantics materially, per
-`SONNET_REPAIR_APPROVAL_BOUNDARIES_TEMP.md` Level C/D boundaries — Opus
-determines this at review time.
-**Stop conditions:** any attempt to implement before the decision is
-recorded.
+`anti-dup` still reports allowlist violations after the edit, or the diff touches any key
+other than `aion_core_modules`, or you feel tempted to silence the `semantic_recall` SQLite
+violations. That last one is the exact failure mode this task exists to prevent.
 
 ---
 
-## TASK-R3 — Recheck the `feature/lucyos-aion-handoff` "empty diff" claim
+## TASK `TASK-003` — OWNER DECISION: derived index and external providers
 
-**Priority:** P4
-**Subsystem:** branch hygiene / audit-trail correctness
-**Confidence:** n/a (evidence task)
-**Depends on:** NONE
-
-**Approval level: A**
-**Repo-only: YES**
-**Base branch/ref:** `origin/main`
-**Expected base SHA:** `0720a9209923bde9652833c4c7a9271041daa855`
-**Why this level applies:** Read-only investigation, no code or config
-changes, fully reversible (it produces a doc, nothing else), no protected
-path touched.
-**Evidence available in repo:** ISSUE-5; `git diff`/`git merge-base` output
-already captured in HEALTH_REPORT.md §5.
+**Priority:** P1 / P2 · **Subsystem:** architecture, security · **Confidence:** n/a
+**Depends on:** TASK-002 · **THIS IS NOT A CODING TASK**
 
 ### Problem
-A prior audit doc claims `feature/lucyos-aion-handoff` has an empty diff
-against `main` and can be deleted as a no-op merge. This session's spot
-check found its tip commit is not a literal ancestor of `main` and a full
-`git diff` shows hundreds of files of difference — consistent with `main`
-having grown since the claim was made, but not confirmed either way.
+Two questions block the merge and neither may be answered by a bounded worker.
 
-### Root cause
-Unknown yet — this is exactly what the task is for.
+**Q1 (P1).** `semantic_recall.py` opens its own SQLite store, producing four `anti-dup`
+violations. Reading the code it is a *rebuildable derived vector index*, which the
+data-library contract permits. But nothing in the repo records it as derived, so allowing it
+by widening `sqlite_connect_allowed` would weaken the rule for every future module.
+
+**Q2 (P2).** `model_gateway.py` routes `PUBLIC`-classed prompts to `openrouter.ai`,
+`api.groq.com`, `api.cerebras.ai`, reading secrets by name. It is default-deny
+(`tasks.data_class` defaults to `INTERNAL`) and auxiliary to the existing executor
+hierarchy, and learnrepo vetting manifests exist. It is still a new external surface.
+
+### Evidence
+Violations 5–8 in `anti-dup` output; `aion_core/semantic_recall.py:76,79,80,107`;
+`aion_core/model_gateway.py:16-36,41,98-129`; `aion_core/worker.py:427` vs `:437`;
+`.lucy/planning/skill-exec-20260917/*.json`.
 
 ### Objective
-Determine definitively whether `feature/lucyos-aion-handoff`'s content is
-fully subsumed by `main` (safe to delete once other branch-cleanup
-prerequisites in `REPO_CLEANUP_AND_MERGE_PLAN.md` are met) or carries real
-unique content that needs its own reconciliation entry.
+A recorded owner ruling on both questions, written into the repo, so TASK-004 can proceed
+with an unambiguous mandate.
 
-### Allowed files
-`docs/internal/health-audit/tasks/ISSUE-5-aion-handoff-recheck.md` (new file,
-write findings there). No other files.
+### What Sonnet does
+**Nothing to the code.** Sonnet's entire job here is to present the decision and record the
+answer. Draft `docs/internal/health-audit/OWNER_DECISIONS_20260917.md` containing both
+questions, the options below, and empty ruling fields for the owner to fill.
+
+**Q1 options:** (a) add `aion_core/semantic_recall.py` to `sqlite_connect_allowed` and record
+in the data contract that it is a rebuildable derived index, never a source of truth;
+(b) refine the `anti-dup` rule to recognise a declared-derived marker, which is more work but
+prevents future ambiguity; (c) move the index out of `aion_core` entirely.
+
+**Q2 options:** (a) ratify as-is, recording that free-tier providers are not "external
+account creation"; (b) ratify but require a standing approval card before any non-`PUBLIC`
+class is ever permitted; (c) keep the module but leave it unreachable until Mac migration.
 
 ### Do not change
-Nothing in `aion_core`, `bridges`, `scripts`, `.lucy/**`, or any branch ref.
-Do not delete the branch — that is an owner action per
-`PROTECTED_PATHS.md`/prior plan §5 regardless of this task's findings.
-
-### Implementation instructions
-1. `git log --oneline origin/main..origin/feature/lucyos-aion-handoff` and `git log --oneline origin/feature/lucyos-aion-handoff..origin/main`.
-2. For each file in `git diff origin/feature/lucyos-aion-handoff origin/main --stat`, classify: present-and-identical-on-main-under-different-path, present-and-different, or absent-from-main.
-3. Write the findings memo with a clear verdict: SUBSUMED / UNIQUE-CONTENT-FOUND / INCONCLUSIVE.
-
-### Required tests
-None.
+Everything. No code, no baseline, no gate.
 
 ### Verification commands
-The two `git log` commands above; re-run and confirm output matches the memo.
+None. This task's output is a document and a decision.
 
 ### Completion criteria
-Memo exists with one of the three verdicts and supporting evidence.
-
-### Rollback
-Delete the memo file; no other state changed.
+The decisions file exists with both rulings filled in by the owner, dated and attributed.
 
 ### Stop and escalate if
-Any unique, non-trivial content is found on the branch that is not on
-`main` — escalate to Opus for a reconciliation decision rather than
-recommending deletion.
-
-**Allowed autonomous actions:** all of the above (read-only investigation +
-one new doc file).
-**Actions requiring Opus review:** none unless UNIQUE-CONTENT-FOUND.
-**Actions requiring owner approval:** actually deleting the branch, always
-(per `PROTECTED_PATHS.md` "owner_only_actions includes delete branches or
-tags") — out of scope for this task regardless of verdict.
-**Stop conditions:** as above.
+Anyone proposes answering Q1 by widening `sqlite_connect_allowed` without also recording
+*why* it is a derived index. That is how a gate quietly dies.
 
 ---
 
-## Explicitly not queued this pass
+## TASK `TASK-004` — Execute the reconciling merge (DETAILED MERGE PLAN)
 
-- **`feature/resource-governor` (wave 6)** — real merge conflicts in
-  protected files (`aion_core/cli.py`, `db.py`, `health.py`). Per the prior
-  plan this must be done "last, alone, with a human watching," which is
-  Level C/D territory by definition (protected paths + non-trivial conflict
-  resolution). Not given a task card because it cannot be executed
-  autonomously at any level — it needs a human-supervised session, not a
-  queued Sonnet task.
-- **ISSUE-7 side branches** (`claude/aion-whatsapp-control-1seild`,
-  `claude/fable-deploy-setup-mc5nr6`, `feature/context-pack`,
-  `plan/lucyos-openclaw-e2e`, `test/authority-gate-positive-20260916`,
-  `candidate/mark2-loop-v1.2-20260908`) — not on the critical path, not
-  requested by the owner, and auditing each in depth would be manufacturing
-  work the auditor spec explicitly says not to do ("If a subsystem is
-  already healthy, say so ... do not manufacture work"). Left recorded in
-  `HEALTH_REPORT.md` §5 for whenever the owner wants them triaged.
+**Priority:** P1 · **Subsystem:** repo integrity · **Confidence:** 95% · **Depends on:**
+TASK-001, TASK-002, TASK-003
 
-## Execution order
+### Problem
+`main` and `integration` have diverged and neither is a superset. `main` is missing the four
+owner modules and the audit docs; `integration` is missing six task PRs.
 
-1. TASK-R1 (Level A, autonomous)
-2. TASK-R3 (Level A, autonomous, independent of R1 — may run in parallel)
-3. TASK-C1 (Level C, stop for decision) — blocks nothing else in this queue,
-   but blocks a fully-clean `anti-dup` on the eventual `main` push (ERROR-2
-   will still show as a known, documented exception until decided)
-4. FINAL-SONNET-PUSH (see `FINAL_SONNET_PUSH_TASK.md`) — depends on R1 being
-   merged onto the repair/promotion branch; does not require C1 to be
-   resolved first, but the push report must explicitly carry ERROR-2 forward
-   as a known, owner-acknowledged item rather than silently drop it.
+### Evidence, already proven by execution in the audit session
+- `git merge-tree --write-tree origin/main origin/integration/consolidation-20260916`
+  produced a clean tree ID with **no CONFLICT lines**.
+- A real `git merge --no-ff` produced **zero conflicts**.
+- The merged commit ran **550 tests, OK (1 skipped)**.
+- `check_portability.py`: 0 violations, 3 known exceptions, **0 stale**, 55 files, portable.
+- `./aion scan .`: clean.
+
+This merge is known-good. Sonnet is reproducing a verified result, not discovering one.
+
+### Root cause
+Parallel integration on two branches with no recorded canonical.
+
+### Objective
+A single branch containing both histories, passing the full suite and every gate, ready for
+the owner to merge into `main`. **Sonnet does not merge into `main` itself.**
+
+### Allowed files
+Only what the merge itself produces. Plus conflict resolution **if and only if** a conflict
+appears that did not appear in the audit.
+
+### Do not change
+Do not rewrite history. Do not rebase. Do not squash. Do not force-push. Do not push to
+`main`. Do not "tidy" anything the merge produces.
+
+### Implementation instructions
+1. `git fetch origin --prune`.
+2. Confirm the inputs still match the audit:
+   `git rev-parse origin/main` → expect `0720a92...`;
+   `git rev-parse origin/integration/consolidation-20260916` → expect `db91548...`.
+   **If either differs, STOP and escalate** — the audit evidence no longer applies.
+3. `git checkout -B repair/reconcile-20260917 origin/main`.
+4. Apply TASK-001 and TASK-002 commits onto this branch if not already present.
+5. `git merge --no-ff origin/integration/consolidation-20260916` with a message naming this
+   audit and stating that the merge reconciles the branch-role inversion.
+6. `git status --short | grep -E '^(UU|AA|DU|UD)'` must return nothing. **If a conflict
+   appears, STOP and escalate.** Do not guess through it; the audit proved there should be
+   none, so a conflict means the inputs moved.
+7. Apply the TASK-003 ruling exactly as the owner recorded it, no more.
+
+### Required tests
+No new tests. The merge must not change test count downward: expect **550** (or higher if
+TASK-003 added any), with 1 skip.
+
+### Verification commands
+```
+git status --short
+python3 -m compileall -q aion_core bridges tests scripts
+python3 -m unittest discover -s tests -t . -q
+./aion scan .
+python3 scripts/check_portability.py
+python3 scripts/verify_authority.py anti-dup --base origin/main
+python3 scripts/verify_authority.py strict --base origin/main --branch "$(git branch --show-current)"
+```
+
+### Completion criteria
+Zero conflicts. Suite OK with at least 550 tests. Scan clean. Portability portable with
+0 stale. `anti-dup` clean, or carrying only violations the owner explicitly ratified in
+TASK-003. Nothing pushed yet.
+
+### Rollback
+Delete the local branch. Nothing was pushed, so rollback is free.
+
+### Stop and escalate if
+Either input SHA moved, any conflict appears, the test count drops below 550, any gate that
+passed in the audit now fails, or the TASK-003 ruling turns out not to cover something the
+merge actually requires.
+
+---
+
+## Not queued, and deliberately so
+
+No task is raised for persistence, recovery, evidence gates, singleton locking, secret
+handling or schema migration. All were checked and all are healthy. Inventing work there
+would be manufacturing activity, which the auditor spec explicitly forbids.

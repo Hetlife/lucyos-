@@ -35,6 +35,7 @@ class TestAuthorityVerifier(unittest.TestCase):
             "protected_paths": [".lucy/authority/**", "aion_core/db.py"],
             "aion_core_modules": ["db", "free"],
             "sqlite_connect_allowed": ["aion_core/db.py"],
+            "derived_sqlite_allowed": [],
             "service_unit_dirs": ["systemd/"],
             "task_overrides": {"S-01": ["aion_core/db.py"]},
             "protected_file_hashes": {},
@@ -110,6 +111,26 @@ class TestAuthorityVerifier(unittest.TestCase):
         self._commit("fine")
         r = run(["anti-dup", "--base", "integration"], self.tmp)
         self.assertEqual(r.returncode, 0, r.stdout)
+
+    def test_anti_dup_allows_only_owner_declared_derived_sqlite(self):
+        self.baseline["derived_sqlite_allowed"] = ["aion_core/derived_index.py"]
+        self.baseline["aion_core_modules"].append("derived_index")
+        self._write_baseline()
+        git(self.tmp, "add", "-A")
+        git(self.tmp, "commit", "-q", "-m", "owner derived sqlite policy")
+        git(self.tmp, "branch", "-f", "integration", "HEAD")
+        (self.tmp / "aion_core/derived_index.py").write_text(
+            "import sqlite3\nc = sqlite3.connect('derived.sqlite3')\nc.execute('CREATE TABLE cache(x TEXT)')\n")
+        self._commit("derived index")
+        r = run(["anti-dup", "--base", "integration"], self.tmp)
+        self.assertEqual(r.returncode, 0, r.stdout)
+        (self.tmp / "aion_core/free.py").write_text(
+            "import sqlite3\nc = sqlite3.connect('other.sqlite3')\nc.execute('CREATE TABLE other(x TEXT)')\n")
+        self._commit("undeclared sqlite")
+        r = run(["anti-dup", "--base", "integration"], self.tmp)
+        self.assertEqual(r.returncode, 1, r.stdout)
+        self.assertIn("sqlite3.connect", r.stdout)
+        self.assertIn("CREATE TABLE", r.stdout)
 
     def test_freeze_then_self_detects_drift(self):
         r = run(["freeze", "--sha", "PENDING"], self.tmp)

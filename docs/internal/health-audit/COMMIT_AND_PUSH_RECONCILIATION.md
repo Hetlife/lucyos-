@@ -1,81 +1,128 @@
 # Commit and Push Reconciliation — 2026-09-17
 
-Scope: verify what is actually reachable from `origin/main` right now, and
-account for every intended change that is not. All SHAs below were read
-directly from `git` this session (`git ls-remote`, `git merge-base
---is-ancestor`, `git log`) — none are taken from a prior report without
-re-checking.
+Method: for every task branch tip, `git merge-base --is-ancestor <tip> <branch>` against
+both `origin/main` and `origin/integration/consolidation-20260916`. Ancestry is proof of
+landing; a green PR page is not.
 
-Status legend: **VERIFIED** (checked this session) / **INFERRED** (matches a
-prior pass's claim, independently corroborated) / **UNVERIFIED** (not
-checked this pass).
+**Result: nothing is missing. No cherry-pick, recreation or conflict resolution is required.**
 
 ---
 
-## 1. Canonical state right now
+## 1. Task-branch landing matrix — VERIFIED
 
-`origin/main` @ `0720a92` ("owner: freeze supervised integration candidate").
-This is also the tip of `origin/supervised/integration-20260917` (identical
-SHA — 0 ahead/behind). VERIFIED.
+All 23 tips are ancestors of `origin/main`. Six never reached integration.
 
-## 2. Intended changes and their remote status
+| Task | Tip | PR | on `main` | on `integration` | Action |
+|---|---|---|---|---|---|
+| S-01 | `9b4e947` | #16 | YES | YES | none |
+| S-02 | `da780bd` | #34 | YES | no | none (main is canonical) |
+| S-05 | `4c37a27` | #26 | YES | YES | none |
+| S-07 | `6f02f08` | #21 | YES | YES | none |
+| S-08 | `3131c9d` | #19 | YES | YES | none |
+| S-09 | `24cd78a` | #27 | YES | no | none |
+| S-10 | `612f5ef` | #15 | YES | YES | none |
+| S-13 | `1f28fd4` | #17 | YES | YES | none |
+| S-14 | `c1831eb` | #18 | YES | YES | none |
+| S-15 | `57e1488` | #23 | YES | YES | none |
+| S-16 | `dc0d88b` | #35 | YES | YES | none |
+| S-17 | `a939d34` | #25 | YES | YES | none |
+| S-18 | `13fb8cf` | #22 | YES | YES | none |
+| S-19 | `d06b199` | #14 | YES | YES | none |
+| S-20 | `4b2fc56` | #31 | YES | YES | none |
+| S-21 | `81153b7` | #13 | YES | YES | none |
+| S-22 | `ab7f8e4` | #20 | YES | YES | none |
+| S-23 | `08406e3` | #24 | YES | no | none |
+| S-24 | `1f65121` | #28 | YES | YES | none |
+| S-26 | `c34b56f` | #29 | YES | no | none |
+| S-27 | `4226001` | #30 | YES | no | none |
+| S-28 | `b34a482` | #32 | YES | YES | none |
+| S-29 | `6510ec9` | #33 | YES | no | none |
 
-| Change | Expected branch | Landed on `main`? | Actual location | Action needed |
-|---|---|---|---|---|
-| 23 S-task branches (S-01…S-30 range) | various `task/S-*` | **YES** — all ancestors of `main` | `main` | None |
-| S-02 architecture-audit salvage | `claude/lucyos-architecture-audit-4o4q83` | YES | `main` via PR #34 | None |
-| S-29 experiments/money-path salvage | `feature/fable-deploy-setup-mc5nr6` (partial) | YES | `main` via PR #33 | None |
-| S-23 portability export | `task/S-23-portability-export` | YES | `main` via PR #24, hardened by `28bd476` | None |
-| S-27 routing report | `task/S-27-routing-report` | YES | `main` via PR #30 | None |
-| S-26 audit chain | `task/S-26-audit-chain` | YES | `main` via PR #29 | None |
-| S-09 openclaw-check | `task/S-09-openclaw-check` | YES | `main` via PR #27 | None |
-| owner commit `60b2dc7` — local-first skill execution adapters (4 new `aion_core` modules) | `integration/consolidation-20260916` | **NO** | Only on `integration/consolidation-20260916`, superseded copy on `audit/health-20260917`, carried into `merge/reconcile-waves-20260917-chatgpt` (wave 1) | Promote reconcile-wave branch to `main` (TASK-R2); allowlist fix already prepared (`57f0e4c`, TASK-R1) |
-| `38e197d` — route platform detection through host adapter | `integration/consolidation-20260916` | NO | Same as above — carried in wave 1 | Same as above |
-| `.lucy/authority/HIGH_MODEL_BASELINE.json` allowlist fix for the 4 modules | `repair/reconcile-20260917` (`57f0e4c`) | NO | Carried into reconcile-wave (wave 2) | Promote (TASK-R1/TASK-R2) |
-| `.lucy/planning/CANONICAL_BRANCH.md` | `repair/reconcile-20260917` | NO | Carried into reconcile-wave (wave 2) | Promote |
-| `aion_core/context.py` result-contract normalization | `post-integration/S-30-result-contract` | NO | Carried into reconcile-wave (wave 3) | Promote |
-| Integration roadmap docs (planning only, zero code) | `planning/integration-roadmap-20260917` | NO | Carried into reconcile-wave (wave 4) | Promote |
-| OpenClaw↔LucyOS bridge (`integrations/openclaw/`) | `feature/openclaw-lucyos-bridge` | NO | Carried into reconcile-wave (wave 5) | Promote |
-| `ssh-keygen`-absence test guard for `test_openclaw_lucyos_bridge` | fixed directly on `merge/reconcile-waves-20260917-chatgpt` (`a99beeb`) | NO | Only on reconcile-wave branch | Promote |
-| `feature/resource-governor` (hermetic test env) | own branch | NO, and NOT in reconcile-wave either | Deliberately deferred — real conflicts in `aion_core/cli.py`, `db.py`, `health.py` | Separate task, do last, human-watched (TASK-C2 in queue, not auto-executable) |
-| Both `docs/internal/*_TEMP.md` spec files this audit runs from | `integration/consolidation-20260916` | NO | Same file exists (word-for-word, checked via `git show`) on `audit/health-20260917` and `merge/reconcile-waves-20260917-chatgpt` too | Will land automatically once wave 1 promotes; not itself an action item |
+**No task was reported complete without a matching remote diff.** The five PRs previously
+recorded as `BLOCKED_HIGH_MODEL_DECISION` (S-16, S-17, S-22, S-23, S-29) plus S-20 and S-02
+were all genuinely unblocked and merged. The baseline fix that unblocked them is present
+and verified: `aion_core_modules` now contains `portability`, `guardian`, `experiments`,
+`money_path`, `tempworker`, and `task_overrides` contains `S-22`.
 
-**No failed push left orphaned work that cannot be accounted for.** Every
-commit named above resolves to a real, reachable SHA on some branch in this
-repository. Nothing needs to be reconstructed from scratch or guessed at.
-VERIFIED.
+---
 
-**No commit was silently reverted or overwritten on the critical path.**
-Diff and test-count deltas across the wave merges are additive (420 →
-537 on separate branches → 560 combined), matching file-count growth, not a
-net loss. VERIFIED by the test run in `HEALTH_REPORT.md` §3.
+## 2. Integration-only commits — the real reconciliation item
 
-## 3. Same-diff-under-different-SHA check
+Eight commits exist on `integration` and not on `main`.
 
-Per the auditor spec's warning ("never reapply a missing SHA blindly — first
-verify whether the same code already landed through another commit"):
-checked whether `60b2dc7`'s four new modules exist anywhere on `main` under a
-different SHA. They do not — `git cat-file -e origin/main:aion_core/model_gateway.py`
-(and the other three) all fail; the files are simply absent from `main`.
-VERIFIED. This is a genuine gap, not a false positive.
+| SHA | Subject | Substantive? | Disposition |
+|---|---|---|---|
+| `60b2dc7` | feat: add local-first skill execution adapters | **YES** | **must reach `main`** |
+| `38e197d` | fix: route platform detection through host adapter | **YES** | **must reach `main`** |
+| `750818a` | docs: add temporary LucyOS health audit instructions | yes (docs) | should reach `main` |
+| `db91548` | docs: expand health audit with commit and push reconciliation | yes (docs) | should reach `main` |
+| `aabc9a5` | merge: reconcile latest supervised integration | no (merge) | carried by the merge |
+| `64ea5f8` | merge: reconcile latest integration before skill execution push | no (merge) | carried by the merge |
+| `907bc31` | merge: sync supervised integration updates | no (merge) | carried by the merge |
+| `de65772` | merge: local-first skill execution adapters | no (merge) | carried by the merge |
 
-## 4. CI reachability
+### `60b2dc7` detail — VERIFIED
 
-Not independently re-run against GitHub Actions this session (no `gh`/GitHub
-Actions API access from this environment for workflow-run history). The
-local-equivalent gate commands (`compileall`, full test suite, `aion scan`,
-`check_portability.py`, `verify_authority.py` both modes) were run directly
-against the reconcile-wave worktree and are recorded in `HEALTH_REPORT.md`
-§3 — these are the same commands `.github/workflows/lucyos-ci.yml` is
-expected to run per `repair/reconcile-20260917:docs/internal/REPO_CLEANUP_AND_MERGE_PLAN.md`
-§6. UNVERIFIED whether GitHub's own CI run for `merge/reconcile-waves-20260917-chatgpt`
-agrees — flagged as a check in `FINAL_VERIFICATION_PLAN.md`.
+Author: Het Patel (owner). Date: 2026-09-17 04:44 UTC.
 
-## 5. Bottom line
+Adds four new `aion_core` modules, none of which exist on `main`:
 
-Nothing needs to be recreated, cherry-picked, or recovered. The single
-outstanding action is **promotion**: get `merge/reconcile-waves-20260917-chatgpt`
-(or an equivalent merge of the same content) onto `main`, after the ERROR-2
-owner ruling and under Level D owner approval, per
-`SONNET_REPAIR_APPROVAL_BOUNDARIES_TEMP.md`. See `SONNET_EXECUTION_QUEUE.md`
-and `FINAL_SONNET_PUSH_TASK.md`.
+| File | Lines | Purpose |
+|---|---|---|
+| `aion_core/model_gateway.py` | 148 | Free-tier external inference providers, data-class gated |
+| `aion_core/platform_resolver.py` | 86 | Mac/host capability resolution |
+| `aion_core/semantic_recall.py` | 122 | Rebuildable derived vector index |
+| `aion_core/usage_telemetry.py` | 90 | Supplemental `ccusage` snapshot, subordinate to `model_usage` |
+
+Also touches `api.py`, `cli.py`, `config.py`, `db.py` (adds `tasks.data_class`), `tasks.py`,
+`.gitignore`, and adds six learnrepo vetting manifests under
+`.lucy/planning/skill-exec-20260917/`.
+
+**Checked and confirmed: this content is NOT present on `main` under any other SHA.** All
+four files return ABSENT on `main` and PRESENT on `integration`. This is genuine unreconciled
+work, not a duplicate. Per the auditor rule, it is **not** being blindly reapplied — it is
+being carried by an ordinary merge whose result has already been executed and tested.
+
+### `38e197d` detail — VERIFIED
+
+Two-line change to `aion_core/platform_resolver.py`. Depends entirely on `60b2dc7`; carried
+by the same merge. No independent action.
+
+---
+
+## 3. Did anything get reverted, overwritten or dropped? — VERIFIED
+
+- **No revert commits** appear in either branch's unique history.
+- **No conflict resolution dropped logic**: the reconciling merge is conflict-free, so no
+  resolution judgement was ever exercised on this pair.
+- **No competing implementation**: `model_gateway` is wired as an *auxiliary* path at
+  `worker.py:427`; the pre-existing `run_cloud` / `cloud_command` hierarchy at
+  `worker.py:437` is untouched. There is one execution loop, not two.
+- **No stale handler references**: full suites pass on both branches and on the merge.
+
+---
+
+## 4. Did CI run on the intended code? — INFERRED
+
+CI ran per-PR against the integration base as each task merged, and all 23 are ancestors of
+`main`. **UNVERIFIED:** whether a CI run exists for `main` @ `0720a92` itself, and for
+`integration` @ `db91548`, since those tips were produced by owner-side merges rather than
+PRs. The merged reconciliation state has **never** been through CI — only through this
+session's local execution. TASK-004 closes that gap.
+
+---
+
+## 5. Reconciliation verdict
+
+| Question | Answer |
+|---|---|
+| Intended commits missing remotely? | **No** |
+| Work existing only locally? | **No** |
+| Failed push leaving work unpushed? | **No** |
+| Merge partially landed? | **No** |
+| Same code landed under another SHA? | Not applicable; nothing is missing |
+| Work reverted or overwritten? | **No** |
+| Recreation / cherry-pick needed? | **No** |
+| Action required? | **One ordinary merge**, integration → main, already proven green |
+
+The reconciliation is a merge, not a recovery.

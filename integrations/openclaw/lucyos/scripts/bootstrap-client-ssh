@@ -1,0 +1,33 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+# Run on an OpenClaw client (for example SCS.ADMIN01).
+# Generates the private key locally and prints ONLY the public key for enrollment.
+TARGET="${1:-}"
+KEY="${LUCYOS_REMOTE_SSH_KEY:-${HOME}/.ssh/lucyos_mark2}"
+PORT="${LUCYOS_REMOTE_SSH_PORT:-22}"
+
+[[ -n "$TARGET" ]] || { echo "usage: bootstrap-client-ssh user@mark2-host" >&2; exit 2; }
+command -v ssh >/dev/null || { echo "ssh client is required" >&2; exit 3; }
+command -v ssh-keygen >/dev/null || { echo "ssh-keygen is required" >&2; exit 3; }
+
+install -d -m 700 "$(dirname "$KEY")"
+if [[ ! -f "$KEY" ]]; then
+  ssh-keygen -q -t ed25519 -N '' -C 'lucyos-openclaw-client' -f "$KEY"
+fi
+chmod 600 "$KEY"
+chmod 644 "${KEY}.pub"
+cat >"${KEY}.lucyos-env" <<EOF
+export LUCYOS_OPENCLAW_BRIDGE=1
+export LUCYOS_REMOTE_SSH_TARGET='${TARGET}'
+export LUCYOS_REMOTE_SSH_PORT='${PORT}'
+export LUCYOS_REMOTE_SSH_KEY='${KEY}'
+EOF
+chmod 600 "${KEY}.lucyos-env"
+
+printf '%s\n' 'PUBLIC_KEY_BEGIN'
+cat "${KEY}.pub"
+printf '%s\n' 'PUBLIC_KEY_END'
+printf 'env_file=%s\n' "${KEY}.lucyos-env"
+printf 'fingerprint=%s\n' "$(ssh-keygen -lf "${KEY}.pub" | awk '{print $2}')"
+printf '%s\n' 'Private key remains on this client. Do not send or copy it.'

@@ -11,7 +11,7 @@ import os
 from pathlib import Path
 
 APP_NAME = "AION"
-SCHEMA_VERSION = 10
+SCHEMA_VERSION = 11
 PROMPT_VERSION = "1.0.0"
 
 

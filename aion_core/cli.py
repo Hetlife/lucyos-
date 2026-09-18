@@ -76,6 +76,7 @@ def _main(argv=None) -> int:
     tc.add_argument("--cost", type=float, default=1)
     tc.add_argument("--risk", type=float, default=1)
     tc.add_argument("--model-class", default="B")
+    tc.add_argument("--data-class", choices=["PUBLIC","INTERNAL","CONFIDENTIAL","SECRET"], default="INTERNAL")
     tc.add_argument("--success", default="", help="success criteria")
     tc.add_argument("--next", default="", help="next action")
     tc.add_argument("--depends", default="")
@@ -246,8 +247,9 @@ def _main(argv=None) -> int:
     wk.add_argument("--max", type=int, default=5)
     wk.add_argument("--dry-run", action="store_true")
 
-    sk = sub.add_parser("skills", help="inspect or sync the disabled LucyOS skill catalog")
-    sk.add_argument("op", choices=["status", "sync", "list"], nargs="?", default="status")
+    sk = sub.add_parser("skills", help="inspect, sync, or plan the LucyOS skill catalog")
+    sk.add_argument("op", choices=["status", "sync", "list", "plan"], nargs="?", default="status")
+    sk.add_argument("--target", choices=["current", "macos-arm64"], default="current")
 
     ar = sub.add_parser("architecture-check", help="deterministically audit a skill integration proposal")
     ar.add_argument("path", help="JSON proposal file")
@@ -349,7 +351,7 @@ def _main(argv=None) -> int:
     elif cmd == "task-add":
         _print(tasks.create(args.title, project=args.project, priority=args.priority,
                             impact=args.impact, cost=args.cost, risk=args.risk,
-                            model_class=args.model_class, success_criteria=args.success,
+                            model_class=args.model_class, data_class=args.data_class, success_criteria=args.success,
                             next_action=args.next, dependencies=args.depends))
     elif cmd == "task-update":
         kw = {k: v for k, v in (("status", args.status), ("next_action", args.next),
@@ -562,6 +564,11 @@ def _main(argv=None) -> int:
             _print(skills.sync_catalog())
         elif args.op == "list":
             _print([dict(r) for r in skills.all_skills()])
+        elif args.op == "plan":
+            from . import platform_resolver
+            profile = ({"os": "macos", "arch": "arm64", "ram_gb": None, "apple_silicon": True}
+                       if args.target == "macos-arm64" else platform_resolver.machine_profile())
+            _print(platform_resolver.resolve(profile=profile))
         else:
             rows = skills.all_skills()
             from collections import Counter

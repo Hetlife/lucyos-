@@ -5,7 +5,7 @@
   "contract": ".lucy/handoffs/2026-09-16/03_HIGH_TO_LOW_MODEL_AUTHORITY_CONTRACT.md",
   "execution_package": ".lucy/authority/LUCYOS_FABLE_ARCHITECT_EXECUTION_PACKAGE.md",
   "integration_branch": "integration/consolidation-20260916",
-  "fable_freeze_sha": "fe7d6487bbb0a359947c052a936105c80cba8d7a",
+  "fable_freeze_sha": "2a7002043ceca4ffff2da09bf59860708954370e",
   "verifier": "scripts/verify_authority.py",
   "how_verified": "In CI on pull requests the verifier and this baseline are read from the BASE branch (never from the branch under test). On pushes and on Mark-2 the deployed tree is checked against protected_file_hashes and against the blobs at fable_freeze_sha.",
   "protected_paths": [
@@ -86,7 +86,11 @@
     "host",
     "sync_outbox",
     "intake",
-    "bridge"
+    "bridge",
+    "model_gateway",
+    "platform_resolver",
+    "semantic_recall",
+    "usage_telemetry"
   ],
   "sqlite_connect_allowed": [
     "aion_core/db.py",
@@ -163,10 +167,10 @@
   ],
   "protected_file_hashes": {
     ".github/workflows/lucyos-ci.yml": "45654d82c0364300552f39e195b183e9e7ee5921a41e95971fafedf9b78b70f5",
-    ".gitignore": "05c1c9035454f11e94b0d5cb578ce99ae3e3b575604920308dcc58941fb7ec46",
-    ".lucy/authority/LUCYOS_FABLE_ARCHITECT_EXECUTION_PACKAGE.md": "3d078e3a19e341e5b0508a2f87f3525b1bbde8435719b2a8b4308b57605517f8",
+    ".gitignore": "d2287223fa585314833fa54be2f517caf7cbde458fd53dfdc8299ee046ee42d5",
+    ".lucy/authority/LUCYOS_FABLE_ARCHITECT_EXECUTION_PACKAGE.md": "56db845b4f4dcf1b4b7312eb14d81798dbc9eaf5849d5f42646476dc3bb6c6da",
     ".lucy/authority/LUCYOS_PLATFORM_AND_DATA_CONTRACTS.md": "38e966acf6b4ae8b6b4ee68c41017453f3b20561445cc9c8604de037ea2f3ed2",
-    ".lucy/authority/PROTECTED_PATHS.md": "08edea34b0c5d395a78f66a86e8278e28aaafa1396b2f84110fd0d3776de24ae",
+    ".lucy/authority/PROTECTED_PATHS.md": "32d1a438c68c9d743887b01c00459e040d56efb3fb0095cccce8225b7b700192",
     ".lucy/deployment/MARK2_DEPLOYMENT_CONTRACT.md": "d12b57b237904756b038c3021a068ad6ec6ce26e25055291a2e4e18abeadb327",
     ".lucy/handoffs/2026-09-16/00_READ_ME_FIRST.md": "cf44299ab88df19ccafa29b384b86b72e2ca792880506e54d5203e3cca2194c7",
     ".lucy/handoffs/2026-09-16/01_OPUS_READINESS_ARCHITECT_BRIEF_PROMPT.txt": "f811a7af8ee6c44b82aef8c10369a110a6e2252d0ef966515e0404a57f9bdf49",
@@ -180,13 +184,13 @@
     "aion_core/agents.py": "74771d5f8fcabb1387b8fb592124fe5bc09842f51266a382bd23fff870325c89",
     "aion_core/approvals.py": "03042465ceca323106f8f2c31cadff4637a54dd706f3c8447fb29015a6aea8be",
     "aion_core/architecture.py": "32abb45511d475f944e784f2ce4dafb2a391d910136d38067beebaf8bce03235",
-    "aion_core/config.py": "9e68a04fc1f5aefb506b2d33956ad060d1589eb0f466693df0a2a411e2420f8e",
-    "aion_core/db.py": "fbfc7cd9214c4830f36a5fa5a5727a934959a279026299cfff7cafb0bd657504",
+    "aion_core/config.py": "7896060bd8d38357d2b4e565aff49a54e4448f1ef8229f204cc5e23d210e3d55",
+    "aion_core/db.py": "62431155b2d3dba963743aebd1d53b71a8e5996eed216542bcf0136bcd891d0d",
     "aion_core/governor.py": "9f69cac28e9e3ee3390ca59a31d56c73ba855fb378dc3b0fe2301f8d370de934",
     "aion_core/resume.py": "1882539898599343c37b6503ab083da72034c926cffd418d236bc5f370e97828",
     "aion_core/router.py": "f7b75d2f8ff0b324d54ea70812b6818519bc09e02b7747538b5e6a5791e68ce0",
     "aion_core/security.py": "236f51486b8409343d0b32602d48dc9dba2556b8c7b310270ee68d1b41d3a31c",
-    "aion_core/worker.py": "becc95578e7613fe90f83efc3a1d33287783dc88c180c59c340619620bfc6c54",
+    "aion_core/worker.py": "690262e20d4ff3075c55f515f20bd044bfc98d432357ae523fe99f90162ee169",
     "deploy/launchd/README.md": "a6f65f3ebb43d3f31ec9348acb0b4c74308fb36e243ae430240a5f31ef21ce2d",
     "deploy/launchd/com.lucyos.aion-bridge.plist": "885599bfcf5b48706287a7f0fe81e6cfb2f61bb56e8d0d081efdd412081b85cc",
     "deploy/launchd/com.lucyos.aion-interface.plist": "5d6284cf028f483ac79524157d4ecadab39fc311700f9ec9613edc303d3a8b4c",
@@ -196,7 +200,7 @@
     "deploy/queues/M-A_structured_api.md": "9a462d9fd45da1c5e5615de2a4df69607fb352b29638b74b1151182ec39da548",
     "scripts/check_portability.py": "60c4f4f12bdf2c748aa1e658d9f0b1ccbd6cbf902ecdfec6860042fcd67a4b1a",
     "scripts/ci_health_gate.py": "cd624bdee561d2b09652a82c17f8deb1fd6fa207493ac3e422888f327186214b",
-    "scripts/verify_authority.py": "17e1a2561173370b7c0d67a6d82082c76746c567ac128df215574daa28700a5a",
+    "scripts/verify_authority.py": "29e702bd1ea9b0775a139a31f9969e25f72f6d71e1aaea87e7d6bc15bf528959",
     "systemd/README.md": "43a049b2ee51ddd3f5c49fe570026c940974acf8b7475168f46886192439d584",
     "systemd/aion-bridge.service": "e66c81f3543e1cd1a9c6be1b4c1eeec734ba0c851aeec3ae698f3af8b9f28218",
     "systemd/aion-interface.service": "77d20a952d55ad54a089702f7a191ba2a04c8bc72b644267a2f75962bf28b517",
@@ -209,5 +213,8 @@
   },
   "platform_and_data_contracts": ".lucy/authority/LUCYOS_PLATFORM_AND_DATA_CONTRACTS.md",
   "portability_guard": "scripts/check_portability.py",
-  "public_repo_assumption": "Repository is PUBLIC by owner decision until Mac migration completes. Never commit credentials, private Drive content, customer data, raw sensitive logs, OAuth material or machine secrets."
+  "public_repo_assumption": "Repository is PUBLIC by owner decision until Mac migration completes. Never commit credentials, private Drive content, customer data, raw sensitive logs, OAuth material or machine secrets.",
+  "derived_sqlite_allowed": [
+    "aion_core/semantic_recall.py"
+  ]
 }

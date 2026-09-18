@@ -1,32 +1,120 @@
 # Issue Register — 2026-09-17
 
-Severity per `LUCYOS_REPO_HEALTH_AUDITOR_TEMP.md` §5 (P0 security/destructive
-> P1 core-runtime/authority > P2 material functional > P3 reliability > P4
-cleanup). No severities inflated; see evidence column for the check that
-produced each entry.
+Severity per the auditor spec. Not inflated: no P0 exists, and saying so is the finding.
 
-| ID | Sev | Subsystem | Classification | Summary | Evidence | Repair task |
-|---|---|---|---|---|---|---|
-| ISSUE-1 | P1 | `.lucy/authority` / governance | product bug (baseline omission) | 4 owner-authored `aion_core` modules (`model_gateway`, `platform_resolver`, `semantic_recall`, `usage_telemetry`) are not in `HIGH_MODEL_BASELINE.json`'s allowlist on `main`, so `verify_authority.py anti-dup` fails for any branch carrying them, even though a fix already exists | `verify_authority.py anti-dup --base origin/main` on the reconcile-wave branch: 4 of 8 violations are exactly these modules; fix already committed at `57f0e4c` on `repair/reconcile-20260917` | TASK-R1 |
-| ISSUE-2 | P2 | `aion_core/semantic_recall.py` / persistence | governance / owner decision, not a code bug per se | Module opens its own SQLite connection and issues `CREATE TABLE` outside `aion_core/db.py`, which `PROTECTED_PATHS.md` names as sole owner of "every table, every migration" | `verify_authority.py anti-dup`: 4 of 8 violations, 2× `sqlite3.connect()`, 2× `CREATE TABLE`, both outside `db.py` | TASK-C1 (Level C — stop for high-model/owner approval before any code change) |
-| ISSUE-3 | P1 | repo integration state | governance / process | The only verified-green, conflict-free reconciliation of `main` + all pending work (`merge/reconcile-waves-20260917-chatgpt`) has never been pushed to `main`; this is the actual blocker on calling the repo "healthy", not any remaining code defect | Ancestry check: `origin/main` is an ancestor of the reconcile-wave branch, not the reverse; ISSUE-1 and ISSUE-2 are the only two things preventing a clean `anti-dup` on that branch | TASK-R2 / FINAL-SONNET-PUSH (Level D — owner approval to touch `main`) |
-| ISSUE-4 | P1 | reconcile-wave branch itself | governance / process | `verify_authority.py strict` fails on the reconcile-wave tip because a multi-wave merge commit doesn't carry a single declared `Task-ID:` trailer or `task/<ID>-...` branch name | `verify_authority.py strict --base origin/main --branch a99beeb...`: 1 violation, "protected paths changed but task id is undeclared" | Addressed as a completion criterion in FINAL_SONNET_PUSH_TASK.md, not a separate repair |
-| ISSUE-5 | P4 | branch hygiene | stale claim in prior audit doc | `repair/reconcile-20260917:docs/internal/REPO_CLEANUP_AND_MERGE_PLAN.md` asserts `feature/lucyos-aion-handoff` has an "empty diff" against `main`; re-checked this session and its tip commit is not a literal ancestor of `main`, and a plain `git diff` now shows hundreds of files' difference (expected, since `main` has grown substantially since that claim was written) | `git merge-base --is-ancestor origin/feature/lucyos-aion-handoff origin/main` → NO; `git diff origin/feature/lucyos-aion-handoff origin/main --stat` → 365 files changed | TASK-R3 (evidence-gathering only, no code change) |
-| ISSUE-6 | P4 | local clone config | cosmetic | This clone's `refs/remotes/origin/HEAD` symbolic ref is unset; the actual GitHub remote default branch is correctly `main` (`git remote show origin` confirms) | `git symbolic-ref refs/remotes/origin/HEAD` fails locally; `git remote show origin` succeeds and reports `main` | No repo action; per-clone `git remote set-head origin -a` if desired. Not queued. |
-| ISSUE-7 | P4 | 7 side branches (see HEALTH_REPORT.md §5) | UNVERIFIED — not yet audited | `claude/aion-whatsapp-control-1seild`, `claude/fable-deploy-setup-mc5nr6`, `feature/context-pack`, `plan/lucyos-openclaw-e2e`, `test/authority-gate-positive-20260916`, `candidate/mark2-loop-v1.2-20260908` carry unmerged, unaudited content not on the critical path | `git log --oneline origin/main..origin/<branch>` counts in HEALTH_REPORT.md §5 | Not queued this pass — recorded so a future audit doesn't rediscover them from zero |
-| ISSUE-8 | — (not an issue) | `feature/resource-governor` (wave 6) | correctly deferred, not a defect | Real merge conflicts in `aion_core/cli.py`, `aion_core/db.py`, `aion_core/health.py`; resolution recipe already documented in `.lucy/execution/SONNET_TASK_QUEUE.md` per the prior plan | `git merge-base --is-ancestor` shows it's absent from both `main` and the reconcile-wave branch; conflict claim not independently re-attempted this session (would require a real merge attempt against protected files — Level C/D territory, out of scope for a planning-only pass) | TASK-C2 — do last, alone, human-watched, per prior plan; not auto-executable by Sonnet |
+| ID | Sev | Subsystem | Issue | Root cause | Task |
+|---|---|---|---|---|---|
+| ISSUE-001 | P1 | authority/baseline | 4 owner modules fail `anti-dup` | Baseline allowlist not updated alongside `60b2dc7` | TASK-002 |
+| ISSUE-002 | P1 | architecture/data | `semantic_recall.py` opens its own SQLite store | Derived index vs canonical store is genuinely ambiguous to the rule | TASK-003 (owner) |
+| ISSUE-003 | P1 | repo integrity | Branch roles inverted, unrecorded | `main` became frozen candidate; docs still say the opposite | TASK-001 |
+| ISSUE-004 | P2 | security/external | `model_gateway` adds 3 third-party inference endpoints | New external surface, owner-authored, not yet owner-ratified | TASK-003 (owner) |
+| ISSUE-005 | P3 | repo hygiene | `origin/HEAD` unset | Never configured on the remote | TASK-001 |
+| ISSUE-006 | P3 | CI coverage | Merged reconciliation state never CI-tested | State does not exist remotely yet | TASK-004 |
 
-## Findings NOT made (explicitly, to avoid manufacturing work)
+---
 
-- No P0 findings. `./aion scan .` clean; no unsafe `shell=True`/`eval`/`exec`/bare-except
-  in core paths; no credential exposure found.
-- No broken imports, circular imports, or dead entrypoints found on the
-  reconcile-wave branch — `compileall` across `aion_core`, `bridges`,
-  `tests`, `scripts` is clean and the full test suite collects and runs
-  (560 tests) without collection errors.
-- No test suite regressions: test count only grows across every wave
-  (420 / 537 on the two pre-merge branches → 560 combined), and the run is
-  `OK` with 2 skips, 0 failures, 0 errors.
-- No evidence any safety/authority gate was weakened to get to this green
-  state — `anti-dup` and `strict` were run for real, not bypassed, and both
-  correctly still report their (expected, already-understood) violations.
+## ISSUE-001 — Four owner modules are not in the baseline allowlist
+
+**Severity P1.** Blocks the reconciling merge from passing `anti-dup`.
+**Confidence 100%.** VERIFIED by running the gate.
+
+`model_gateway`, `platform_resolver`, `semantic_recall`, `usage_telemetry` are absent from
+`aion_core_modules` in `.lucy/authority/HIGH_MODEL_BASELINE.json`.
+
+**Root cause:** the identical omission pattern that blocked five PRs earlier the same day.
+Code and tests are written; the baseline entry is forgotten. The gate is behaving correctly;
+the baseline is the thing that is stale.
+
+**Not a code defect.** All four modules compile, have dedicated tests, and pass.
+
+---
+
+## ISSUE-002 — `semantic_recall.py` opens a SQLite store outside `db.py`
+
+**Severity P1.** Blocks the merge. **Requires an owner ruling, not a Sonnet fix.**
+**Confidence 95%** on the reading; **the ruling itself is open.**
+
+Four violations: two `sqlite3.connect()` and two `CREATE TABLE`, at `index_path()`.
+
+**Root cause:** `anti-dup` is a textual rule that cannot distinguish a *rebuildable derived
+index* from a *second source of truth*. Reading the module, this is the former: tables are
+`metadata` and `items`, the module imports `db` and `config`, and the whole artifact is
+regenerated by `rebuild()`. The data-library contract explicitly permits rebuildable indexes
+and forbids only making an embedding store the sole source of truth.
+
+**Why this is still escalated rather than waved through:** the contract permits derived
+indexes, but nothing in the repo currently *records* that this particular store is derived.
+Without that record, a future reader (or a future `anti-dup` reviewer) cannot tell the
+difference, and the rule would be weakened by whoever adds the exception. The owner should
+decide **how** to encode it, not merely **whether**.
+
+---
+
+## ISSUE-003 — Branch roles inverted without an in-repo record
+
+**Severity P1.** Not a code defect; a correctness-of-understanding defect, which is worse
+because every later decision inherits it.
+**Confidence 100%.** VERIFIED.
+
+`origin/main` @ `0720a92` carries "owner: freeze supervised integration candidate" and all
+23 task PRs. `integration/consolidation-20260916` is 27 behind and missing six of them. Yet
+`.lucy/planning/INTEGRATION_ROADMAP_20260917.md` and `..._V2_...md`, written the same day,
+both describe integration as the target and `main` as the destination.
+
+**Root cause:** the owner reasonably promoted `main` mid-flight; no artifact was updated to
+say so. Documentation drifted from reality within hours.
+
+---
+
+## ISSUE-004 — `model_gateway` adds three external inference providers
+
+**Severity P2.** Not P1: it is default-deny and does not sit in the critical path.
+**Requires an owner ruling.** **Confidence 100%** on the facts.
+
+Outbound HTTPS to `openrouter.ai`, `api.groq.com`, `api.cerebras.ai`; reads secrets by name.
+
+**Mitigations present in the code (VERIFIED):** `DATA_POLICY` allows only `PUBLIC`;
+`tasks.data_class` defaults to `INTERNAL`, so the default is deny; failure limit 3 with a
+15-minute cooldown; invoked as an auxiliary path at `worker.py:427` while the existing
+DET → Ollama → `cloud_command` hierarchy at `worker.py:437` is untouched.
+
+**Process was followed:** learnrepo vetting manifests exist for each new dependency under
+`.lucy/planning/skill-exec-20260917/`.
+
+**Residual owner questions:** do these free-tier providers count as "external account
+creation"? Does routing any task text off-machine, even `PUBLIC`-classed, need a standing
+approval? Is `sqlite-vec` / `fastembed` acceptable in a stdlib-only core, given both are
+optional and guarded by `dependency_status()`?
+
+---
+
+## ISSUE-005 — `origin/HEAD` unset
+
+**Severity P3.** Cosmetic but real: fresh clones and tooling cannot infer the default branch.
+**Confidence 100%.** VERIFIED.
+
+---
+
+## ISSUE-006 — The reconciled state has never been through CI
+
+**Severity P3.** **Confidence 100%.**
+
+The merge was executed and tested locally in this session (550 tests, OK; portability
+portable; scan clean). It has never run on GitHub Actions because the state does not exist
+remotely. Local green is strong evidence but is not CI evidence, and this register will not
+pretend otherwise.
+
+---
+
+## Explicitly NOT issues — evidence-backed, do not manufacture work
+
+- **No failing tests** on `integration`, on `main`, or on the merge.
+- **No lost or orphaned commits.** All 23 task tips are ancestors of `main`.
+- **No weakened gate.** Portability reports 0 violations and **0 stale** exceptions; the two
+  remaining exceptions are legitimately owned by S-11 and S-12.
+- **No secrets.** Clean on all three states.
+- **No second execution loop.** `model_gateway` is auxiliary, not a replacement.
+- **No schema drift.** Additive `_ADDED_COLUMNS` pattern intact; `data_class` is additive
+  with a safe default.
+- **Evidence gates intact.** `worker._validate` still reruns `validation_command`
+  independently and still returns `needs_review` for unvalidated class A/B work.

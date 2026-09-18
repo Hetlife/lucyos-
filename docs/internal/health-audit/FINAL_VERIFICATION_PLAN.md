@@ -1,75 +1,136 @@
 # Final Verification Plan — 2026-09-17
 
-Run this after TASK-R1 (and TASK-R3 if desired) are complete and before
-FINAL-SONNET-PUSH is allowed to commit/push anything. Per auditor spec §12.
-Every step must be run for real; do not report a step as passed without
-having executed it in this session's environment.
+Run **after** TASK-001 through TASK-004 and **before** `FINAL_SONNET_PUSH_TASK.md`.
+Every step states what PASS looks like. A step without a stated PASS condition is not a check.
 
-1. **Inspect every task diff.** `git diff origin/main...<repair-branch>` —
-   confirm it is exactly: (a) TASK-R1's 4-line allowlist addition, (b) the
-   full content of waves 1–5 already proven on `merge/reconcile-waves-20260917-chatgpt`
-   (`git diff origin/main origin/merge/reconcile-waves-20260917-chatgpt --stat`
-   as the reference shape), and (c) nothing else. Any extra file is a scope
-   violation — stop.
-2. **Targeted tests.** For TASK-R1: none needed (data-only change; validate
-   JSON parses). For the promoted waves: `test_model_gateway.py`,
-   `test_platform_resolver.py`, `test_semantic_recall.py`,
-   `test_usage_telemetry.py`, `test_sse_events.py`, `test_task_data_class.py`,
-   `test_context_contract.py`, `test_openclaw_lucyos_bridge.py` all pass
-   individually.
-3. **Full suite.** `python3 -m unittest discover -s tests -t . -q` — expect
-   560 tests, 0 failures, 0 errors, ≤2 skipped (the `ssh-keygen`-absence
-   skips are environment-only and expected in a sandbox without
-   `ssh-keygen`; confirm the skip reason names `ssh-keygen`, not something
-   else, if the skip count changes).
-4. **CI-equivalent checks.**
-   ```
-   python3 -m compileall -q aion_core bridges tests scripts
-   ./aion scan .
-   python3 scripts/check_portability.py
-   python3 scripts/verify_authority.py anti-dup --base origin/main
-   python3 scripts/verify_authority.py strict  --base origin/main --branch <repair-branch-or-sha>
-   ```
-   Expected after TASK-R1 lands but before TASK-C1 is decided:
-   `anti-dup` → exactly 4 violations remaining (ERROR-2/semantic_recall
-   only — the allowlist 4 are gone). If `anti-dup` still shows 8, TASK-R1
-   did not actually land on the branch being verified; stop.
-   `strict` → must carry a real `Task-ID` (from the commit trailer this push
-   task itself creates, see `FINAL_SONNET_PUSH_TASK.md`) — 0 violations.
-5. **Test startup.** `python3 -m aion_core.cli --help` (or the repo's
-   documented startup smoke-test command) runs without a traceback.
-6. **Save/resume.** Run whatever test(s) in `tests/` cover
-   `aion_core/resume.py` checkpoint/resume explicitly (already included in
-   the full suite run in step 3 — confirm by name, don't just trust the
-   aggregate count).
-7. **Authority gates.** Confirm step 4's `anti-dup`/`strict` runs above were
-   not run with any flag that suppresses or ignores violations, and that
-   `.lucy/authority/**` and `.github/workflows/lucyos-ci.yml` are byte-identical
-   to `origin/main` in the diff from step 1 (constitutional paths — should
-   never appear as "changed" in this push's diff at all, since TASK-R1 only
-   touches the allowlist *data* inside `HIGH_MODEL_BASELINE.json`, which is
-   explicitly the one field designed to be updated this way).
-8. **Failure/retry/recovery paths.** Confirm `tests/test_*` covering worker
-   retries/timeouts/cancellation (already part of the 560) pass individually,
-   not just in aggregate.
-9. **`git status`.** Clean, no untracked files left behind by the test run
-   (watch for stray `.lucy/planning/skill-exec-*` scratch files or SQLite
-   files created by `semantic_recall.py` during the test run — these must
-   not be staged).
-10. **Secret scan.** `./aion scan .` (already step 4) plus a manual look at
-    the diff for anything resembling a token/key/credential.
-11. **Confirm no unrelated changes.** Diff touches only files named in
-    TASK-R1 and the wave-1-through-5 content already reviewed by the prior
-    audits; nothing outside that set.
-12. **Verify remote push SHA** (post-push, see `FINAL_SONNET_PUSH_TASK.md`):
-    `git ls-remote origin <branch>` matches the locally reported pushed SHA.
-13. **Produce final health status.** A short PASS/FAIL note per criterion
-    above, written to
-    `docs/internal/health-audit/tasks/FINAL_VERIFICATION_RESULT.md`, dated
-    and SHA-stamped. Do not declare the repo healthy on any criterion that
-    was not actually executed.
+## Baselines this plan asserts against
 
-**Owner/Level-D gate:** even with all 13 steps green, actually merging or
-pushing onto `main` still requires the Level D owner approval named in
-`FINAL_SONNET_PUSH_TASK.md` and `SONNET_REPAIR_APPROVAL_BOUNDARIES_TEMP.md`.
-A fully green verification plan authorizes *readiness*, not the push itself.
+Measured in the audit session on the real merged commit. Any downward movement is a failure,
+not a rounding difference.
+
+| Metric | Expected |
+|---|---|
+| Full suite | **≥ 550 tests, OK, 1 skipped** |
+| Portability guard | 0 violations, 3 known exceptions, **0 stale**, portable |
+| Secret scan | clean |
+| Merge conflicts | zero |
+| `anti-dup` | clean, or only owner-ratified violations |
+
+---
+
+## 1. Diff review
+
+```
+git status --short
+git log --oneline origin/main..HEAD
+git diff origin/main...HEAD --stat
+```
+**PASS:** every commit maps to TASK-001, TASK-002, TASK-003 or the TASK-004 merge. No
+unexplained file. No formatting churn. No unrequested refactor. No temporary or generated
+file staged (no `.aion_home*`, no `__pycache__`, no `*.pyc`, no scratch directory).
+
+## 2. Compile and import integrity
+
+```
+python3 -m compileall -q aion_core bridges tests scripts
+python3 -c "import aion_core.worker, aion_core.db, aion_core.resume, aion_core.model_gateway, aion_core.semantic_recall, aion_core.platform_resolver, aion_core.usage_telemetry"
+```
+**PASS:** silent compile; all imports succeed with no circular-import error.
+
+## 3. Targeted tests for the merged-in modules
+
+```
+python3 -m unittest tests.test_model_gateway tests.test_platform_resolver tests.test_semantic_recall tests.test_usage_telemetry tests.test_task_data_class -v
+```
+**PASS:** all OK. These are the modules the merge carries; they are the ones most likely to
+break on contact with `main`.
+
+## 4. Full suite
+
+```
+python3 -m unittest discover -s tests -t . -q
+```
+**PASS:** ≥ 550 tests, OK. A count **below** 550 means the merge dropped tests and is a
+stop condition, not a curiosity.
+
+## 5. CI-equivalent gates
+
+```
+./aion scan .
+python3 scripts/check_portability.py
+python3 scripts/verify_authority.py anti-dup --base origin/main
+python3 scripts/verify_authority.py strict --base origin/main --branch "$(git branch --show-current)"
+```
+**PASS:** scan clean. Portability portable, **0 stale** (a stale exception means someone
+fixed a bug without removing its excuse, and the ratchet must be allowed to tighten).
+`anti-dup` clean or only owner-ratified. `strict` ok, or a single unambiguous task identity
+if protected paths were touched.
+
+## 6. Startup, persistence and recovery on a throwaway brain
+
+```
+export AION_HOME=$(mktemp -d)
+./aion init && ./aion seed && ./aion boot
+./aion health --deep
+./aion backup
+```
+**PASS:** `init`/`seed`/`boot` all succeed. Required health checks pass. `backup` creates
+**and restore-verifies** an archive; a backup that is not restore-tested is not a backup.
+
+## 7. Save / resume
+
+```
+./aion boot     # second time, fresh process
+```
+**PASS:** reports the previously recorded next action rather than re-running it. An
+interrupted external action must not be duplicated.
+
+## 8. Authority gates still enforced
+
+```
+python3 -c "
+import json;b=json.load(open('.lucy/authority/HIGH_MODEL_BASELINE.json'))
+assert '.lucy/authority/**' in b['constitutional_paths_no_override_possible']
+assert 'scripts/verify_authority.py' in b['constitutional_paths_no_override_possible']
+assert '.github/workflows/lucyos-ci.yml' in b['constitutional_paths_no_override_possible']
+print('constitutional paths intact')"
+```
+**PASS:** prints the confirmation. This is the check that catches a gate being quietly
+loosened while everything else looks green.
+
+## 9. Model routing and delegation unchanged
+
+```
+grep -n "run_cloud\|cloud_command\|_execution_lock\|needs_review" aion_core/worker.py | head
+```
+**PASS:** the DET → Ollama → `cloud_command` hierarchy is present and unmodified;
+`_execution_lock` still exists; `_validate` still returns `needs_review` for class A/B work
+lacking independent validation. `model_gateway` must appear only as an auxiliary call, never
+as a replacement for `run_cloud`.
+
+## 10. Secret hygiene
+
+```
+./aion scan .
+git diff origin/main...HEAD | grep -iE "api[_-]?key|secret|token|password|bearer" || echo "no credential-shaped additions"
+```
+**PASS:** scan clean and the diff grep returns nothing beyond variable *names* already
+present in the codebase. Never print an actual value while checking.
+
+## 11. Remote state unchanged since the audit
+
+```
+git fetch origin --prune
+git rev-parse origin/main origin/integration/consolidation-20260916
+```
+**PASS:** `0720a92...` and `db91548...` respectively. **If either moved, STOP.** The audit
+evidence, including the conflict-free merge proof, no longer applies and needs a fresh
+high-model pass.
+
+---
+
+## Final health statement
+
+Only after every PASS above may anyone describe the repository as healthy. Record the actual
+numbers observed, not the expected ones. If a step was skipped, say it was skipped; a
+skipped check reported as passing is the single most damaging thing this plan can produce.
