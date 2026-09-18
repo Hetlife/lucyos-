@@ -4,40 +4,581 @@
   "canonical_main_at_authoring": "66e3a4ef1b8242123555af5a7c9d80115ab23d82",
   "research_branch": "research/codebase-reduction-20260918",
   "task_id_regex": "^(S|FABLE|OWNER|CODEX)-\\d{1,4}$",
-  "status_vocabulary": ["NEW", "READY_FOR_EVIDENCE", "PLANNED", "AUDIT_REQUIRED", "READY_TO_EXECUTE", "EXECUTING", "VERIFYING", "PASS", "REWORK", "BLOCKED_OWNER", "BLOCKED_TECHNICAL", "CHECKPOINTED", "MERGE_CANDIDATE", "DONE"],
-  "priority_vocabulary": ["P0", "P1", "P2", "P3", "P4", "P5"],
+  "status_vocabulary": [
+    "NEW",
+    "READY_FOR_EVIDENCE",
+    "PLANNED",
+    "AUDIT_REQUIRED",
+    "READY_TO_EXECUTE",
+    "EXECUTING",
+    "VERIFYING",
+    "PASS",
+    "REWORK",
+    "BLOCKED_OWNER",
+    "BLOCKED_TECHNICAL",
+    "CHECKPOINTED",
+    "MERGE_CANDIDATE",
+    "DONE"
+  ],
+  "priority_vocabulary": [
+    "P0",
+    "P1",
+    "P2",
+    "P3",
+    "P4",
+    "P5"
+  ],
   "gates": {
     "architecture_audit": "04_AUTHORITY_MODEL.md#3",
     "verification": "05_AUTONOMOUS_EXECUTION_LOOP.md#2 INDEPENDENT + REGRESSION",
     "owner": "04_AUTHORITY_MODEL.md#5"
   },
   "tasks": [
-    {"id": "FABLE-05", "title": "Planning package: reconciliation, authority model, task graph, prompts", "milestone": "M0", "level": "L1", "priority": "P1", "status": "PASS", "executor": "fable", "reviewer": "owner", "depends_on": [], "owner_gate": "ratify at M2", "outputs": [".lucy/planning/codebase-reduction-20260918/*"], "acceptance": "all 23 master-prompt concerns covered; package committed and mirrored to Drive", "parallel_group": null},
-    {"id": "S-40", "title": "M0 canonical baseline lock", "milestone": "M0", "level": "L1", "priority": "P1", "status": "READY_TO_EXECUTE", "executor": "controller", "reviewer": "ci+controller", "depends_on": ["FABLE-05"], "owner_gate": null, "outputs": ["evidence/M0_BASELINE.md"], "acceptance": "16_FIRST_10_TASKS.md#S-40", "parallel_group": null},
-    {"id": "OWNER-06", "title": "Node checkout policy: name DC-1 = main, or keep 2cd3cc5 and prioritise S-03/S-04", "milestone": "M0", "level": "L4", "priority": "P1", "status": "NEW", "executor": "owner", "reviewer": "fable", "depends_on": ["S-40"], "owner_gate": "OWNER-06", "outputs": ["decision recorded in CHECKPOINT.md and, if a SHA is named, in .lucy/deployment/MARK2_DEPLOYMENT_CONTRACT.md via Fable PR"], "acceptance": "one of the two options recorded", "parallel_group": "M0-owner", "blocks_only": ["M6", "M8", "M9"]},
-    {"id": "OWNER-07", "title": "Confirm/enable branch protection on main (OWNER-01 carry-over)", "milestone": "M0", "level": "L4", "priority": "P1", "status": "NEW", "executor": "owner", "reviewer": "fable", "depends_on": ["S-40"], "owner_gate": "OWNER-07", "outputs": ["GitHub setting; note in CHECKPOINT.md"], "acceptance": "protection state known and recorded", "parallel_group": "M0-owner", "blocks_only": []},
-    {"id": "S-41", "title": "scripts/complexity_map.py: import graph, fan-in/out, cycles, sizes", "milestone": "M1", "level": "L2", "priority": "P3", "status": "NEW", "executor": "codex", "reviewer": "claude-code", "depends_on": ["S-40"], "owner_gate": null, "outputs": ["scripts/complexity_map.py", "tests/test_complexity_map.py", "evidence/complexity_map.json", "evidence/dependency_graph.json", "evidence/hotspots.md"], "acceptance": "16_FIRST_10_TASKS.md#S-41", "parallel_group": "M1-scripts"},
-    {"id": "S-42", "title": "scripts/duplication_scan.py: duplicate bodies, dead modules, stale docs", "milestone": "M1", "level": "L2", "priority": "P3", "status": "NEW", "executor": "claude-code", "reviewer": "codex", "depends_on": ["S-40"], "owner_gate": null, "outputs": ["scripts/duplication_scan.py", "tests/test_duplication_scan.py", "evidence/duplication_report.md", "evidence/dead_weight_candidates.md"], "acceptance": "16_FIRST_10_TASKS.md#S-42", "parallel_group": "M1-scripts"},
-    {"id": "S-43", "title": "scripts/task_context_profiler.py + six-task context-cost baseline", "milestone": "M1", "level": "L2", "priority": "P3", "status": "NEW", "executor": "codex", "reviewer": "claude-code", "depends_on": ["S-40"], "owner_gate": null, "outputs": ["scripts/task_context_profiler.py", "tests/test_task_context_profiler.py", "evidence/context_cost_baseline.md"], "acceptance": "16_FIRST_10_TASKS.md#S-43", "parallel_group": "M1-scripts"},
-    {"id": "FABLE-06", "title": "Review M1 maps; confirm/adjust the 8-module cut", "milestone": "M1", "level": "L1", "priority": "P3", "status": "NEW", "executor": "fable", "reviewer": "owner", "depends_on": ["S-41", "S-42", "S-43"], "owner_gate": null, "outputs": ["evidence/M1_GATE.md"], "acceptance": "module cut for S-44 fixed in writing", "parallel_group": null},
-    {"id": "S-44", "title": "Eight module manifests + schema + ownership-coverage test", "milestone": "M2", "level": "L1", "priority": "P3", "status": "NEW", "executor": "claude-code", "reviewer": "codex", "depends_on": ["FABLE-06"], "owner_gate": "ratify direction + module cut (M2 exit)", "outputs": [".lucy/architecture/module.schema.json", ".lucy/architecture/modules/*.json", ".lucy/architecture/README.md", "tests/test_module_manifests.py"], "acceptance": "16_FIRST_10_TASKS.md#S-44", "parallel_group": null},
-    {"id": "OWNER-08", "title": "Merge baseline change: CONTROLLER executor scope + S-40..S-59 overrides where needed; fix integration_branch field", "milestone": "M2", "level": "L4", "priority": "P2", "status": "NEW", "executor": "fable", "reviewer": "owner", "depends_on": ["S-41"], "owner_gate": "OWNER-08", "outputs": ["PR touching .lucy/authority/HIGH_MODEL_BASELINE.json"], "acceptance": "authority-gate fails by design; owner merges with admin bypass; re-freeze", "parallel_group": "M0-owner", "blocks_only": []},
-    {"id": "S-45", "title": "Extend aion context: --module section, repo files/tests/ADRs, size budget, delta watermark", "milestone": "M3", "level": "L2", "priority": "P3", "status": "NEW", "executor": "codex", "reviewer": "claude-code", "depends_on": ["S-44", "S-43"], "owner_gate": "merge to main", "outputs": ["aion_core/context.py", "aion_core/cli.py (context args only)", "tests/test_context_contract.py"], "acceptance": "16_FIRST_10_TASKS.md#S-45", "parallel_group": null, "pr_target": "main"},
-    {"id": "S-47", "title": "Pilot task A: salvage `aion verify` from 2cd3cc5 onto main using only the context pack", "milestone": "M3", "level": "L2", "priority": "P3", "status": "NEW", "executor": "codex", "reviewer": "claude-code", "depends_on": ["S-45"], "owner_gate": "merge to main", "outputs": ["aion_core/<per 2cd3cc5>", "tests/<per 2cd3cc5>"], "acceptance": "16_FIRST_10_TASKS.md#S-47", "parallel_group": "M3-pilot", "pr_target": "main"},
-    {"id": "S-49", "title": "Pilot task B: salvage hermetic test environment from 10c8d79 using only the context pack", "milestone": "M3", "level": "L2", "priority": "P3", "status": "NEW", "executor": "claude-code", "reviewer": "codex", "depends_on": ["S-45"], "owner_gate": "merge to main", "outputs": ["tests/base.py", "tests/<per 10c8d79>"], "acceptance": "16_FIRST_10_TASKS.md#S-49", "parallel_group": "M3-pilot", "pr_target": "main"},
-    {"id": "S-46", "title": "Context pilot measurement + report", "milestone": "M3", "level": "L1", "priority": "P3", "status": "NEW", "executor": "controller", "reviewer": "fable", "depends_on": ["S-47", "S-49"], "owner_gate": null, "outputs": ["evidence/context_pilot_results.md", "evidence/M3_GATE.md"], "acceptance": "16_FIRST_10_TASKS.md#S-46", "parallel_group": null},
-    {"id": "S-48", "title": "scripts/check_boundaries.py (warning mode) + first three rules", "milestone": "M4", "level": "L2", "priority": "P3", "status": "NEW", "executor": "codex", "reviewer": "claude-code", "depends_on": ["S-44"], "owner_gate": "promote to required CI (M4 exit, L4)", "outputs": ["scripts/check_boundaries.py", "tests/test_check_boundaries.py", "evidence/boundary_report.md"], "acceptance": "16_FIRST_10_TASKS.md#S-48", "parallel_group": "M3-pilot"},
-    {"id": "FABLE-07", "title": "Review M3/M4 results; decide M5 scope and M6 first move", "milestone": "M4", "level": "L1", "priority": "P3", "status": "NEW", "executor": "fable", "reviewer": "owner", "depends_on": ["S-46", "S-48"], "owner_gate": null, "outputs": ["evidence/M4_GATE.md"], "acceptance": "M5 archive list and M6 move #1 named", "parallel_group": null},
-    {"id": "S-50", "title": "Archive superseded planning docs; collapse three routers into one", "milestone": "M5", "level": "L1", "priority": "P5", "status": "NEW", "executor": "claude-code", "reviewer": "codex", "depends_on": ["S-42", "FABLE-07"], "owner_gate": "archive list", "outputs": [".lucy/archive/planning-20260917/**", "START_HERE.md", "docs/README.md", "tests/test_start_here.py"], "acceptance": "zero broken internal links; START_HERE ≤ 60 lines", "parallel_group": "M5"},
-    {"id": "S-51", "title": "Fix stale CANONICAL_BRANCH.md and baseline integration_branch (Fable PR)", "milestone": "M5", "level": "L4", "priority": "P4", "status": "NEW", "executor": "fable", "reviewer": "owner", "depends_on": ["OWNER-08"], "owner_gate": "OWNER-08", "outputs": [".lucy/planning/CANONICAL_BRANCH.md", ".lucy/authority/HIGH_MODEL_BASELINE.json"], "acceptance": "both name main @ current SHA", "parallel_group": "M5"},
-    {"id": "S-52", "title": "Dead-code removal #1 (candidate chosen from evidence/dead_weight_candidates.md)", "milestone": "M5", "level": "L2", "priority": "P5", "status": "NEW", "executor": "codex", "reviewer": "claude-code", "depends_on": ["S-42", "FABLE-07"], "owner_gate": null, "outputs": ["one module removal PR"], "acceptance": "no importer, no CLI wiring, no test, no manifest, no live doc pointer; suite count unchanged or explained", "parallel_group": "M5"},
-    {"id": "S-53", "title": "handoff.build_prompt and aion_codex_worker.sh reference aion context --module", "milestone": "M8", "level": "L2", "priority": "P4", "status": "NEW", "executor": "codex", "reviewer": "claude-code", "depends_on": ["S-46"], "owner_gate": "merge to main", "outputs": ["aion_core/handoff.py", "scripts/aion_codex_worker.sh", "tests/test_plan_worker.py"], "acceptance": "generated prompt names the pack command and the module index", "parallel_group": "M8", "pr_target": "main"},
-    {"id": "S-54", "title": "START_HERE.md: aion context first; module index", "milestone": "M8", "level": "L1", "priority": "P4", "status": "NEW", "executor": "controller", "reviewer": "ci+controller", "depends_on": ["S-50"], "owner_gate": null, "outputs": ["START_HERE.md"], "acceptance": "test_start_here passes; ≤ 60 lines", "parallel_group": "M8"},
-    {"id": "S-55", "title": "aion health: non-required module_manifests check (coverage, boundary warnings)", "milestone": "M8", "level": "L2", "priority": "P4", "status": "NEW", "executor": "claude-code", "reviewer": "codex", "depends_on": ["S-44", "S-48"], "owner_gate": "merge to main", "outputs": ["aion_core/health.py", "tests/test_end_to_end.py"], "acceptance": "required=False; ok when manifests absent; ci_health_gate unchanged", "parallel_group": "M8", "pr_target": "main"},
-    {"id": "FABLE-08", "title": "M7 refreshed topology comparison (ADR draft)", "milestone": "M7", "level": "L1", "priority": "P4", "status": "NEW", "executor": "fable", "reviewer": "owner", "depends_on": ["S-46", "S-48", "S-52"], "owner_gate": "OWNER-09", "outputs": ["evidence/M7_TOPOLOGY.md"], "acceptance": "02 §2 table refreshed with measured values", "parallel_group": null},
-    {"id": "OWNER-09", "title": "Topology decision A/B/C", "milestone": "M7", "level": "L4", "priority": "P4", "status": "NEW", "executor": "owner", "reviewer": "fable", "depends_on": ["FABLE-08"], "owner_gate": "OWNER-09", "outputs": ["ADR under .lucy/authority via owner-merged PR"], "acceptance": "decision recorded; default A", "parallel_group": null},
-    {"id": "FABLE-09", "title": "Update .lucy/handoffs prompts for pack-first workflow", "milestone": "M8", "level": "L4", "priority": "P4", "status": "NEW", "executor": "fable", "reviewer": "owner", "depends_on": ["S-53", "S-54"], "owner_gate": "merge", "outputs": [".lucy/handoffs/2026-09-16/06_*.txt or a new dated handoff"], "acceptance": "night-loop prompt names what to read instead of 'do not scan'", "parallel_group": null},
-    {"id": "FABLE-10", "title": "Value-mode entry check", "milestone": "M9", "level": "L0", "priority": "P2", "status": "NEW", "executor": "controller", "reviewer": "fable", "depends_on": ["S-46", "S-48", "S-50", "S-55", "OWNER-06"], "owner_gate": null, "outputs": ["evidence/M9_GATE.md"], "acceptance": "07_MILESTONE_GATES.md#M9 entry criteria, all six, with numbers", "parallel_group": null}
+    {
+      "id": "FABLE-05",
+      "title": "Planning package: reconciliation, authority model, task graph, prompts",
+      "milestone": "M0",
+      "level": "L1",
+      "priority": "P1",
+      "status": "PASS",
+      "executor": "fable",
+      "reviewer": "owner",
+      "depends_on": [],
+      "owner_gate": "ratify at M2",
+      "outputs": [
+        ".lucy/planning/codebase-reduction-20260918/*"
+      ],
+      "acceptance": "all 23 master-prompt concerns covered; package committed and mirrored to Drive",
+      "parallel_group": null
+    },
+    {
+      "id": "S-40",
+      "title": "M0 canonical baseline lock",
+      "milestone": "M0",
+      "level": "L1",
+      "priority": "P1",
+      "status": "DONE",
+      "executor": "controller",
+      "reviewer": "ci+controller",
+      "depends_on": [
+        "FABLE-05"
+      ],
+      "owner_gate": null,
+      "outputs": [
+        "evidence/M0_BASELINE.md"
+      ],
+      "acceptance": "16_FIRST_10_TASKS.md#S-40",
+      "parallel_group": null
+    },
+    {
+      "id": "OWNER-06",
+      "title": "Node checkout policy: name DC-1 = main, or keep 2cd3cc5 and prioritise S-03/S-04",
+      "milestone": "M0",
+      "level": "L4",
+      "priority": "P1",
+      "status": "BLOCKED_OWNER",
+      "executor": "owner",
+      "reviewer": "fable",
+      "depends_on": [
+        "S-40"
+      ],
+      "owner_gate": "OWNER-06",
+      "outputs": [
+        "decision recorded in CHECKPOINT.md and, if a SHA is named, in .lucy/deployment/MARK2_DEPLOYMENT_CONTRACT.md via Fable PR"
+      ],
+      "acceptance": "one of the two options recorded",
+      "parallel_group": "M0-owner",
+      "blocks_only": [
+        "M6",
+        "M8",
+        "M9"
+      ]
+    },
+    {
+      "id": "OWNER-07",
+      "title": "Confirm/enable branch protection on main (OWNER-01 carry-over)",
+      "milestone": "M0",
+      "level": "L4",
+      "priority": "P1",
+      "status": "BLOCKED_OWNER",
+      "executor": "owner",
+      "reviewer": "fable",
+      "depends_on": [
+        "S-40"
+      ],
+      "owner_gate": "OWNER-07",
+      "outputs": [
+        "GitHub setting; note in CHECKPOINT.md"
+      ],
+      "acceptance": "protection state known and recorded",
+      "parallel_group": "M0-owner",
+      "blocks_only": []
+    },
+    {
+      "id": "S-41",
+      "title": "scripts/complexity_map.py: import graph, fan-in/out, cycles, sizes",
+      "milestone": "M1",
+      "level": "L2",
+      "priority": "P3",
+      "status": "READY_TO_EXECUTE",
+      "executor": "codex",
+      "reviewer": "claude-code",
+      "depends_on": [
+        "S-40"
+      ],
+      "owner_gate": null,
+      "outputs": [
+        "scripts/complexity_map.py",
+        "tests/test_complexity_map.py",
+        "evidence/complexity_map.json",
+        "evidence/dependency_graph.json",
+        "evidence/hotspots.md"
+      ],
+      "acceptance": "16_FIRST_10_TASKS.md#S-41",
+      "parallel_group": "M1-scripts"
+    },
+    {
+      "id": "S-42",
+      "title": "scripts/duplication_scan.py: duplicate bodies, dead modules, stale docs",
+      "milestone": "M1",
+      "level": "L2",
+      "priority": "P3",
+      "status": "READY_TO_EXECUTE",
+      "executor": "claude-code",
+      "reviewer": "codex",
+      "depends_on": [
+        "S-40"
+      ],
+      "owner_gate": null,
+      "outputs": [
+        "scripts/duplication_scan.py",
+        "tests/test_duplication_scan.py",
+        "evidence/duplication_report.md",
+        "evidence/dead_weight_candidates.md"
+      ],
+      "acceptance": "16_FIRST_10_TASKS.md#S-42",
+      "parallel_group": "M1-scripts"
+    },
+    {
+      "id": "S-43",
+      "title": "scripts/task_context_profiler.py + six-task context-cost baseline",
+      "milestone": "M1",
+      "level": "L2",
+      "priority": "P3",
+      "status": "READY_TO_EXECUTE",
+      "executor": "codex",
+      "reviewer": "claude-code",
+      "depends_on": [
+        "S-40"
+      ],
+      "owner_gate": null,
+      "outputs": [
+        "scripts/task_context_profiler.py",
+        "tests/test_task_context_profiler.py",
+        "evidence/context_cost_baseline.md"
+      ],
+      "acceptance": "16_FIRST_10_TASKS.md#S-43",
+      "parallel_group": "M1-scripts"
+    },
+    {
+      "id": "FABLE-06",
+      "title": "Review M1 maps; confirm/adjust the 8-module cut",
+      "milestone": "M1",
+      "level": "L1",
+      "priority": "P3",
+      "status": "NEW",
+      "executor": "fable",
+      "reviewer": "owner",
+      "depends_on": [
+        "S-41",
+        "S-42",
+        "S-43"
+      ],
+      "owner_gate": null,
+      "outputs": [
+        "evidence/M1_GATE.md"
+      ],
+      "acceptance": "module cut for S-44 fixed in writing",
+      "parallel_group": null
+    },
+    {
+      "id": "S-44",
+      "title": "Eight module manifests + schema + ownership-coverage test",
+      "milestone": "M2",
+      "level": "L1",
+      "priority": "P3",
+      "status": "NEW",
+      "executor": "claude-code",
+      "reviewer": "codex",
+      "depends_on": [
+        "FABLE-06"
+      ],
+      "owner_gate": "ratify direction + module cut (M2 exit)",
+      "outputs": [
+        ".lucy/architecture/module.schema.json",
+        ".lucy/architecture/modules/*.json",
+        ".lucy/architecture/README.md",
+        "tests/test_module_manifests.py"
+      ],
+      "acceptance": "16_FIRST_10_TASKS.md#S-44",
+      "parallel_group": null
+    },
+    {
+      "id": "OWNER-08",
+      "title": "Merge baseline change: CONTROLLER executor scope + S-40..S-59 overrides where needed; fix integration_branch field",
+      "milestone": "M2",
+      "level": "L4",
+      "priority": "P2",
+      "status": "NEW",
+      "executor": "fable",
+      "reviewer": "owner",
+      "depends_on": [
+        "S-41"
+      ],
+      "owner_gate": "OWNER-08",
+      "outputs": [
+        "PR touching .lucy/authority/HIGH_MODEL_BASELINE.json"
+      ],
+      "acceptance": "authority-gate fails by design; owner merges with admin bypass; re-freeze",
+      "parallel_group": "M0-owner",
+      "blocks_only": []
+    },
+    {
+      "id": "S-45",
+      "title": "Extend aion context: --module section, repo files/tests/ADRs, size budget, delta watermark",
+      "milestone": "M3",
+      "level": "L2",
+      "priority": "P3",
+      "status": "NEW",
+      "executor": "codex",
+      "reviewer": "claude-code",
+      "depends_on": [
+        "S-44",
+        "S-43"
+      ],
+      "owner_gate": "merge to main",
+      "outputs": [
+        "aion_core/context.py",
+        "aion_core/cli.py (context args only)",
+        "tests/test_context_contract.py"
+      ],
+      "acceptance": "16_FIRST_10_TASKS.md#S-45",
+      "parallel_group": null,
+      "pr_target": "main"
+    },
+    {
+      "id": "S-47",
+      "title": "Pilot task A: salvage `aion verify` from 2cd3cc5 onto main using only the context pack",
+      "milestone": "M3",
+      "level": "L2",
+      "priority": "P3",
+      "status": "NEW",
+      "executor": "codex",
+      "reviewer": "claude-code",
+      "depends_on": [
+        "S-45"
+      ],
+      "owner_gate": "merge to main",
+      "outputs": [
+        "aion_core/<per 2cd3cc5>",
+        "tests/<per 2cd3cc5>"
+      ],
+      "acceptance": "16_FIRST_10_TASKS.md#S-47",
+      "parallel_group": "M3-pilot",
+      "pr_target": "main"
+    },
+    {
+      "id": "S-49",
+      "title": "Pilot task B: salvage hermetic test environment from 10c8d79 using only the context pack",
+      "milestone": "M3",
+      "level": "L2",
+      "priority": "P3",
+      "status": "NEW",
+      "executor": "claude-code",
+      "reviewer": "codex",
+      "depends_on": [
+        "S-45"
+      ],
+      "owner_gate": "merge to main",
+      "outputs": [
+        "tests/base.py",
+        "tests/<per 10c8d79>"
+      ],
+      "acceptance": "16_FIRST_10_TASKS.md#S-49",
+      "parallel_group": "M3-pilot",
+      "pr_target": "main"
+    },
+    {
+      "id": "S-46",
+      "title": "Context pilot measurement + report",
+      "milestone": "M3",
+      "level": "L1",
+      "priority": "P3",
+      "status": "NEW",
+      "executor": "controller",
+      "reviewer": "fable",
+      "depends_on": [
+        "S-47",
+        "S-49"
+      ],
+      "owner_gate": null,
+      "outputs": [
+        "evidence/context_pilot_results.md",
+        "evidence/M3_GATE.md"
+      ],
+      "acceptance": "16_FIRST_10_TASKS.md#S-46",
+      "parallel_group": null
+    },
+    {
+      "id": "S-48",
+      "title": "scripts/check_boundaries.py (warning mode) + first three rules",
+      "milestone": "M4",
+      "level": "L2",
+      "priority": "P3",
+      "status": "NEW",
+      "executor": "codex",
+      "reviewer": "claude-code",
+      "depends_on": [
+        "S-44"
+      ],
+      "owner_gate": "promote to required CI (M4 exit, L4)",
+      "outputs": [
+        "scripts/check_boundaries.py",
+        "tests/test_check_boundaries.py",
+        "evidence/boundary_report.md"
+      ],
+      "acceptance": "16_FIRST_10_TASKS.md#S-48",
+      "parallel_group": "M3-pilot"
+    },
+    {
+      "id": "FABLE-07",
+      "title": "Review M3/M4 results; decide M5 scope and M6 first move",
+      "milestone": "M4",
+      "level": "L1",
+      "priority": "P3",
+      "status": "NEW",
+      "executor": "fable",
+      "reviewer": "owner",
+      "depends_on": [
+        "S-46",
+        "S-48"
+      ],
+      "owner_gate": null,
+      "outputs": [
+        "evidence/M4_GATE.md"
+      ],
+      "acceptance": "M5 archive list and M6 move #1 named",
+      "parallel_group": null
+    },
+    {
+      "id": "S-50",
+      "title": "Archive superseded planning docs; collapse three routers into one",
+      "milestone": "M5",
+      "level": "L1",
+      "priority": "P5",
+      "status": "NEW",
+      "executor": "claude-code",
+      "reviewer": "codex",
+      "depends_on": [
+        "S-42",
+        "FABLE-07"
+      ],
+      "owner_gate": "archive list",
+      "outputs": [
+        ".lucy/archive/planning-20260917/**",
+        "START_HERE.md",
+        "docs/README.md",
+        "tests/test_start_here.py"
+      ],
+      "acceptance": "zero broken internal links; START_HERE \u2264 60 lines",
+      "parallel_group": "M5"
+    },
+    {
+      "id": "S-51",
+      "title": "Fix stale CANONICAL_BRANCH.md and baseline integration_branch (Fable PR)",
+      "milestone": "M5",
+      "level": "L4",
+      "priority": "P4",
+      "status": "NEW",
+      "executor": "fable",
+      "reviewer": "owner",
+      "depends_on": [
+        "OWNER-08"
+      ],
+      "owner_gate": "OWNER-08",
+      "outputs": [
+        ".lucy/planning/CANONICAL_BRANCH.md",
+        ".lucy/authority/HIGH_MODEL_BASELINE.json"
+      ],
+      "acceptance": "both name main @ current SHA",
+      "parallel_group": "M5"
+    },
+    {
+      "id": "S-52",
+      "title": "Dead-code removal #1 (candidate chosen from evidence/dead_weight_candidates.md)",
+      "milestone": "M5",
+      "level": "L2",
+      "priority": "P5",
+      "status": "NEW",
+      "executor": "codex",
+      "reviewer": "claude-code",
+      "depends_on": [
+        "S-42",
+        "FABLE-07"
+      ],
+      "owner_gate": null,
+      "outputs": [
+        "one module removal PR"
+      ],
+      "acceptance": "no importer, no CLI wiring, no test, no manifest, no live doc pointer; suite count unchanged or explained",
+      "parallel_group": "M5"
+    },
+    {
+      "id": "S-53",
+      "title": "handoff.build_prompt and aion_codex_worker.sh reference aion context --module",
+      "milestone": "M8",
+      "level": "L2",
+      "priority": "P4",
+      "status": "NEW",
+      "executor": "codex",
+      "reviewer": "claude-code",
+      "depends_on": [
+        "S-46"
+      ],
+      "owner_gate": "merge to main",
+      "outputs": [
+        "aion_core/handoff.py",
+        "scripts/aion_codex_worker.sh",
+        "tests/test_plan_worker.py"
+      ],
+      "acceptance": "generated prompt names the pack command and the module index",
+      "parallel_group": "M8",
+      "pr_target": "main"
+    },
+    {
+      "id": "S-54",
+      "title": "START_HERE.md: aion context first; module index",
+      "milestone": "M8",
+      "level": "L1",
+      "priority": "P4",
+      "status": "NEW",
+      "executor": "controller",
+      "reviewer": "ci+controller",
+      "depends_on": [
+        "S-50"
+      ],
+      "owner_gate": null,
+      "outputs": [
+        "START_HERE.md"
+      ],
+      "acceptance": "test_start_here passes; \u2264 60 lines",
+      "parallel_group": "M8"
+    },
+    {
+      "id": "S-55",
+      "title": "aion health: non-required module_manifests check (coverage, boundary warnings)",
+      "milestone": "M8",
+      "level": "L2",
+      "priority": "P4",
+      "status": "NEW",
+      "executor": "claude-code",
+      "reviewer": "codex",
+      "depends_on": [
+        "S-44",
+        "S-48"
+      ],
+      "owner_gate": "merge to main",
+      "outputs": [
+        "aion_core/health.py",
+        "tests/test_end_to_end.py"
+      ],
+      "acceptance": "required=False; ok when manifests absent; ci_health_gate unchanged",
+      "parallel_group": "M8",
+      "pr_target": "main"
+    },
+    {
+      "id": "FABLE-08",
+      "title": "M7 refreshed topology comparison (ADR draft)",
+      "milestone": "M7",
+      "level": "L1",
+      "priority": "P4",
+      "status": "NEW",
+      "executor": "fable",
+      "reviewer": "owner",
+      "depends_on": [
+        "S-46",
+        "S-48",
+        "S-52"
+      ],
+      "owner_gate": "OWNER-09",
+      "outputs": [
+        "evidence/M7_TOPOLOGY.md"
+      ],
+      "acceptance": "02 \u00a72 table refreshed with measured values",
+      "parallel_group": null
+    },
+    {
+      "id": "OWNER-09",
+      "title": "Topology decision A/B/C",
+      "milestone": "M7",
+      "level": "L4",
+      "priority": "P4",
+      "status": "NEW",
+      "executor": "owner",
+      "reviewer": "fable",
+      "depends_on": [
+        "FABLE-08"
+      ],
+      "owner_gate": "OWNER-09",
+      "outputs": [
+        "ADR under .lucy/authority via owner-merged PR"
+      ],
+      "acceptance": "decision recorded; default A",
+      "parallel_group": null
+    },
+    {
+      "id": "FABLE-09",
+      "title": "Update .lucy/handoffs prompts for pack-first workflow",
+      "milestone": "M8",
+      "level": "L4",
+      "priority": "P4",
+      "status": "NEW",
+      "executor": "fable",
+      "reviewer": "owner",
+      "depends_on": [
+        "S-53",
+        "S-54"
+      ],
+      "owner_gate": "merge",
+      "outputs": [
+        ".lucy/handoffs/2026-09-16/06_*.txt or a new dated handoff"
+      ],
+      "acceptance": "night-loop prompt names what to read instead of 'do not scan'",
+      "parallel_group": null
+    },
+    {
+      "id": "FABLE-10",
+      "title": "Value-mode entry check",
+      "milestone": "M9",
+      "level": "L0",
+      "priority": "P2",
+      "status": "NEW",
+      "executor": "controller",
+      "reviewer": "fable",
+      "depends_on": [
+        "S-46",
+        "S-48",
+        "S-50",
+        "S-55",
+        "OWNER-06"
+      ],
+      "owner_gate": null,
+      "outputs": [
+        "evidence/M9_GATE.md"
+      ],
+      "acceptance": "07_MILESTONE_GATES.md#M9 entry criteria, all six, with numbers",
+      "parallel_group": null
+    }
   ],
   "parallel_groups": {
     "M0-owner": "owner decisions that never block L0-L2 work",
