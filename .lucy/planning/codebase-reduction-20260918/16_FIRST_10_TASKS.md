@@ -205,7 +205,7 @@ stated once here and inherited:
   `evidence/M3_GATE.md` with PASS/FAIL per target.
 - SUCCESS_CRITERIA: both pilots landed (or one landed + fallback landed); targets evaluated with numbers;
   any "worker needed an excluded file" event listed with the manifest fix applied.
-- NEXT_UNLOCKED: FABLE-07, M9-GATE (partial).
+- NEXT_UNLOCKED: FABLE-07, FABLE-10 (partial).
 
 ## S-48 — `scripts/check_boundaries.py` (warning mode)
 - MILESTONE M4 · LEVEL **L2** · P3 · EXECUTOR codex · REVIEWER claude-code · PARALLEL with M3 pilots
@@ -227,7 +227,7 @@ stated once here and inherited:
 
 ---
 
-Tasks 11+ (S-50…S-55, FABLE-07…09, OWNER-08/09, M9-GATE) are specified at card level in
+Tasks 11+ (S-50…S-55, FABLE-07…09, OWNER-08/09, FABLE-10) are specified at card level in
 `06_TASK_GRAPH.json` and `07_MILESTONE_GATES.md`; the controller writes their full cards into
 `tasks/<ID>.md` when their prerequisites are DONE, using `08_TASK_CARD_TEMPLATE.md`, and Fable reviews any
 card at L3+ before it becomes READY.
