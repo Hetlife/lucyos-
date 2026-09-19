@@ -76,6 +76,15 @@
 - rollback: revert S-40 checkpoint commit
 - next_unlocked: S-41, S-42, S-43
 
+## 2026-09-19T18:20Z · SECURE GATEWAY · PHASE-1 OWNER GATE READY
+- output: `docs/SECURE_CAPABILITY_GATEWAY_IMPLEMENTATION_GATE.md`
+- status: design/research complete; **no implementation or deployment authorized**
+- recommendation: RFC 9052 COSE_Sign1 with Ed25519 via maintained `cryptography`; optional later HPKE/age confidentiality layer is explicitly out of Phase 1
+- scope: existing adapter, security, governor, approvals, tasks, resume/checkpoints and bounded executor; no daemon, queue, arbitrary shell, parallel authority or custom crypto
+- evidence: exact approval schema, device enrollment/rotation/revocation, trust boundaries, threat controls, abuse matrix, migration, rollback and owner wording recorded in the implementation gate
+- remote: pending commit/push/remote verification in this work cycle
+- next: owner approval of the exact Phase-1 implementation boundary; then a separate protected implementation gate
+
 Newest block first. Format: `05_AUTONOMOUS_EXECUTION_LOOP.md` §5. A fresh controller session reads only the top block, then `06_TASK_GRAPH.json`, then open PRs.
 
 ## 2026-09-18T18:30Z · FABLE-05 · PASS
