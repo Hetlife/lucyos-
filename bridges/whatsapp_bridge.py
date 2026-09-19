@@ -18,6 +18,7 @@ inbound text before it reaches state, and redacts every outbound reply.
 from __future__ import annotations
 
 import argparse
+import base64
 import hashlib
 import hmac
 import json
@@ -46,6 +47,14 @@ def reply_to(message: str, sender: str = "owner") -> str:
     """Route one message and return a redacted, length-bounded reply."""
     if len(message.encode("utf-8")) > MAX_MESSAGE_BYTES:
         return "That message is too long for the control channel. Send a command, not a document."
+    if message.strip().startswith("COSE1:"):
+        try:
+            from aion_core import gateway
+            envelope = base64.b64decode(message.strip()[6:], validate=True)
+            task_id = gateway.submit(envelope, title="signed remote request")
+            return f"Accepted signed request as {task_id}; execution remains policy/approval gated."
+        except Exception:
+            return "Signed request rejected; no task was authorized."
     try:
         answer = router.handle(message, sender=sender)
     except Exception as exc:  # never let a bridge crash take the channel down
