@@ -4,7 +4,8 @@ set -euo pipefail
 # Enroll one client public key into Mark-2 with a forced LucyOS command.
 # Public key is read from stdin; private keys must never be copied here.
 AUTH_KEYS="${LUCYOS_AUTHORIZED_KEYS:-/root/.ssh/authorized_keys}"
-DISPATCH="${LUCYOS_REMOTE_DISPATCH:-/root/lucyos/integrations/openclaw/lucyos/scripts/lucyos-remote-dispatch}"
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+DISPATCH="${LUCYOS_REMOTE_DISPATCH:-${SCRIPT_DIR}/lucyos-remote-dispatch}"
 LABEL="${1:-lucyos-client}"
 
 [[ "$LABEL" =~ ^[A-Za-z0-9._-]{1,64}$ ]] || { echo "invalid label" >&2; exit 2; }

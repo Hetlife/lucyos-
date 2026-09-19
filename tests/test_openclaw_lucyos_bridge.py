@@ -37,6 +37,18 @@ class OpenClawLucyBridgeTest(unittest.TestCase):
             [str(DISPATCH)], input=stdin, env=env,
             stdout=subprocess.PIPE, stderr=subprocess.PIPE, check=False,
         )
+    def test_dispatch_defaults_to_repo_relative_aion(self):
+        env = os.environ.copy()
+        env.pop("LUCYOS_AION_BIN", None)
+        env["SSH_ORIGINAL_COMMAND"] = "status"
+        env["AION_HOME"] = str(self.tmp_path / "brain")
+        result = subprocess.run(
+            [str(DISPATCH)], env=env, stdout=subprocess.PIPE,
+            stderr=subprocess.PIPE, check=False,
+        )
+        self.assertEqual(result.returncode, 0, result.stderr.decode())
+        self.assertNotIn("/root/lucyos/aion", DISPATCH.read_text())
+
     def test_simple_command_maps_without_shell(self):
         result = self.dispatch("status")
         self.assertEqual(result.returncode, 0, result.stderr.decode())
