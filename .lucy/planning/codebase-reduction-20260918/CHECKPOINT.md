@@ -1,5 +1,12 @@
 # CHECKPOINT — lucyos-codebase-reduction-20260918
 
+## 2026-09-19T13:00Z · M5 REVIEW + GATEWAY DESIGN
+- M5 result: no cleanup retained; `authorize_drive.py` deletion blocked by manifest ownership glob and restored
+- verification: full suite 618 PASS, 1 skipped, 59.410 s; scan clean; portability clean; diff clean
+- evidence: `evidence/M5_GATE.md`; unchanged complexity/duplication/context metrics from FABLE-07
+- gateway: `docs/SECURE_CAPABILITY_GATEWAY_MVP.md` design-only; no security-critical implementation
+- next: owner-visible S-50 archive list / S-53 merge gate; gateway threat-model approval before implementation
+
 ## 2026-09-19T12:30Z · FABLE-07 · M3/M4 CLOSED WITH FOLLOW-UPS
 - output: `evidence/M4_GATE.md`
 - result: M3/M4 close operationally healthy; context ≤10-file and runtime ≤+10% remain unresolved
