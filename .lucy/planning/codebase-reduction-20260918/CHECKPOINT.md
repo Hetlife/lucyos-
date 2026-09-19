@@ -99,6 +99,13 @@
 - unchanged: no WhatsApp activation, arbitrary shell, sensitive encryption, capability auto-activation or canonical/main promotion
 - next: adapter integration, complete abuse/restart matrix, full suite and governance gates
 
+## 2026-09-19T19:35Z · SECURE GATEWAY · VERIFICATION MILESTONE
+- dependency-enabled abuse matrix: 6 PASS (positive, canonical parameter mutation, replay, restart-persistent replay, tamper, expiry, malformed, oversized, revoked/wrong epoch, privilege/allowlist and untrusted prompt content)
+- dependency-enabled full suite: 624 tests, 1 skipped, 59.790s, PASS
+- gates: `aion verify` READY; portability PASS; duplication 0 duplicate bodies; secret scan PASS; diff-check PASS
+- architecture: gateway assigned to existing `kernel.tasks` ownership; no new authority module or queue
+- remaining: final architecture audit, explicit strict-scope check, clean bootstrap dependency install evidence, delivery-event diagnosis, commit/push and activation gate
+
 Newest block first. Format: `05_AUTONOMOUS_EXECUTION_LOOP.md` §5. A fresh controller session reads only the top block, then `06_TASK_GRAPH.json`, then open PRs.
 
 ## 2026-09-18T18:30Z · FABLE-05 · PASS

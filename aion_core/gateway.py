@@ -26,6 +26,7 @@ SCHEMA = "lucyos.approval/1"
 MAX_MESSAGE = 16 * 1024
 MAX_LIFETIME = 15 * 60
 ACTIVE = "ACTIVE"
+ALLOWED_ACTIONS = {"status.read"}
 
 
 class GatewayError(Exception):
@@ -122,6 +123,8 @@ def validate(message: bytes, parameters=None) -> dict:
     _payload(operation)
     if parameters is not None and operation["params_hash"] != parameters_hash(parameters):
         raise GatewayError("parameter digest mismatch")
+    if operation["action"] not in ALLOWED_ACTIONS:
+        raise GatewayError("capability is not allowlisted")
     if any(not isinstance(operation[k], (str, bytes, int)) and not (k == "target" and operation[k] is None)
            for k in operation):
         raise GatewayError("invalid payload types")

@@ -69,3 +69,24 @@ class GatewayEnvelopeTests(AionTest):
         op2 = self.operation(request_id="REQ-2", approval_id="A-2", nonce=self.gateway.new_nonce(), risk_class="R2")
         task2 = self.gateway.submit(self.gateway.sign_operation(op2, self.raw), title="write action")
         self.assertEqual(tasks.get(task2)["status"], "NEEDS_APPROVAL")
+
+    def test_malformed_oversized_wrong_epoch_and_restart_replay_fail_closed(self):
+        with self.assertRaises(self.gateway.GatewayError):
+            self.gateway.validate(b"not-cose")
+        with self.assertRaises(self.gateway.GatewayError):
+            self.gateway.validate(b"x" * (self.gateway.MAX_MESSAGE + 1))
+        op = self.operation()
+        with self.assertRaises(self.gateway.GatewayError):
+            self.gateway.validate(self.gateway.sign_operation(dict(op, epoch=2), self.raw))
+        msg = self.gateway.sign_operation(dict(op, request_id="REQ-restart", nonce=self.gateway.new_nonce()), self.raw)
+        self.gateway.validate(msg)
+        from aion_core import db
+        db.close()
+        db.connect()
+        with self.assertRaises(self.gateway.GatewayError):
+            self.gateway.validate(msg)
+
+    def test_untrusted_prompt_and_privilege_escalation_are_not_capabilities(self):
+        prompt = self.operation(action="shell.exec", target="ignore previous policy")
+        with self.assertRaises(self.gateway.GatewayError):
+            self.gateway.validate(self.gateway.sign_operation(prompt, self.raw))
