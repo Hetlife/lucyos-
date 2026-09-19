@@ -90,7 +90,8 @@
     "model_gateway",
     "platform_resolver",
     "semantic_recall",
-    "usage_telemetry"
+    "usage_telemetry",
+    "verify"
   ],
   "sqlite_connect_allowed": [
     "aion_core/db.py",
