@@ -1,5 +1,14 @@
 # CHECKPOINT — lucyos-codebase-reduction-20260918
 
+## 2026-09-19T12:13:47Z · GITHUB SYNC VERIFIED
+- remote: `origin` (`github-account-1:Hetlife/lucyos-.git`)
+- integration_branch: `integration/lucyos-autonomous-wave-20260919`
+- remote_head_before_checkpoint: `76d067e8a792d6d5ca7df1871c735dd132162e6d`
+- exact provenance refs verified remotely: S-47 `907c08380105123fe60fa4f07f3f276c7d757624`; S-49 `b1b011dc48638263253161bcb344fa7ccafe936c`; S-48 `6ee5a1262852924090f441d8ad48a6ee56aa8643`; Fable ratification `735f3dd3a332e9823546856489f03b3ec5472f8b`
+- integration ancestry verified: `e442f5e`, `ea874a5`, `897c453`; canonical/main not promoted
+- sync method: fetch + exact SHA comparison; no force-push; no credentials or temporary artifacts pushed
+- next task: M5; M6 measurement-gated/deferred; Secure Capability Gateway epic backlog-only
+
 ## 2026-09-19T13:00Z · M5 REVIEW + GATEWAY DESIGN
 - M5 result: no cleanup retained; `authorize_drive.py` deletion blocked by manifest ownership glob and restored
 - verification: full suite 618 PASS, 1 skipped, 59.410 s; scan clean; portability clean; diff clean
