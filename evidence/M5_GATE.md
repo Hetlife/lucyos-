@@ -14,7 +14,7 @@ they were not moved speculatively.
 ## Measurements
 
 - Before/after tracked production tree: unchanged after restoration.
-- Full suite after restoration: rerun required before closeout; no behavior
+- Full suite after restoration: 618 PASS, 1 skipped, 59.410 s; no behavior
   change was retained.
 - Dependency cycles, duplicate-function count, and context footprint therefore
   remain unchanged from FABLE-07 evidence.
@@ -28,3 +28,7 @@ after its owner-visible archive list is accepted. Do not broaden it into
 manifest redesign or router decomposition. M6 decomposition is not justified
 by current context evidence until task telemetry separates governance overhead
 from task-specific context.
+
+The channel-independent gateway owner review is recorded in
+`docs/SECURE_CAPABILITY_GATEWAY_OWNER_REVIEW.md`; it is design-only and has no
+security-critical implementation.

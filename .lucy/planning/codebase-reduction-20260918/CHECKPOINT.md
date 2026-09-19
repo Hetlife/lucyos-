@@ -1,5 +1,12 @@
 # CHECKPOINT — lucyos-codebase-reduction-20260918
 
+## 2026-09-19T12:47Z · M5 + GATEWAY OWNER REVIEW DESIGN
+- M5 cleanup remains evidence-blocked: `authorize_drive.py` restored because `scripts/*.py` manifest ownership is authoritative
+- final restored verification: 618 tests PASS, 1 skipped, 59.410 s; no retained code change
+- gateway review: `docs/SECURE_CAPABILITY_GATEWAY_OWNER_REVIEW.md`; channel-independent trust/enrollment/encryption/approval/replay/task/capability model; design only
+- remote recovery point: integration branch `integration/lucyos-autonomous-wave-20260919` at `9c594bd`; push of this follow-up pending
+- next: S-50 owner-visible archive cleanup; gateway research/threat-model approval before implementation
+
 ## 2026-09-19T12:13:47Z · GITHUB SYNC VERIFIED
 - remote: `origin` (`github-account-1:Hetlife/lucyos-.git`)
 - integration_branch: `integration/lucyos-autonomous-wave-20260919`
