@@ -106,6 +106,21 @@
 - architecture: gateway assigned to existing `kernel.tasks` ownership; no new authority module or queue
 - remaining: final architecture audit, explicit strict-scope check, clean bootstrap dependency install evidence, delivery-event diagnosis, commit/push and activation gate
 
+## 2026-09-19T19:45Z · SECURE GATEWAY · FINAL VERIFICATION EVIDENCE
+- dependency-enabled full suite: 624 tests, 1 skipped, 59.790s, PASS
+- gateway abuse/recovery: 6/6 PASS; restart-persistent nonce replay, malformed/oversized, expiry, tamper, epoch/revocation, parameter mutation, allowlist/prompt boundary and R2 approval routing covered
+- architecture guard: PASS; all required reuse flags true, no duplicate queue/authority/secret store/daemon
+- security: secret scan PASS; portability PASS; duplication 0; `aion verify` READY; diff-check PASS
+- delivery reliability finding: session evidence shows prior final `message(action=send)` completed successfully with a WhatsApp message ID; the subsequent turn was user-interrupted. No OpenClaw/WhatsApp delivery defect is evidenced, so no runtime change was made.
+- remaining: final clean-bootstrap evidence, dependency advisory record, checkpoint/commit/push, then stop at activation owner gate
+
+## 2026-09-19T19:50Z · SECURE GATEWAY · SECURITY GATE BLOCKED
+- OSV direct package queries: pycose 1.1.0=0, cbor2 5.6.5=6, cryptography 41.0.7=14, ecdsa 0.19.2=2, certvalidator/oscrypto/asn1crypto=0
+- result: implementation tests pass, but dependency/security gate is NOT CLEAR; Phase 1 cannot be marked VERIFIED or activated
+- cause: current Python 3.9-compatible cbor2 line has advisories; pycose runtime graph includes ecdsa; newer cbor2 requires Python 3.10+
+- owner gate: choose a clean maintained COSE dependency graph or explicitly approve retiring Python 3.9 support after compatibility review
+- safety: no deployment, activation, public exposure, sensitive encryption or canonical/main promotion
+
 Newest block first. Format: `05_AUTONOMOUS_EXECUTION_LOOP.md` §5. A fresh controller session reads only the top block, then `06_TASK_GRAPH.json`, then open PRs.
 
 ## 2026-09-18T18:30Z · FABLE-05 · PASS
