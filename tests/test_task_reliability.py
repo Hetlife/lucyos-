@@ -221,6 +221,10 @@ class TestRecovery(AionTest):
         self.assertIn("reconcile", tasks.get(task)["blockers"])
 
 
+def passing_command(command, **kw):
+    return {"ok": True, "code": 0, "cmd": command, "output": "independent checks passed"}
+
+
 class TestGitClosure(AionTest):
     def setUp(self):
         super().setUp()
@@ -243,11 +247,7 @@ class TestGitClosure(AionTest):
         return subprocess.run(["git", "-C", str(self.repo), *args], capture_output=True,
                               text=True, check=True).stdout.strip()
 
-    @staticmethod
-    def passing(command, **kw):
-        return {"ok": True, "code": 0, "cmd": command, "output": "independent checks passed"}
-
-    @patch("aion_core.worker.run_command", side_effect=passing)
+    @patch("aion_core.worker.run_command", side_effect=passing_command)
     def test_duplicate_closure_preserves_evidence_timestamp_and_events(self, run):
         self.assertTrue(tasks.close_implemented(self.task, self.commit, repo=self.repo))
         before = dict(tasks.get(self.task))
@@ -263,7 +263,7 @@ class TestGitClosure(AionTest):
         with self.assertRaises(tasks.TaskError):
             tasks.close_implemented(self.task, "0" * 40, repo=self.repo)
 
-    @patch("aion_core.worker.run_command", side_effect=passing)
+    @patch("aion_core.worker.run_command", side_effect=passing_command)
     def test_waiting_implemented_task_reconciles_without_claim_or_reexecution(self, run):
         tasks.update(self.task, status="WAITING", blockers=tasks.EXECUTOR_WAIT_BLOCKERS["B"])
         self.assertTrue(tasks.close_implemented(self.task, self.commit, repo=self.repo))
@@ -288,7 +288,7 @@ class TestGitClosure(AionTest):
     @patch("aion_core.worker.run_command")
     def test_each_required_gate_failure_refuses_done(self, run):
         for failing in range(5):
-            calls = [self.passing("check") for _ in range(5)]
+            calls = [passing_command("check") for _ in range(5)]
             calls[failing] = {"ok": False, "code": 1, "output": "failed gate"}
             run.side_effect = calls
             before = dict(tasks.get(self.task))
@@ -300,7 +300,7 @@ class TestGitClosure(AionTest):
     def test_task_change_during_validation_cannot_overwrite_new_owner(self, run):
         def change(command, **kw):
             tasks.claim(self.task, "new-owner")
-            return self.passing(command)
+            return passing_command(command)
         run.side_effect = change
         with self.assertRaises(tasks.TaskError):
             tasks.close_implemented(self.task, self.commit, repo=self.repo)
@@ -346,7 +346,7 @@ class TestGitClosure(AionTest):
     def test_tree_change_during_validation_refuses_closure(self, run):
         def dirty(command, **kw):
             (self.repo / "artifact").write_text("changed while checking")
-            return self.passing(command)
+            return passing_command(command)
         run.side_effect = dirty
         with self.assertRaisesRegex(tasks.TaskError, "tree changed"):
             tasks.close_implemented(self.task, self.commit, repo=self.repo)
