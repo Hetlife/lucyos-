@@ -12,4 +12,6 @@
 | Operational readiness | PASS | deep health + verify READY |
 
 **Disposition:** pilots closed safely; optimization targets remain follow-ups.
+SQLite findings are assessed separately in `sqlite_boundary_assessment.md` and
+are harmless existing uses, not S-46 defects.
 No CI promotion or production change is authorized by this report.

@@ -5,6 +5,7 @@
 - result: both pilots landed and measured; runtime/context targets explicitly not met
 - evidence: context proxies 102/63 files; full suite 615/57.332s; 11 cycles; zero duplicate bodies; health and verify READY
 - separate debt: two pre-existing SQLite boundary findings from S-48, not fixed here
+- assessment: `evidence/sqlite_boundary_assessment.md`; both are harmless existing uses, not duplicate stores
 - backlog epic: `BACKLOG_EPIC_SECURE_CAPABILITY_GATEWAY.md`, no implementation
 - next: retain follow-up measurements and select next unblocked task
 
