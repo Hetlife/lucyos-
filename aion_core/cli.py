@@ -55,7 +55,7 @@ def _main(argv=None) -> int:
     bk.add_argument("--verify-only", action="store_true")
     sub.add_parser("openclaw-check", help="loopback reachability probe for an optional OpenClaw gateway")
     sg = sub.add_parser("scg", help="owner-controlled Secure Capability Gateway activation")
-    sg.add_argument("op", choices=["status", "enable", "disable", "enroll-candidate", "confirm", "revoke"])
+    sg.add_argument("op", choices=["status", "enable", "disable", "device-key", "enroll-candidate", "confirm", "revoke"])
     sg.add_argument("value", nargs="*")
     sub.add_parser("export", help="write a portable archive of canonical state (no secrets)")
     im = sub.add_parser("import", help="verify and restore a portable archive into this AION_HOME")
@@ -355,6 +355,13 @@ def _main(argv=None) -> int:
         elif args.op in ("enable", "disable"):
             gateway.set_enabled(args.op == "enable")
             _print({"enabled": gateway.enabled()})
+        elif args.op == "device-key":
+            if len(args.value) != 3 or args.value[0] != "create":
+                raise CliError("usage: aion scg device-key create DEVICE_ID IDENTITY")
+            try:
+                _print(gateway.create_device_key_candidate(args.value[1], args.value[2]))
+            except gateway.GatewayError as exc:
+                raise CliError(security.redact(str(exc))) from None
         elif args.op == "enroll-candidate":
             if len(args.value) != 3:
                 raise CliError("usage: aion scg enroll-candidate DEVICE_ID IDENTITY PUBLIC_KEY_HEX")

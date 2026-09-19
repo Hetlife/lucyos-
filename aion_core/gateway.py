@@ -8,8 +8,12 @@ nonce. Task creation remains the caller's existing ``tasks.create`` path.
 from __future__ import annotations
 
 import hashlib
+import os
+import re
 import secrets
+import stat
 from datetime import datetime, timezone
+from pathlib import Path
 
 try:
     import cbor2
@@ -47,6 +51,99 @@ def fingerprint(public_key: bytes) -> str:
     if type(public_key) is not bytes or len(public_key) != 32:
         raise GatewayError("invalid public key")
     return hashlib.sha256(public_key).hexdigest()
+
+
+_DEVICE_TOKEN = re.compile(r"^[A-Za-z0-9_.:-]{1,64}$")
+
+
+def local_device_key_path() -> Path:
+    return Path.home() / ".config" / "lucyos" / "device-private.pem"
+
+
+def _load_local_device_key(path: Path) -> Ed25519PrivateKey:
+    try:
+        st = path.lstat()
+    except FileNotFoundError as exc:
+        raise GatewayError("device private key does not exist") from exc
+    if stat.S_ISLNK(st.st_mode) or not stat.S_ISREG(st.st_mode):
+        raise GatewayError("device private key must be a regular file, not a symlink")
+    if st.st_uid != os.getuid():
+        raise GatewayError("device private key is not owned by the current user")
+    if stat.S_IMODE(st.st_mode) != 0o600:
+        raise GatewayError("device private key permissions must be 0600")
+    try:
+        key = serialization.load_pem_private_key(path.read_bytes(), password=None)
+    except Exception as exc:
+        raise GatewayError("device private key is unreadable or invalid") from exc
+    if not isinstance(key, Ed25519PrivateKey):
+        raise GatewayError("device private key is not Ed25519")
+    return key
+
+
+def _write_new_device_key(path: Path, key: Ed25519PrivateKey) -> None:
+    path.parent.mkdir(parents=True, mode=0o700, exist_ok=True)
+    os.chmod(path.parent, 0o700)
+    data = key.private_bytes(
+        serialization.Encoding.PEM, serialization.PrivateFormat.PKCS8,
+        serialization.NoEncryption())
+    flags = os.O_WRONLY | os.O_CREAT | os.O_EXCL
+    if hasattr(os, "O_NOFOLLOW"):
+        flags |= os.O_NOFOLLOW
+    try:
+        fd = os.open(path, flags, 0o600)
+    except FileExistsError as exc:
+        raise GatewayError("device private key already exists; refusing overwrite") from exc
+    try:
+        with os.fdopen(fd, "wb") as fh:
+            fh.write(data)
+            fh.flush()
+            os.fsync(fh.fileno())
+    except Exception:
+        try:
+            path.unlink()
+        except OSError:
+            pass
+        raise
+    os.chmod(path, 0o600)
+
+
+def create_device_key_candidate(device_id: str, identity: str, key_path: Path | None = None) -> dict:
+    """Create/reuse one local Ed25519 key and propose only its public material."""
+    if not _DEVICE_TOKEN.fullmatch(device_id or "") or not _DEVICE_TOKEN.fullmatch(identity or ""):
+        raise GatewayError("device_id and identity must be bounded identifiers")
+    path = Path(key_path) if key_path is not None else local_device_key_path()
+    existed = os.path.lexists(path)
+    conn = db.connect()
+    row = conn.execute("SELECT * FROM gateway_devices WHERE device_id=?", (device_id,)).fetchone()
+    if not existed and row is not None:
+        raise GatewayError("device enrollment already exists but local private key is missing; explicit recovery is required")
+    if existed:
+        key = _load_local_device_key(path)
+    else:
+        key = Ed25519PrivateKey.generate()
+        _write_new_device_key(path, key)
+    public = key.public_key().public_bytes(serialization.Encoding.Raw, serialization.PublicFormat.Raw)
+    actual_fp = fingerprint(public)
+    if row is None:
+        propose_device(device_id, identity, public)
+        status_value = CANDIDATE
+    else:
+        stored = serialization.load_pem_public_key(bytes(row["public_key"])).public_bytes(
+            serialization.Encoding.Raw, serialization.PublicFormat.Raw)
+        if row["owner_identity"] != identity or fingerprint(stored) != actual_fp:
+            raise GatewayError("existing device enrollment does not match this local key; refusing replacement")
+        status_value = row["status"]
+        if status_value not in (CANDIDATE, ACTIVE):
+            raise GatewayError(f"device enrollment is {status_value}; explicit recovery is required")
+    return {
+        "device_id": device_id,
+        "identity": identity,
+        "private_key": str(path),
+        "private_key_created": not existed,
+        "fingerprint": actual_fp,
+        "enrollment_status": status_value,
+        "owner_confirmation_required": status_value == CANDIDATE,
+    }
 
 
 def _now() -> datetime:
