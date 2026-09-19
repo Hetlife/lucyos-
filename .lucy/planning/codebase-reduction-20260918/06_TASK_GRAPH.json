@@ -335,7 +335,7 @@
       "milestone": "M4",
       "level": "L2",
       "priority": "P3",
-      "status": "READY_TO_EXECUTE",
+      "status": "DONE",
       "executor": "codex",
       "reviewer": "claude-code",
       "depends_on": [
