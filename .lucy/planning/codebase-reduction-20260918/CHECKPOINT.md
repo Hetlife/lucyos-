@@ -1,5 +1,15 @@
 # CHECKPOINT — lucyos-codebase-reduction-20260918
 
+## 2026-09-19T12:01Z · S-48 · VERIFIED TASK BRANCH
+- task_branch: detached from ratified integration 7a657ff; pr: not opened
+- objective: warning-mode boundary scanner using existing module manifests and authority allowlists
+- changes: `scripts/check_boundaries.py`; `tests/test_check_boundaries.py`; generated `evidence/boundary_report.md`
+- tests: targeted=3 PASS; full=618 PASS, 1 skipped, 57.730 s; warning scan=0.11 s
+- gates: scan=clean; portability=ok; anti-dup=ok; strict=ok; diff-check=clean
+- result: task implementation verified; warning report records two pre-existing sqlite-import findings; no CI promotion performed
+- rollback: revert the S-48 task commit; no runtime or CI change
+- next_unlocked: five consecutive warning-mode observations, then S-46 / FABLE-07 decision on promotion
+
 ## 2026-09-19T10:31Z · S-47 · VERIFIED TASK BRANCH
 - task_branch: task/S-47-verify   base: 1dbda69   pr: not opened
 - objective: salvage the machine acceptance command from 2cd3cc5 onto the current research baseline
