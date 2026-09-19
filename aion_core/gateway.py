@@ -95,11 +95,11 @@ def revoke_device(device_id: str, reason: str) -> None:
         raise GatewayError("unknown or already revoked device")
 
 
-def sign_operation(operation: dict, private_key: bytes) -> bytes:
-    if type(private_key) is not bytes or len(private_key) != 32:
+def sign_operation(operation: dict, signing_seed: bytes) -> bytes:
+    if type(signing_seed) is not bytes or len(signing_seed) != 32:
         raise GatewayError("invalid signing key")
     msg = Sign1Message(phdr={1: EdDSA}, payload=_payload(operation))
-    msg.key = OKPKey(crv=6, d=private_key)
+    msg.key = OKPKey(crv=6, d=signing_seed)
     return msg.encode()
 
 
