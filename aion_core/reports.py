@@ -83,12 +83,16 @@ def execution_status(task_ids: list[str] | None = None) -> str:
             status = "REVIEW_MERGE_READY"
         elif status == "NEEDS_REVIEW" and ("VERIFY" in action.upper() or "CI" in action.upper()):
             status = "VERIFYING"
-        if row["status"] in tasks.ACTIVE_STATES and tasks.progress(row["task_id"])["stalled"]:
+        progress = tasks.progress(row["task_id"]) if row["status"] in tasks.ACTIVE_STATES else None
+        if progress and progress["stalled"]:
             status = "STALLED"
         evidence = (row["evidence"] or "No verified evidence yet").replace("\n", " ")
         evidence = evidence[:240] + ("…" if len(evidence) > 240 else "")
+        evidence_at = (progress["last_evidence_at"] if progress else None)
+        if not evidence_at and row["status"] not in tasks.ACTIVE_STATES and row["evidence"]:
+            evidence_at = row["updated_at"]
         lines += ["", f"{row['task_id']} — {status}", evidence,
-                  f"Last ledger evidence: {row['updated_at']}",
+                  f"Last meaningful evidence: {evidence_at or 'none this attempt'}",
                   f"Next: {action or 'No next action recorded'}"]
         if row["blockers"]:
             lines.append(f"Blocker: {row['blockers']}")

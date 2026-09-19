@@ -378,4 +378,7 @@ class TestExecutionStatus(AionTest):
         db.connect().execute("UPDATE tasks SET started_at=?, updated_at=? WHERE task_id=?",
                              ("2000-01-01T00:00:00+00:00", util.now(), task))
         db.connect().commit()
-        self.assertIn("S-STALLED — STALLED", reports.execution_status([task]))
+        text = reports.execution_status([task])
+        self.assertIn("S-STALLED — STALLED", text)
+        self.assertIn("Last meaningful evidence: none this attempt", text)
+        self.assertNotIn("Last meaningful evidence: " + tasks.get(task)["updated_at"], text)
