@@ -1,5 +1,13 @@
 # CHECKPOINT — lucyos-codebase-reduction-20260918
 
+## 2026-09-19T12:15Z · S-46 · DONE WITH FOLLOW-UPS
+- outputs: `evidence/context_pilot_results.md`, `evidence/M3_GATE.md`
+- result: both pilots landed and measured; runtime/context targets explicitly not met
+- evidence: context proxies 102/63 files; full suite 615/57.332s; 11 cycles; zero duplicate bodies; health and verify READY
+- separate debt: two pre-existing SQLite boundary findings from S-48, not fixed here
+- backlog epic: `BACKLOG_EPIC_SECURE_CAPABILITY_GATEWAY.md`, no implementation
+- next: retain follow-up measurements and select next unblocked task
+
 ## 2026-09-19T11:58Z · S-47 + S-49 · DONE ON RATIFIED INTEGRATION
 - ratified_base: 178fd3e; integration_head: 7a657ff; canonical_main: unchanged
 - commits: Fable ratification 735f3dd (applied as 178fd3e), S-47 907c083 (applied as 2b0eb1b), S-49 b1b011d (applied as 7a657ff)
