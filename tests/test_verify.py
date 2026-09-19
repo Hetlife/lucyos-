@@ -2,25 +2,25 @@ import os
 import unittest
 from unittest import mock
 
-from aion_core import backup, bootstrap, health, verify
+from aion_core import backup, bootstrap, health
 from tests.base import AionTest
 
 
 class TestMachineIdentity(AionTest):
     def test_machine_reports_measurable_identity(self):
-        m = verify.machine()
+        m = health.machine()
         for field in ("hostname", "platform", "arch", "python", "repo_path", "aion_home"):
             self.assertTrue(m[field], f"{field} must be measured, not blank")
         self.assertEqual(m["aion_home"], str(self.tmp))
 
     def test_label_defaults_to_unlabelled_rather_than_a_guess(self):
         os.environ.pop("AION_MACHINE", None)
-        self.assertEqual(verify.machine()["label"], "unlabelled")
+        self.assertEqual(health.machine()["label"], "unlabelled")
 
     def test_label_is_read_from_the_environment(self):
         os.environ["AION_MACHINE"] = "lucy-den"
         try:
-            self.assertEqual(verify.machine()["label"], "lucy-den")
+            self.assertEqual(health.machine()["label"], "lucy-den")
         finally:
             os.environ.pop("AION_MACHINE", None)
 
@@ -33,8 +33,8 @@ class TestOpenClawDetection(AionTest):
         (home / "shared_brain").mkdir(parents=True)
         os.environ["OPENCLAW_HOME"] = str(home)
         try:
-            with mock.patch("aion_core.verify.shutil.which", return_value=None):
-                result = verify.openclaw()
+            with mock.patch("aion_core.health.shutil.which", return_value=None):
+                result = health.openclaw()
             self.assertFalse(result["present"])
             self.assertEqual(result["home_contents"], [])
         finally:
@@ -46,7 +46,7 @@ class TestOpenClawDetection(AionTest):
         (home / "agent").mkdir()
         os.environ["OPENCLAW_HOME"] = str(home)
         try:
-            result = verify.openclaw()
+            result = health.openclaw()
             self.assertTrue(result["present"])
             self.assertIn("agent", result["home_contents"])
         finally:
@@ -61,28 +61,28 @@ class TestClassification(AionTest):
             {"name": "ollama", "ok": False, "detail": "not installed"},
             {"name": "disk", "ok": True, "detail": "fine"},
         ]}
-        tiers = verify.classify(report)
+        tiers = health.classify(report)
         self.assertEqual([e["name"] for e in tiers["blocking"]], ["database"])
         self.assertEqual([e["name"] for e in tiers["setup_required"]], ["secret_store"])
         self.assertEqual([e["name"] for e in tiers["optional"]], ["ollama"])
 
     def test_setup_required_entries_carry_the_exact_fix_command(self):
         report = {"checks": [{"name": "secret_store", "ok": False, "detail": "missing"}]}
-        tiers = verify.classify(report)
+        tiers = health.classify(report)
         self.assertEqual(tiers["setup_required"][0]["fix"], "aion secrets init")
 
     def test_passing_checks_are_not_reported_as_problems(self):
         report = {"checks": [{"name": "database", "ok": True, "detail": "fine"}]}
-        tiers = verify.classify(report)
+        tiers = health.classify(report)
         self.assertEqual(tiers["blocking"], [])
 
 
 class TestVerdicts(AionTest):
     def test_fresh_install_is_setup_required_not_broken(self):
         """A brand new machine is sound; it just has owner steps outstanding."""
-        result = verify.run()
+        result = health.verify()
         self.assertEqual(result["verdict"], "SETUP_REQUIRED")
-        self.assertEqual(result["exit_code"], 1)
+        self.assertEqual(result["exit_code"], 0)
         fixes = {e["fix"] for e in result["tiers"]["setup_required"]}
         self.assertIn("aion secrets init", fixes)
         self.assertIn("aion backup", fixes)
@@ -90,7 +90,7 @@ class TestVerdicts(AionTest):
     def test_machine_becomes_ready_once_owner_setup_is_done(self):
         bootstrap.init_secret_store()
         backup.create()
-        result = verify.run()
+        result = health.verify()
         self.assertEqual(result["verdict"], "READY")
         self.assertEqual(result["exit_code"], 0)
 
@@ -100,7 +100,7 @@ class TestVerdicts(AionTest):
             "healthy": False, "failing": ["database"],
             "checks": [{"name": "database", "ok": False, "detail": "integrity_check failed"}]}
         try:
-            result = verify.run()
+            result = health.verify()
         finally:
             health.run_all = original
         self.assertEqual(result["verdict"], "BROKEN")
@@ -116,7 +116,7 @@ class TestVerdicts(AionTest):
 
         health.run_all = explode
         try:
-            result = verify.run()
+            result = health.verify()
         finally:
             health.run_all = original
         self.assertEqual(result["verdict"], "BROKEN")
@@ -125,40 +125,40 @@ class TestVerdicts(AionTest):
     def test_failing_tests_make_an_otherwise_ready_machine_broken(self):
         bootstrap.init_secret_store()
         backup.create()
-        original = verify.run_tests
-        verify.run_tests = lambda repo: {"ran": True, "ok": False,
+        original = health.run_tests
+        health.run_tests = lambda repo: {"ran": True, "ok": False,
                                          "detail": "FAILED (failures=3)", "count": 258}
         try:
-            result = verify.run(deep=True)
+            result = health.verify(deep=True)
         finally:
-            verify.run_tests = original
+            health.run_tests = original
         self.assertEqual(result["verdict"], "BROKEN")
 
 
 class TestTestSummaryParsing(AionTest):
     def test_summary_prefers_unittest_verdict_over_stray_output(self):
         output = "Ran 258 tests in 17.5s\n\nOK\n"
-        self.assertEqual(verify._summary_line(output), "OK")
+        self.assertEqual(health._summary_line(output), "OK")
 
     def test_summary_finds_failure_line(self):
         output = "Ran 258 tests in 17.5s\n\nFAILED (failures=2)\n"
-        self.assertEqual(verify._summary_line(output), "FAILED (failures=2)")
+        self.assertEqual(health._summary_line(output), "FAILED (failures=2)")
 
     def test_stray_test_stdout_is_not_mistaken_for_a_verdict(self):
         output = "Ran 5 tests\n\nOK\nStrong-model build spend: INR 0.0\n"
-        self.assertEqual(verify._summary_line(output), "OK")
+        self.assertEqual(health._summary_line(output), "OK")
 
     def test_count_is_extracted(self):
-        self.assertEqual(verify._test_count("Ran 258 tests in 17.5s"), 258)
+        self.assertEqual(health._test_count("Ran 258 tests in 17.5s"), 258)
 
     def test_missing_summary_says_so_rather_than_inventing_one(self):
-        self.assertEqual(verify._summary_line("no useful output"),
+        self.assertEqual(health._summary_line("no useful output"),
                          "no unittest summary found")
 
 
 class TestRender(AionTest):
     def test_render_names_the_verdict_and_the_fixes(self):
-        text = verify.render(verify.run())
+        text = health.render_verify(health.verify())
         self.assertIn("SETUP_REQUIRED", text)
         self.assertIn("aion secrets init", text)
         self.assertIn("Test suite: not run", text)

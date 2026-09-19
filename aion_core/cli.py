@@ -10,7 +10,7 @@ from pathlib import Path
 from . import (agents, approvals, backup, bootstrap, config, db, errors, experiments, fable,
                health, memory, metrics, notebook, owner_setup, packets, reports, resume, router,
                security, seed, sessions, tasks, util, plan, worker, governor, handoff,
-               milestones, deliveries, autonomy, learnrepo, verify)
+               milestones, deliveries, autonomy, learnrepo)
 
 
 def _print(text):
@@ -416,8 +416,8 @@ def _main(argv=None) -> int:
     elif cmd == "learnrepo-status":
         _print(learnrepo.status())
     elif cmd == "verify":
-        result = verify.run(deep=args.deep)
-        _print(result if args.json else verify.render(result))
+        result = health.verify(deep=args.deep)
+        _print(result if args.json else health.render_verify(result))
         return result["exit_code"]
     elif cmd == "route":
         _print(agents.route(args.kind, args.complexity, args.stakes, args.ambiguity))
