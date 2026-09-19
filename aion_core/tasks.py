@@ -572,14 +572,14 @@ def value(row) -> float:
     return round(num / den, 3)
 
 
-def ready(limit: int = 10) -> list:
+def ready(limit: int | None = 10) -> list:
     rows = db.connect().execute(
         "SELECT * FROM tasks WHERE status IN ('READY','TRIAGE','INBOX') "
         "AND (blockers IS NULL OR blockers='')"
     ).fetchall()
     rows = [r for r in rows if _deps_met(r) and _approval_clear(r)]
     rows.sort(key=lambda r: (-value(r), r["priority"], r["created_at"]))
-    return rows[:limit]
+    return rows if limit is None else rows[:limit]
 
 
 def _deps_met(row) -> bool:

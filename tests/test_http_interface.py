@@ -133,6 +133,15 @@ class TestPhoneInterface(AionTest):
         self.assertEqual(counts["task.worker_result"], 1)
         self.assertEqual(counts["task.evidence"], 1)
 
+    def test_scs_eligible_task_is_not_starved_by_ineligible_ranked_tasks(self):
+        for index in range(30):
+            tasks.create(f"secret ranked {index}", data_class="SECRET", impact=100, probability=1,
+                         info_gain=1, unlocks=1, time_est=0.1, cost=0.1, risk=0.1, human_dependence=0.1)
+        eligible = tasks.create("eligible after secret backlog", model_class="DET", impact=0.1)
+        with mock.patch.dict(os.environ, {"AION_SCS_HANDOFF_ENABLED": "1"}, clear=False):
+            _, body = self.request(http_server.SCS_TASK_PATH, token=self.token)
+        self.assertEqual(body["data"]["task_id"], eligible)
+
     def test_scs_heartbeat_is_contact_without_evidence(self):
         with mock.patch.dict(os.environ, {"AION_SCS_HANDOFF_ENABLED": "1"}, clear=False):
             task_id, claim = self._scs_claim("heartbeat only")

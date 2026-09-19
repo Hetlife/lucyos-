@@ -85,7 +85,7 @@ def _claim_scs_task() -> dict | None:
         or governor_state in {"RESERVE", "CRITICAL-ONLY", "HANDOFF", "STOP"}
     )
     agent = scs_agent_id()
-    for row in tasks.ready(25):
+    for row in tasks.ready(None):
         data_class = str(row["data_class"] or "INTERNAL").upper()
         model_class = str(row["model_class"] or "B").upper()
         if data_class == "SECRET" or model_class in {"C", "D"}:
