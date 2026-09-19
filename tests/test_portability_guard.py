@@ -148,9 +148,13 @@ class TestPortabilityGuard(unittest.TestCase):
 
     def test_stale_exception_fails_the_guard(self):
         """An exception whose coupling is gone must fail, so the list only shrinks."""
-        self.guard.KNOWN_EXCEPTIONS = dict(self.guard.KNOWN_EXCEPTIONS)
+        original = self.guard.KNOWN_EXCEPTIONS
+        self.guard.KNOWN_EXCEPTIONS = dict(original)
         self.guard.KNOWN_EXCEPTIONS["aion_core/does_not_exist.py::init_system"] = "S-99"
-        self.assertEqual(self.guard.main(["--json"]), 1)
+        try:
+            self.assertEqual(self.guard.main(["--json"]), 1)
+        finally:
+            self.guard.KNOWN_EXCEPTIONS = original
 
     def test_every_known_exception_names_a_task(self):
         for key, task in self.guard.KNOWN_EXCEPTIONS.items():

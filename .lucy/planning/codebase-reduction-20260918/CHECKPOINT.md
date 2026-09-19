@@ -1,5 +1,15 @@
 # CHECKPOINT — lucyos-codebase-reduction-20260918
 
+## 2026-09-19T10:31Z · S-47 · VERIFIED TASK BRANCH
+- task_branch: task/S-47-verify   base: 1dbda69   pr: not opened
+- objective: salvage the machine acceptance command from 2cd3cc5 onto the current research baseline
+- changes: `aion verify` CLI/module/tests; governance ownership manifest; host-adapter portability; portability-test isolation
+- tests: focused=45 PASS; full=609 PASS, 1 skipped, 55.183 s
+- gates: scan=clean; portability=ok; anti-dup=ok; strict=ok; diff-check=clean
+- evidence: `./aion verify --json`; `python3 -m unittest discover -s tests`
+- result: task branch ready for review; owner merge gate remains, main untouched
+- next_unlocked: owner review/merge, then S-49 or S-48
+
 ## 2026-09-18T09:35Z · S-40 · DONE
 - canonical_main: 66e3a4ef1b8242123555af5a7c9d80115ab23d82   research_branch: pending commit   task_branch: research/codebase-reduction-20260918   pr: -
 - evidence: evidence/M0_BASELINE.md; GitHub Actions run 35279040189; Drive 01_CURRENT_STATE_BASELINE
