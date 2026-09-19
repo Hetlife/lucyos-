@@ -23,6 +23,8 @@ def status() -> str:
     counts = tasks.counts()
     unblocked = len(tasks.ready(200))
     pend = approvals.pending()
+    stalled = sum(tasks.progress(r["task_id"])["stalled"]
+                  for state in tasks.ACTIVE_STATES for r in tasks.by_status(state))
     open_errs = errors.open_errors(limit=5)
     m = metrics.money()
     health = util.read_json(config.home() / "state" / "HEALTH.json", default={}) or {}
@@ -46,6 +48,7 @@ def status() -> str:
         f"Money: ₹{m['real_revenue_inr']} real revenue, ₹{m['real_cost_inr']} cost, "
         f"₹{m['real_net_inr']} net",
         f"Approvals waiting: {', '.join(r['approval_id'] for r in pend) or 'none'}",
+        f"Stalled without new evidence: {stalled}",
         f"Unresolved errors: {len(open_errs)}",
         f"Next action: {nxt['title'] if nxt else _nothing_runnable(counts)}",
     ]
@@ -55,10 +58,60 @@ def status() -> str:
     return _clean("\n".join(lines))
 
 
+
+def execution_status(task_ids: list[str] | None = None) -> str:
+    """Deterministic owner execution view from the canonical task ledger only.
+
+    Transport-neutral: OpenClaw/WhatsApp may deliver this text, but they do not
+    contribute task state. Evidence text and ledger timestamps are reported;
+    worker/process counts are intentionally absent.
+    """
+    if task_ids:
+        rows = [tasks.get(task_id) for task_id in task_ids]
+        rows = [row for row in rows if row is not None]
+    else:
+        rows = []
+        for state in ("RUNNING", "CLAIMED", "NEEDS_REVIEW", "NEEDS_APPROVAL",
+                      "BLOCKED", "FAILED", "WAITING", "READY"):
+            rows.extend(tasks.by_status(state))
+        rows = rows[:12]
+    lines = ["LucyOS · Execution"]
+    for row in rows:
+        status = row["status"]
+        action = row["next_action"] or ""
+        if "REVIEW_MERGE_READY" in action:
+            status = "REVIEW_MERGE_READY"
+        elif status == "NEEDS_REVIEW" and ("VERIFY" in action.upper() or "CI" in action.upper()):
+            status = "VERIFYING"
+        progress = tasks.progress(row["task_id"]) if row["status"] in tasks.ACTIVE_STATES else None
+        if progress and progress["stalled"]:
+            status = "STALLED"
+        evidence = (row["evidence"] or "No verified evidence yet").replace("\n", " ")
+        evidence = evidence[:240] + ("…" if len(evidence) > 240 else "")
+        evidence_at = (progress["last_evidence_at"] if progress else None)
+        if not evidence_at and row["status"] not in tasks.ACTIVE_STATES and row["evidence"]:
+            evidence_at = row["updated_at"]
+        lines += ["", f"{row['task_id']} — {status}", evidence,
+                  f"Last meaningful evidence: {evidence_at or 'none this attempt'}",
+                  f"Next: {action or 'No next action recorded'}"]
+        if row["blockers"]:
+            lines.append(f"Blocker: {row['blockers']}")
+    counts = tasks.counts()
+    stalled = sum(tasks.progress(r["task_id"])["stalled"]
+                  for state in tasks.ACTIVE_STATES for r in tasks.by_status(state))
+    owner = db.connect().execute(
+        "SELECT COUNT(*) n FROM tasks WHERE status='NEEDS_APPROVAL' "
+        "OR blockers LIKE 'OWNER_APPROVAL_REQUIRED:%'"
+    ).fetchone()["n"]
+    lines += ["", f"READY {counts.get('READY', 0)} · RUNNING {counts.get('RUNNING', 0)} · "
+              f"REVIEW {counts.get('NEEDS_REVIEW', 0)} · STALLED {stalled} · FAILED {counts.get('FAILED', 0)}",
+              "Need Het: " + (f"{owner} owner-gated task(s)" if owner else "Nothing")]
+    return _clean("\n".join(lines))
+
 def _nothing_runnable(counts: dict) -> str:
     """Say *why* nothing is runnable — 'queue empty' is usually a lie."""
     if counts.get("WAITING"):
-        return f"{counts['WAITING']} task(s) waiting on a missing executor — send `blockers`"
+        return f"{counts['WAITING']} task(s) waiting on an executor or recovery condition — send `blockers`"
     if counts.get("BLOCKED"):
         return f"{counts['BLOCKED']} task(s) blocked — send `blockers`"
     if counts.get("NEEDS_APPROVAL"):

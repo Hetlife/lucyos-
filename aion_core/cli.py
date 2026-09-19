@@ -38,6 +38,8 @@ def _main(argv=None) -> int:
     sub.add_parser("init", help="create/repair the shared brain")
     sub.add_parser("boot", help="startup + resume loop")
     sub.add_parser("status", help="owner status summary")
+    xs = sub.add_parser("execution-status", help="canonical task/evidence status for owner delivery")
+    xs.add_argument("task_ids", nargs="*")
     sub.add_parser("today")
     sub.add_parser("money")
     sub.add_parser("blockers")
