@@ -36,9 +36,17 @@ class HostAdapter:
         stating a fact nobody verified."""
         raise NotImplementedError
 
+    def scheduler_available(self) -> bool:
+        """Whether this host's scheduler can be queried by this process."""
+        return False
+
     def service_install_hint(self, name: str) -> str:
         """A human instruction string. Never executes anything."""
         raise NotImplementedError
+
+    def architecture(self) -> str:
+        """CPU architecture when known; unknown is explicit, never guessed."""
+        return "unknown"
 
     def probe(self) -> dict:
         """Capability facts only -- no mutation, no network, nothing sensitive
