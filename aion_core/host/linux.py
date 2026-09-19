@@ -2,6 +2,7 @@
 from __future__ import annotations
 
 import subprocess
+import platform
 from pathlib import Path
 
 from .base import REPO, HostAdapter
@@ -32,6 +33,20 @@ class LinuxHost(HostAdapter):
         if result.returncode == 3:
             return False
         return None
+
+    def scheduler_available(self) -> bool:
+        try:
+            result = subprocess.run(
+                ["systemctl", "--user", "is-system-running"],
+                capture_output=True, timeout=5, text=True)
+        except (OSError, subprocess.TimeoutExpired):
+            return False
+        # A state response such as "running" or "degraded" proves that the
+        # user manager answered even when its overall state is not healthy.
+        return bool(result.stdout.strip())
+
+    def architecture(self) -> str:
+        return platform.machine() or "unknown"
 
     def service_install_hint(self, name: str) -> str:
         return (f"cp systemd/{name} ~/.config/systemd/user/ && "

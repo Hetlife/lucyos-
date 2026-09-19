@@ -2,6 +2,7 @@
 from __future__ import annotations
 
 import subprocess
+import platform
 from pathlib import Path
 
 from .base import REPO, HostAdapter
@@ -29,6 +30,17 @@ class MacOSHost(HostAdapter):
             return False
         first_field = result.stdout.split()[0] if result.stdout.split() else ""
         return first_field.isdigit()  # a PID means running; "-" or blank means loaded but not running
+
+    def scheduler_available(self) -> bool:
+        try:
+            result = subprocess.run(["launchctl", "list"],
+                                    capture_output=True, timeout=5)
+        except (OSError, subprocess.TimeoutExpired):
+            return False
+        return result.returncode == 0
+
+    def architecture(self) -> str:
+        return platform.machine() or "unknown"
 
     def service_install_hint(self, name: str) -> str:
         return (f"cp deploy/launchd/{name} ~/Library/LaunchAgents/ && "

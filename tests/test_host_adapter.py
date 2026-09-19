@@ -22,6 +22,7 @@ class TestNullHostAdapter(unittest.TestCase):
         self.assertEqual(a.name(), "unknown")
         self.assertEqual(a.scheduler_kind(), "native-timer")
         self.assertIsNone(a.service_active("anything"))
+        self.assertFalse(a.scheduler_available())
         self.assertIsInstance(a.service_install_hint("anything"), str)
 
     def test_probe_returns_only_capability_facts(self):
@@ -71,6 +72,14 @@ class TestLinuxHost(unittest.TestCase):
         with patch("subprocess.run", side_effect=subprocess.TimeoutExpired("systemctl", 5)):
             self.assertIsNone(self.host.service_active("aion-work.timer"))
 
+    def test_scheduler_available_when_user_manager_answers(self):
+        with patch("subprocess.run", return_value=_completed(1, "degraded\n")):
+            self.assertTrue(self.host.scheduler_available())
+
+    def test_scheduler_unavailable_when_query_cannot_run(self):
+        with patch("subprocess.run", side_effect=OSError("no such binary")):
+            self.assertFalse(self.host.scheduler_available())
+
 
 class TestMacOSHost(unittest.TestCase):
     def setUp(self):
@@ -104,6 +113,14 @@ class TestMacOSHost(unittest.TestCase):
             result = self.host.service_active("x")
         self.assertIsNone(result)
         self.assertIsNot(result, False)
+
+    def test_scheduler_available_when_launchctl_answers(self):
+        with patch("subprocess.run", return_value=_completed(0)):
+            self.assertTrue(self.host.scheduler_available())
+
+    def test_scheduler_unavailable_when_launchctl_missing(self):
+        with patch("subprocess.run", side_effect=OSError("no such binary")):
+            self.assertFalse(self.host.scheduler_available())
 
 
 if __name__ == "__main__":

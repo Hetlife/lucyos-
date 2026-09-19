@@ -10,7 +10,7 @@ from pathlib import Path
 from . import (agents, approvals, backup, bootstrap, config, db, errors, experiments, fable,
                health, memory, metrics, notebook, owner_setup, packets, reports, resume, router,
                security, seed, sessions, tasks, util, plan, worker, governor, handoff,
-               milestones, deliveries, autonomy, learnrepo)
+               milestones, deliveries, autonomy, learnrepo, verify)
 
 
 def _print(text):
@@ -128,6 +128,10 @@ def _main(argv=None) -> int:
     lr = sub.add_parser("learnrepo-run", help="run due deterministic LearnRepo health jobs")
     lr.add_argument("--mode", choices=["nightly", "daily", "weekly", "monthly", "quarterly"], default="nightly")
     sub.add_parser("learnrepo-status", help="show LearnRepo queue/health state")
+
+    vf = sub.add_parser("verify", help="is LucyOS sound on THIS machine, and what can it do")
+    vf.add_argument("--deep", action="store_true", help="also run the full test suite here")
+    vf.add_argument("--json", action="store_true", help="machine-readable output")
 
     rt = sub.add_parser("route", help="decide which model class should do a task")
     rt.add_argument("kind")
@@ -275,7 +279,10 @@ def _main(argv=None) -> int:
     args = p.parse_args(argv)
     cmd = args.cmd
 
-    if cmd != "init":
+    # `verify` is the diagnostic of last resort: it must still run on a machine
+    # whose shared brain or database is broken, which is exactly when
+    # bootstrap.ensure() would raise.
+    if cmd not in ("init", "verify"):
         bootstrap.ensure()
 
     if cmd == "init":
@@ -408,6 +415,10 @@ def _main(argv=None) -> int:
         _print(learnrepo.run_due(mode=args.mode))
     elif cmd == "learnrepo-status":
         _print(learnrepo.status())
+    elif cmd == "verify":
+        result = verify.run(deep=args.deep)
+        _print(result if args.json else verify.render(result))
+        return result["exit_code"]
     elif cmd == "route":
         _print(agents.route(args.kind, args.complexity, args.stakes, args.ambiguity))
     elif cmd == "usage":
