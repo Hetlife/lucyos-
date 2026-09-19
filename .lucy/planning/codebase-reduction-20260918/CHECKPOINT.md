@@ -1,5 +1,14 @@
 # CHECKPOINT — lucyos-codebase-reduction-20260918
 
+## 2026-09-19T11:58Z · S-47 + S-49 · DONE ON RATIFIED INTEGRATION
+- ratified_base: 178fd3e; integration_head: 7a657ff; canonical_main: unchanged
+- commits: Fable ratification 735f3dd (applied as 178fd3e), S-47 907c083 (applied as 2b0eb1b), S-49 b1b011d (applied as 7a657ff)
+- result: S-47 and S-49 DONE; approved merge order applied in isolated integration worktree
+- tests: focused=57 PASS; full=615 PASS, 1 skipped; `aion verify --json` READY
+- gates: anti-dup=PASS against ratified base; strict=PASS; portability=PASS; secrets=PASS; diff=PASS
+- rollback: revert S-49, then S-47, then protected ratification
+- next_unlocked: S-48 execution, then S-46 measurement report
+
 ## 2026-09-19T10:31Z · S-47 · VERIFIED TASK BRANCH
 - task_branch: task/S-47-verify   base: 1dbda69   pr: not opened
 - objective: salvage the machine acceptance command from 2cd3cc5 onto the current research baseline
