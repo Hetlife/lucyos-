@@ -20,7 +20,7 @@ try:
 except ImportError as exc:  # pragma: no cover - exercised by clean bootstrap
     raise RuntimeError("gateway dependencies are not installed; see requirements-gateway.txt") from exc
 
-from . import db, security, util
+from . import approvals, db, security, tasks, util
 
 SCHEMA = "lucyos.approval/1"
 MAX_MESSAGE = 16 * 1024
@@ -149,3 +149,29 @@ def validate(message: bytes, parameters=None) -> dict:
         conn.rollback()
         raise GatewayError("replayed nonce or duplicate request") from exc
     return operation
+
+
+def submit(message: bytes, *, title: str, parameters=None, **task_fields) -> str:
+    """Validate once, create one canonical task, and attach existing approval policy."""
+    operation = validate(message, parameters)
+    digest = hashlib.sha256(_payload(operation)).digest()
+    conn = db.connect()
+    if conn.execute("SELECT 1 FROM gateway_requests WHERE request_id=?", (operation["request_id"],)).fetchone():
+        raise GatewayError("duplicate request")
+    risk = operation["risk_class"]
+    status = "NEEDS_APPROVAL" if risk in {"R2", "R3"} else "READY"
+    task_id = tasks.create(title, status=status, **task_fields)
+    approval_id = None
+    if status == "NEEDS_APPROVAL":
+        approval_id = approvals.create(operation["action"], task_id=task_id,
+                                       why="gateway exact-operation approval",
+                                       resumes="execute approved capability")
+    try:
+        conn.execute("INSERT INTO gateway_requests(request_id,task_id,operation_hash,device_id,status,approval_id,created_at) VALUES(?,?,?,?,?,?,?)",
+                     (operation["request_id"], task_id, digest, operation["device_id"], status, approval_id, util.now()))
+        conn.commit()
+    except Exception:
+        # The existing task/approval remains auditable and must be reviewed; no retry is attempted.
+        tasks.update(task_id, status="NEEDS_REVIEW", last_error="gateway request ledger write failed")
+        raise GatewayError("gateway ledger write failed")
+    return task_id

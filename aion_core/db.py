@@ -162,6 +162,16 @@ CREATE TABLE IF NOT EXISTS gateway_nonces (
     consumed_at     TEXT NOT NULL
 );
 
+CREATE TABLE IF NOT EXISTS gateway_requests (
+    request_id      TEXT PRIMARY KEY,
+    task_id         TEXT NOT NULL UNIQUE,
+    operation_hash  BLOB NOT NULL,
+    device_id       TEXT NOT NULL,
+    status          TEXT NOT NULL DEFAULT 'ACCEPTED',
+    approval_id     TEXT,
+    created_at      TEXT NOT NULL
+);
+
 CREATE TABLE IF NOT EXISTS packets (
     packet_id      TEXT PRIMARY KEY,
     source         TEXT NOT NULL,

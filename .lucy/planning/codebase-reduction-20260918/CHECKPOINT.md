@@ -93,6 +93,12 @@
 - safety: no adapter deployment, sensitive encryption, arbitrary shell, capability activation or canonical/main promotion
 - next: integrate existing approval/task/executor path; rerun full suite and all security/architecture gates
 
+## 2026-09-19T19:25Z · SECURE GATEWAY · TASK SUBMISSION SEAM
+- implementation: gateway now records additive request/nonce ledgers, validates exact COSE operation, creates one existing LucyOS task, and routes R2/R3 through existing approvals
+- tests: isolated dependency environment 4 PASS (positive, parameter mutation, replay, tamper, expiry, revocation, task creation and risk gate)
+- unchanged: no WhatsApp activation, arbitrary shell, sensitive encryption, capability auto-activation or canonical/main promotion
+- next: adapter integration, complete abuse/restart matrix, full suite and governance gates
+
 Newest block first. Format: `05_AUTONOMOUS_EXECUTION_LOOP.md` §5. A fresh controller session reads only the top block, then `06_TASK_GRAPH.json`, then open PRs.
 
 ## 2026-09-18T18:30Z · FABLE-05 · PASS

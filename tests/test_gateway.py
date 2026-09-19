@@ -59,3 +59,13 @@ class GatewayEnvelopeTests(AionTest):
         self.gateway.revoke_device("phone-1", "lost")
         with self.assertRaises(self.gateway.GatewayError):
             self.gateway.validate(self.gateway.sign_operation(dict(op, nonce=self.gateway.new_nonce()), self.raw))
+
+    def test_submit_uses_existing_task_path_and_risk_gate(self):
+        op = self.operation()
+        task_id = self.gateway.submit(self.gateway.sign_operation(op, self.raw), title="health check",
+                                      parameters={"path": "health"})
+        from aion_core import tasks
+        self.assertEqual(tasks.get(task_id)["status"], "READY")
+        op2 = self.operation(request_id="REQ-2", approval_id="A-2", nonce=self.gateway.new_nonce(), risk_class="R2")
+        task2 = self.gateway.submit(self.gateway.sign_operation(op2, self.raw), title="write action")
+        self.assertEqual(tasks.get(task2)["status"], "NEEDS_APPROVAL")
