@@ -61,11 +61,13 @@ class OpenClawLucyBridgeTest(unittest.TestCase):
             self.assertIn("bridge refused", result.stderr.decode())
 
     def test_context_requires_bounded_task_id(self):
-        good = self.dispatch("context TASK-ABC123")
-        self.assertEqual(good.returncode, 0, good.stderr.decode())
-        self.assertIn("ARGS=context|TASK-ABC123", good.stdout.decode())
-        bad = self.dispatch("context ../../etc/passwd")
-        self.assertNotEqual(bad.returncode, 0)
+        for task_id in ("TASK-ABC123", "S-48"):
+            good = self.dispatch(f"context {task_id}")
+            self.assertEqual(good.returncode, 0, good.stderr.decode())
+            self.assertIn(f"ARGS=context|{task_id}", good.stdout.decode())
+        for task_id in ("../../etc/passwd", "S-", "S-12345", "S-48;id"):
+            bad = self.dispatch(f"context {task_id}")
+            self.assertNotEqual(bad.returncode, 0)
 
     def test_work_dry_is_bounded(self):
         good = self.dispatch("work-dry 3")
