@@ -351,3 +351,31 @@ class TestGitClosure(AionTest):
         with self.assertRaisesRegex(tasks.TaskError, "tree changed"):
             tasks.close_implemented(self.task, self.commit, repo=self.repo)
         self.assertEqual(tasks.get(self.task)["status"], "READY")
+
+
+class TestExecutionStatus(AionTest):
+    def test_status_uses_canonical_ledger_and_verified_outcomes(self):
+        tasks.create("verify me", task_id="S-47", status="NEEDS_REVIEW",
+                     evidence="19/19 targeted tests passed",
+                     next_action="VERIFYING: full regression and CI")
+        tasks.create("merge me", task_id="S-49", status="NEEDS_REVIEW",
+                     evidence="6/6 targeted tests passed; CI SUCCESS",
+                     blockers="OWNER_APPROVAL_REQUIRED: merge main",
+                     next_action="REVIEW_MERGE_READY: owner review PR")
+        tasks.create("wait", task_id="S-48", status="READY",
+                     next_action="Wait for execution capacity")
+        text = reports.execution_status(["S-47", "S-49", "S-48"])
+        self.assertIn("S-47 — VERIFYING", text)
+        self.assertIn("19/19 targeted tests passed", text)
+        self.assertIn("S-49 — REVIEW_MERGE_READY", text)
+        self.assertIn("S-48 — READY", text)
+        self.assertNotIn("workers active", text.lower())
+        self.assertNotIn("start S-47", text)
+        self.assertIn("Need Het: 1 owner-gated task(s)", text)
+
+    def test_status_marks_alive_but_evidence_stale_task_stalled(self):
+        task = tasks.create("stale", task_id="S-STALLED", status="RUNNING", owner_agent="worker")
+        db.connect().execute("UPDATE tasks SET started_at=?, updated_at=? WHERE task_id=?",
+                             ("2000-01-01T00:00:00+00:00", util.now(), task))
+        db.connect().commit()
+        self.assertIn("S-STALLED — STALLED", reports.execution_status([task]))
