@@ -85,6 +85,14 @@
 - remote: pending commit/push/remote verification in this work cycle
 - next: owner approval of the exact Phase-1 implementation boundary; then a separate protected implementation gate
 
+## 2026-09-19T19:15Z · SECURE GATEWAY · DEPENDENCY + VALIDATOR MILESTONE
+- decision: SCG-01 selects pycose 1.1.0 + cbor2 5.6.5 + existing cryptography; cwt/ GPL alternatives/custom COSE rejected
+- files: `.lucy/architecture/decisions/SCG-01-cose-dependency.md`, `requirements-gateway.txt`, CI/bootstrap conventions
+- implementation: `aion_core/gateway.py` adds bounded COSE_Sign1/Ed25519 verification, exact canonical parameter digest, enrollment/revocation and atomic nonce replay protection; DB tables are additive
+- tests: isolated real-wheel environment gateway tests 3 PASS; full suite was started and existing diagnostics remained expected, final count pending timed completion
+- safety: no adapter deployment, sensitive encryption, arbitrary shell, capability activation or canonical/main promotion
+- next: integrate existing approval/task/executor path; rerun full suite and all security/architecture gates
+
 Newest block first. Format: `05_AUTONOMOUS_EXECUTION_LOOP.md` §5. A fresh controller session reads only the top block, then `06_TASK_GRAPH.json`, then open PRs.
 
 ## 2026-09-18T18:30Z · FABLE-05 · PASS

@@ -44,6 +44,8 @@ jobs:
       - uses: actions/setup-python@v5
         with:
           python-version: ${{ matrix.python-version }}
+      - name: Install gateway dependency set
+        run: python -m pip install --disable-pip-version-check -r requirements-gateway.txt
       - name: Compile sources
         run: python -m compileall -q aion_core bridges tests scripts
       - name: Cross-platform portability guard

@@ -1,0 +1,9 @@
+# Secure Capability Gateway Phase 1: RFC 9052 COSE_Sign1 only.
+# Keep this file separate from the stdlib-only base until the gateway is enabled.
+pycose==1.1.0
+cbor2==5.6.5
+ecdsa==0.19.0
+attrs==23.2.0
+certvalidator==0.11.1
+# Existing crypto provider; keep aligned with the supported Python matrix.
+cryptography==41.0.7

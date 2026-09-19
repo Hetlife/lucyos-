@@ -142,6 +142,26 @@ CREATE TABLE IF NOT EXISTS approvals (
     task_id         TEXT
 );
 
+CREATE TABLE IF NOT EXISTS gateway_devices (
+    device_id       TEXT PRIMARY KEY,
+    owner_identity   TEXT NOT NULL,
+    public_key       BLOB NOT NULL,
+    key_version      INTEGER NOT NULL,
+    epoch            INTEGER NOT NULL DEFAULT 1,
+    status           TEXT NOT NULL DEFAULT 'ACTIVE',
+    enrolled_at      TEXT NOT NULL,
+    revoked_at       TEXT,
+    revoke_reason    TEXT
+);
+
+CREATE TABLE IF NOT EXISTS gateway_nonces (
+    nonce           BLOB PRIMARY KEY,
+    request_id      TEXT NOT NULL,
+    device_id       TEXT NOT NULL,
+    expires_at      TEXT NOT NULL,
+    consumed_at     TEXT NOT NULL
+);
+
 CREATE TABLE IF NOT EXISTS packets (
     packet_id      TEXT PRIMARY KEY,
     source         TEXT NOT NULL,

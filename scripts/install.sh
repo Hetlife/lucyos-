@@ -16,6 +16,9 @@ if sys.version_info < (3, 9):
 print(f"python:       {sys.version.split()[0]} OK")
 PY
 
+echo "gateway dependencies: install with the platform package manager/venv before activation"
+echo "  python3 -m pip install --require-hashes -r ${REPO}/requirements-gateway.txt"
+
 mkdir -p "${BIN}"
 ln -sf "${REPO}/aion" "${BIN}/aion"
 echo "installed:    ${BIN}/aion -> ${REPO}/aion"
