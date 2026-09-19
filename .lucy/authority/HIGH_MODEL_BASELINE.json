@@ -217,5 +217,8 @@
   "public_repo_assumption": "Repository is PUBLIC by owner decision until Mac migration completes. Never commit credentials, private Drive content, customer data, raw sensitive logs, OAuth material or machine secrets.",
   "derived_sqlite_allowed": [
     "aion_core/semantic_recall.py"
+  ],
+  "sqlite_import_allowed": [
+    "scripts/runtime_inventory.py"
   ]
 }

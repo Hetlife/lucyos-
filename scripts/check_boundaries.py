@@ -53,6 +53,7 @@ def findings() -> list[dict]:
     baseline = json.loads(BASELINE.read_text(encoding="utf-8"))
     sqlite_allowed = set(baseline.get("sqlite_connect_allowed", []))
     sqlite_allowed.update(baseline.get("derived_sqlite_allowed", []))
+    sqlite_import_allowed = set(baseline.get("sqlite_import_allowed", []))
     out = []
     for path in _files():
         rel = path.relative_to(REPO).as_posix()
@@ -79,7 +80,7 @@ def findings() -> list[dict]:
                     if manifest and target not in manifest["allowed_dependencies"]:
                         out.append({"path": rel, "rule": "dependency", "line": node.lineno,
                                     "detail": f"{importer} imports {target} ({name})"})
-                if name == "sqlite3" and rel not in sqlite_allowed:
+                if name == "sqlite3" and rel not in sqlite_allowed and rel not in sqlite_import_allowed:
                     out.append({"path": rel, "rule": "sqlite_import", "line": node.lineno,
                                 "detail": "sqlite3 import outside the ratified allowlist"})
     return out

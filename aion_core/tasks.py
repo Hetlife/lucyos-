@@ -1,8 +1,6 @@
 """Global task queue with explicit ownership, states and value ranking."""
 from __future__ import annotations
 
-import sqlite3
-
 from . import config, db, security, util
 
 STATES = [
@@ -62,7 +60,7 @@ def create(title: str, **kw) -> str:
     return task_id
 
 
-def get(task_id: str) -> sqlite3.Row | None:
+def get(task_id: str):
     return db.connect().execute("SELECT * FROM tasks WHERE task_id=?", (task_id,)).fetchone()
 
 
