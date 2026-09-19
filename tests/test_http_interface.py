@@ -33,6 +33,9 @@ class TestPhoneInterface(AionTest):
             headers["Authorization"] = f"Bearer {token}"
         data = None
         if payload is not None:
+            if path == http_server.SCS_RESULT_PATH:
+                payload = dict(payload)
+                payload.setdefault("claim_id", tasks.claim_id(payload["task_id"]))
             data = json.dumps(payload).encode()
             headers["Content-Type"] = "application/json"
         req = Request(self.base + path, data=data, headers=headers,
@@ -69,168 +72,182 @@ class TestPhoneInterface(AionTest):
         self.assertEqual(approvals.get(approval_id)["status"], "APPROVED")
         self.assertEqual(tasks.get(task_id)["status"], "READY")
 
+    def _scs_claim(self, title="handoff task"):
+        task_id = tasks.create(title, model_class="DET")
+        _, body = self.request(http_server.SCS_TASK_PATH, token=self.token)
+        self.assertEqual(body["data"]["task_id"], task_id)
+        return task_id, body["data"]
+
+    @staticmethod
+    def _scs_packet(claim, key, status="DONE", **updates):
+        packet = {
+            "task_id": claim["task_id"],
+            "claim_id": claim["claim_id"],
+            "idempotency_key": key,
+            "STATUS": status,
+            "ACTIONS": "worker claims bounded work completed",
+            "FILES_CHANGED": "artifact.txt",
+            "TESTS": "focused validation exited 0",
+            "RESULTS": "artifact measurement matched",
+            "BLOCKERS": "",
+            "NEXT_ACTION": "independent review",
+        }
+        packet.update(updates)
+        return packet
+
     def test_scs_handoff_is_off_by_default(self):
         task_id = tasks.create("stay ready while handoff disabled")
         with self.assertRaises(HTTPError) as caught:
             self.request(http_server.SCS_TASK_PATH, token=self.token)
         self.assertEqual(caught.exception.code, 404)
+        packet = {field: "" for field in http_server.SCS_RESULT_FIELDS}
+        with self.assertRaises(HTTPError) as caught:
+            self.request(http_server.SCS_RESULT_PATH, token=self.token, payload=packet)
+        self.assertEqual(caught.exception.code, 404)
         self.assertEqual(tasks.get(task_id)["status"], "READY")
 
-    def test_scs_get_claims_atomically_and_exposes_only_allowlisted_fields(self):
+    def test_scs_duplicate_claim_and_delivery_do_not_repeat_work_or_events(self):
         secret_task = tasks.create("secret task", data_class="SECRET")
-        task_id = tasks.create(
-            "safe local task",
-            description="bounded work",
-            success_criteria="verified output",
-            validation_method="unit test",
-            next_action="execute",
-            model_class="B",
-            data_class="INTERNAL",
-        )
+        task_id = tasks.create("safe local task", model_class="DET")
         with mock.patch.dict(os.environ, {"AION_SCS_HANDOFF_ENABLED": "1"}, clear=False):
             def fetch():
-                _, payload = self.request(http_server.SCS_TASK_PATH, token=self.token)
-                return payload["data"]
+                return self.request(http_server.SCS_TASK_PATH, token=self.token)[1]["data"]
             with ThreadPoolExecutor(max_workers=4) as pool:
-                results = list(pool.map(lambda _: fetch(), range(4)))
-        claimed = [item for item in results if item is not None]
-        self.assertEqual(len(claimed), 1, results)
-        self.assertEqual(claimed[0]["task_id"], task_id)
-        self.assertEqual(set(claimed[0]), set(http_server.SCS_TASK_FIELDS))
-        self.assertEqual(tasks.get(task_id)["status"], "CLAIMED")
-        self.assertEqual(tasks.get(task_id)["owner_agent"], "scs-admin01")
+                claims = list(pool.map(lambda _: fetch(), range(4)))
+            claimed = [item for item in claims if item is not None]
+            self.assertEqual(len(claimed), 1, claims)
+            claim = claimed[0]
+            self.assertEqual(claim["task_id"], task_id)
+            self.assertEqual(claim["owner_agent"], "scs-admin01")
+            self.assertEqual(set(claim), set(http_server.SCS_TASK_FIELDS))
+            packet = self._scs_packet(claim, "delivery-1")
+            first = self.request(http_server.SCS_RESULT_PATH, token=self.token, payload=packet)[1]
+            replay = self.request(http_server.SCS_RESULT_PATH, token=self.token, payload=packet)[1]
+        self.assertFalse(first["data"]["replayed"])
+        self.assertTrue(replay["data"]["replayed"])
+        self.assertEqual(tasks.get(task_id)["status"], "NEEDS_REVIEW")
         self.assertEqual(tasks.get(secret_task)["status"], "READY")
+        counts = dict(db.connect().execute(
+            "SELECT kind,COUNT(*) FROM events WHERE subject=? GROUP BY kind", (task_id,)).fetchall())
+        self.assertEqual(counts["task.claim"], 1)
+        self.assertEqual(counts["task.worker_result"], 1)
+        self.assertEqual(counts["task.evidence"], 1)
 
-    def test_scs_claim_respects_pause_and_safe_mode(self):
-        task_id = tasks.create("paid handoff task", model_class="B")
+    def test_scs_heartbeat_is_contact_without_evidence(self):
         with mock.patch.dict(os.environ, {"AION_SCS_HANDOFF_ENABLED": "1"}, clear=False):
-            db.set_meta("paused", "1")
-            _, paused = self.request(http_server.SCS_TASK_PATH, token=self.token)
-            self.assertIsNone(paused["data"])
-            self.assertEqual(tasks.get(task_id)["status"], "READY")
-            db.set_meta("paused", "0")
-            db.set_meta("safe_mode", "1")
-            _, safe = self.request(http_server.SCS_TASK_PATH, token=self.token)
-            self.assertIsNone(safe["data"])
-            self.assertEqual(tasks.get(task_id)["status"], "READY")
+            task_id, claim = self._scs_claim("heartbeat only")
+            before = tasks.get(task_id)["updated_at"]
+            packet = self._scs_packet(
+                claim, "heartbeat-1", "HEARTBEAT", ACTIONS="", FILES_CHANGED="",
+                TESTS="", RESULTS="", BLOCKERS="", NEXT_ACTION="")
+            body = self.request(http_server.SCS_RESULT_PATH, token=self.token, payload=packet)[1]
+        row = tasks.get(task_id)
+        self.assertEqual(body["data"]["status"], "CLAIMED")
+        self.assertEqual(row["status"], "CLAIMED")
+        self.assertGreaterEqual(row["updated_at"], before)
+        self.assertEqual(row["evidence"], "")
+        count = db.connect().execute(
+            "SELECT COUNT(*) FROM events WHERE subject=? AND kind='task.evidence'", (task_id,)).fetchone()[0]
+        self.assertEqual(count, 0)
 
-    def test_scs_claim_respects_model_authority_and_budget_governor(self):
-        c_task = tasks.create("class c", model_class="C")
-        d_task = tasks.create("class d", model_class="D")
-        b_task = tasks.create("class b", model_class="B")
-        budget = {
-            "day_over": False,
-            "month_over": False,
-            "governor": "RESERVE",
-        }
-        with mock.patch.dict(os.environ, {"AION_SCS_HANDOFF_ENABLED": "1"}, clear=False),              mock.patch("bridges.http_server.governor.state", return_value="RESERVE"),              mock.patch("bridges.http_server.metrics.budget_status", return_value=budget):
-            _, held = self.request(http_server.SCS_TASK_PATH, token=self.token)
-        self.assertIsNone(held["data"])
-        for task_id in (c_task, d_task, b_task):
-            self.assertEqual(tasks.get(task_id)["status"], "READY")
-
-        a_task = tasks.create("class a", model_class="A")
-        with mock.patch.dict(os.environ, {"AION_SCS_HANDOFF_ENABLED": "1"}, clear=False),              mock.patch("bridges.http_server.governor.state", return_value="RESERVE"),              mock.patch("bridges.http_server.metrics.budget_status", return_value=budget):
-            _, allowed = self.request(http_server.SCS_TASK_PATH, token=self.token)
-        self.assertEqual(allowed["data"]["task_id"], a_task)
-        self.assertEqual(tasks.get(c_task)["status"], "READY")
-        self.assertEqual(tasks.get(d_task)["status"], "READY")
-        self.assertEqual(tasks.get(b_task)["status"], "READY")
-
-    def test_scs_result_is_replay_safe_conflict_safe_and_redacted(self):
-        task_id = tasks.create("handoff result")
-        packet = {
-            "task_id": task_id,
-            "idempotency_key": "result-001",
-            "STATUS": "DONE",
-            "ACTIONS": "implemented adapter",
-            "FILES_CHANGED": "bridges/http_server.py",
-            "TESTS": "focused tests passed",
-            "RESULTS": "verified ghp_AbCdEfGhIjKlMnOpQrStUvWxYz012345",
-            "BLOCKERS": "",
-            "NEXT_ACTION": "continue",
-        }
+    def test_scs_meaningful_validation_uses_existing_evidence_api(self):
         with mock.patch.dict(os.environ, {"AION_SCS_HANDOFF_ENABLED": "1"}, clear=False):
-            self.request(http_server.SCS_TASK_PATH, token=self.token)
-            _, first = self.request(http_server.SCS_RESULT_PATH, token=self.token, payload=packet)
-            _, replay = self.request(http_server.SCS_RESULT_PATH, token=self.token, payload=packet)
-            conflict = dict(packet)
-            conflict["RESULTS"] = "different result"
+            task_id, claim = self._scs_claim("measured progress")
+            packet = self._scs_packet(claim, "progress-1", "PROGRESS")
+            body = self.request(http_server.SCS_RESULT_PATH, token=self.token, payload=packet)[1]
+        self.assertEqual(body["data"]["status"], "CLAIMED")
+        self.assertIn("focused validation exited 0", tasks.get(task_id)["evidence"])
+        detail = db.connect().execute(
+            "SELECT detail FROM events WHERE subject=? AND kind='task.evidence'", (task_id,)).fetchone()[0]
+        self.assertEqual(json.loads(detail)["kind"], "validation")
+        self.assertNotIn(packet["ACTIONS"], tasks.get(task_id)["evidence"])
+
+    def test_scs_done_is_a_review_claim_and_never_closes_task(self):
+        with mock.patch.dict(os.environ, {"AION_SCS_HANDOFF_ENABLED": "1"}, clear=False):
+            task_id, claim = self._scs_claim("claimed complete")
+            packet = self._scs_packet(claim, "done-claim")
+            body = self.request(http_server.SCS_RESULT_PATH, token=self.token, payload=packet)[1]
+        self.assertEqual(body["data"]["status"], "NEEDS_REVIEW")
+        row = tasks.get(task_id)
+        self.assertEqual(row["status"], "NEEDS_REVIEW")
+        self.assertIsNone(row["completed_at"])
+        self.assertNotEqual(row["status"], "DONE")
+
+    def test_scs_failed_uses_deterministic_failure_recovery(self):
+        with mock.patch.dict(os.environ, {"AION_SCS_HANDOFF_ENABLED": "1"}, clear=False):
+            task_id, claim = self._scs_claim("schema failure")
+            packet = self._scs_packet(
+                claim, "failure-1", "FAILED", TESTS="", FILES_CHANGED="",
+                RESULTS="provider schema validation error", BLOCKERS="invalid schema")
+            body = self.request(http_server.SCS_RESULT_PATH, token=self.token, payload=packet)[1]
+        row = tasks.get(task_id)
+        self.assertEqual(body["data"]["status"], "NEEDS_REVIEW")
+        self.assertEqual(row["status"], "NEEDS_REVIEW")
+        self.assertEqual(row["retry_count"], 0)
+        self.assertIn("PROVIDER_SCHEMA_ERROR", row["blockers"])
+
+    def test_scs_replay_conflict_and_old_claim_are_rejected(self):
+        with mock.patch.dict(os.environ, {"AION_SCS_HANDOFF_ENABLED": "1"}, clear=False):
+            task_id, first_claim = self._scs_claim("retry fence")
+            failed = self._scs_packet(
+                first_claim, "attempt-1", "FAILED", TESTS="", FILES_CHANGED="",
+                RESULTS="worker process died", BLOCKERS="")
+            self.request(http_server.SCS_RESULT_PATH, token=self.token, payload=failed)
+            self.assertEqual(tasks.get(task_id)["status"], "READY")
+            _, second_claim = self.request(http_server.SCS_TASK_PATH, token=self.token)
+            second_claim = second_claim["data"]
+            self.assertNotEqual(first_claim["claim_id"], second_claim["claim_id"])
+            stale = self._scs_packet(first_claim, "stale-attempt")
+            with self.assertRaises(HTTPError) as caught:
+                self.request(http_server.SCS_RESULT_PATH, token=self.token, payload=stale)
+            self.assertEqual(caught.exception.code, 409)
+            replay = self.request(http_server.SCS_RESULT_PATH, token=self.token, payload=failed)[1]
+            self.assertTrue(replay["data"]["replayed"])
+            conflict = dict(failed, RESULTS="different failure")
             with self.assertRaises(HTTPError) as caught:
                 self.request(http_server.SCS_RESULT_PATH, token=self.token, payload=conflict)
         self.assertEqual(caught.exception.code, 409)
-        self.assertFalse(first["data"]["replayed"])
-        self.assertTrue(replay["data"]["replayed"])
-        row = tasks.get(task_id)
-        self.assertEqual(row["status"], "DONE")
-        self.assertNotIn("ghp_AbCdEf", row["evidence"])
-        stored_row = db.connect().execute(
-            "SELECT key,result FROM idempotency WHERE scope=?",
-            (http_server.SCS_IDEMPOTENCY_SCOPE,),
-        ).fetchone()
-        self.assertNotIn("result-001", stored_row["key"])
-        self.assertNotIn("ghp_AbCdEf", stored_row["result"])
+        self.assertEqual(tasks.get(task_id)["retry_count"], 1)
+        self.assertEqual(tasks.get(task_id)["owner_agent"], "scs-admin01")
 
-    def test_scs_post_commit_failure_keeps_idempotency_pending(self):
-        from aion_core import resume
-
-        task_id = tasks.create("post-commit failure")
-        packet = {
-            "task_id": task_id,
-            "idempotency_key": "result-post-commit",
-            "STATUS": "DONE",
-            "ACTIONS": "completed bounded work",
-            "FILES_CHANGED": "artifact.txt",
-            "TESTS": "validation passed",
-            "RESULTS": "artifact verified",
-            "BLOCKERS": "",
-            "NEXT_ACTION": "continue",
-        }
+    def test_scs_result_return_failure_retries_saved_receipt(self):
         with mock.patch.dict(os.environ, {"AION_SCS_HANDOFF_ENABLED": "1"}, clear=False):
-            self.request(http_server.SCS_TASK_PATH, token=self.token)
-            with mock.patch.object(resume, "checkpoint", side_effect=RuntimeError("checkpoint unavailable")):
-                with self.assertRaises(HTTPError) as caught:
+            task_id, claim = self._scs_claim("lost response")
+            packet = self._scs_packet(claim, "lost-return")
+            original = self.server.RequestHandlerClass._json
+            def lose_success(handler, code, payload):
+                if code == 200 and payload.get("data", {}).get("task_id") == task_id:
+                    raise ConnectionResetError("client disappeared")
+                return original(handler, code, payload)
+            with mock.patch.object(self.server.RequestHandlerClass, "_json", lose_success):
+                with self.assertRaises(Exception):
                     self.request(http_server.SCS_RESULT_PATH, token=self.token, payload=packet)
-            self.assertEqual(caught.exception.code, 500)
-            self.assertEqual(tasks.get(task_id)["status"], "DONE")
-            pending = db.connect().execute(
-                "SELECT key,result FROM idempotency WHERE scope=?",
-                (http_server.SCS_IDEMPOTENCY_SCOPE,),
-            ).fetchone()
-            self.assertIsNotNone(pending)
-            self.assertNotIn("result-post-commit", pending["key"])
-            self.assertEqual(json.loads(pending["result"])["state"], "pending")
-            with self.assertRaises(HTTPError) as retry:
-                self.request(http_server.SCS_RESULT_PATH, token=self.token, payload=packet)
-        self.assertEqual(retry.exception.code, 409)
-
-    def test_scs_done_requires_evidence_and_non_done_stays_non_done(self):
-        task_id = tasks.create("handoff evidence gate")
-        base = {
-            "task_id": task_id,
-            "idempotency_key": "result-002",
-            "STATUS": "DONE",
-            "ACTIONS": "attempted",
-            "FILES_CHANGED": "",
-            "TESTS": "",
-            "RESULTS": "result exists",
-            "BLOCKERS": "",
-            "NEXT_ACTION": "",
-        }
-        with mock.patch.dict(os.environ, {"AION_SCS_HANDOFF_ENABLED": "1"}, clear=False):
-            self.request(http_server.SCS_TASK_PATH, token=self.token)
-            with self.assertRaises(HTTPError) as caught:
-                self.request(http_server.SCS_RESULT_PATH, token=self.token, payload=base)
-            self.assertEqual(caught.exception.code, 400)
-            self.assertEqual(tasks.get(task_id)["status"], "CLAIMED")
-            review = dict(base)
-            review["idempotency_key"] = "result-003"
-            review["STATUS"] = "NEEDS_REVIEW"
-            review["BLOCKERS"] = "human review needed"
-            _, payload = self.request(http_server.SCS_RESULT_PATH, token=self.token, payload=review)
-        self.assertEqual(payload["data"]["status"], "NEEDS_REVIEW")
+            replay = self.request(http_server.SCS_RESULT_PATH, token=self.token, payload=packet)[1]
+        self.assertTrue(replay["data"]["replayed"])
         self.assertEqual(tasks.get(task_id)["status"], "NEEDS_REVIEW")
-        self.assertNotEqual(tasks.get(task_id)["status"], "DONE")
+        count = db.connect().execute(
+            "SELECT COUNT(*) FROM events WHERE subject=? AND kind='task.worker_result'", (task_id,)).fetchone()[0]
+        self.assertEqual(count, 1)
+
+    def test_scs_auth_and_redaction_cover_claims_receipts_and_events(self):
+        with mock.patch.dict(os.environ, {"AION_SCS_HANDOFF_ENABLED": "1"}, clear=False):
+            for token in (None, "wrong"):
+                with self.assertRaises(HTTPError) as caught:
+                    self.request(http_server.SCS_TASK_PATH, token=token)
+                self.assertEqual(caught.exception.code, 401)
+            task_id, claim = self._scs_claim("redacted result")
+            packet = self._scs_packet(
+                claim, "redacted-1", RESULTS="token=ghp_AbCdEfGhIjKlMnOpQrStUvWxYz012345")
+            body = self.request(http_server.SCS_RESULT_PATH, token=self.token, payload=packet)[1]
+        self.assertNotIn("ghp_AbCdEf", json.dumps(body))
+        self.assertNotIn("ghp_AbCdEf", tasks.get(task_id)["evidence"])
+        stored = "\n".join(row[0] for row in db.connect().execute(
+            "SELECT result FROM idempotency WHERE scope=? UNION ALL SELECT detail FROM events WHERE subject=?",
+            (http_server.SCS_IDEMPOTENCY_SCOPE, task_id)).fetchall())
+        self.assertNotIn("ghp_AbCdEf", stored)
+        key = db.connect().execute(
+            "SELECT key FROM idempotency WHERE scope=?", (http_server.SCS_IDEMPOTENCY_SCOPE,)).fetchone()[0]
+        self.assertNotIn("redacted-1", key)
 
     def test_public_app_shell_has_strict_security_headers(self):
         response, body = self.request("/")

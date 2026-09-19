@@ -78,3 +78,34 @@ owner boundaries require approval, and process death/heartbeat loss/app-server/t
 failures have bounded retries. Existing cloud timeout holds preserve partial work
 without spending retries and no longer masquerade as missing-executor holds.
 These APIs add no queue, scheduler, schema migration or background loop.
+
+## SCS handoff adapter
+
+The existing loopback HTTP interface keeps bearer authentication and defaults
+`AION_SCS_HANDOFF_ENABLED` to off. Its task GET atomically claims eligible work
+once; repeated GETs cannot redeliver an active task. The packet preserves the
+canonical `task_id` (including IDs such as `S-41`) and `owner_agent`, and adds
+`claim_id`, the existing `task.claim` event ID. Workers must echo that ID on every
+result. This fences stale results even when recovery and reclaim occur in the
+same second. A lost task GET remains owned until existing stale-owner recovery;
+the adapter does not start a second execution or a delivery retry loop.
+
+Result packets retain the original string fields and add only `claim_id`.
+`STATUS=HEARTBEAT` requires all work-report fields empty and calls `heartbeat`.
+`PROGRESS` leaves task status unchanged. Nonempty `TESTS` is reported validation
+proof, passed with `RESULTS` to `record_evidence`; actions, filenames and result
+prose alone are recorded as worker claims, not meaningful progress. This is
+worker-reported evidence, still subject to independent review.
+`DONE` requires TESTS and RESULTS and becomes `NEEDS_REVIEW`, preserving the
+canonical owner and never calling completion. `FAILED` calls `tasks.fail` with
+blockers and results, retaining deterministic classification and retry bounds.
+`BLOCKED` and `NEEDS_REVIEW` use existing validated transitions. Closure remains
+an explicit independent operation through the existing closure seam.
+
+Task changes, events and the receipt in the existing `idempotency` table share
+one transaction. Retry a failed result return with exactly the same packet and
+key: a committed receipt replays without mutation; an interrupted transaction
+rolls back and can be retried. Reusing a key with different content conflicts.
+Old claim IDs cannot mutate a reclaimed task, even with a fresh key. Original
+v1 receipts are rejected as conflicts, never converted into fresh submissions.
+No transport-owned task state, schema, dependency or background process is added.

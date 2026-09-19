@@ -22,7 +22,7 @@ from urllib.parse import parse_qs, urlsplit
 
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 
-from aion_core import api, approvals, bootstrap, config, db, governor, metrics, router, security, tasks, util  # noqa: E402
+from aion_core import api, approvals, bootstrap, config, db, governor, metrics, router, security, tasks  # noqa: E402
 
 ROOT = Path(__file__).resolve().parent.parent
 WEB_ROOT = ROOT / "web"
@@ -53,16 +53,16 @@ SCS_TASK_PATH = "/api/v1/scs/task"
 SCS_RESULT_PATH = "/api/v1/scs/result"
 SCS_TASK_FIELDS = (
     "task_id", "title", "description", "success_criteria", "validation_method",
-    "next_action", "model_class", "data_class",
+    "next_action", "model_class", "data_class", "owner_agent", "claim_id",
 )
 SCS_RESULT_FIELDS = {
-    "task_id", "idempotency_key", "STATUS", "ACTIONS", "FILES_CHANGED",
+    "task_id", "claim_id", "idempotency_key", "STATUS", "ACTIONS", "FILES_CHANGED",
     "TESTS", "RESULTS", "BLOCKERS", "NEXT_ACTION",
 }
-SCS_RESULT_STATES = {"DONE", "BLOCKED", "FAILED", "NEEDS_REVIEW"}
-SCS_IDEMPOTENCY_SCOPE = "scs-result-v1"
+SCS_RESULT_STATES = {"DONE", "BLOCKED", "FAILED", "NEEDS_REVIEW", "HEARTBEAT", "PROGRESS"}
+SCS_IDEMPOTENCY_SCOPE = "scs-result-v2"
 SCS_KEY_RE = re.compile(r"^[A-Za-z0-9_.:-]{1,128}$")
-SCS_TASK_ID_RE = re.compile(r"^TASK-[A-Z0-9]{6,}$")
+SCS_TASK_ID_RE = re.compile(r"^[A-Za-z0-9_.:-]{1,128}$")
 _TRUE_VALUES = {"1", "true", "yes", "on"}
 
 
@@ -95,7 +95,8 @@ def _claim_scs_task() -> dict | None:
         if paid_b_held and model_class == "B":
             continue
         if tasks.claim(row["task_id"], agent):
-            claimed = tasks.get(row["task_id"])
+            claimed = dict(tasks.get(row["task_id"]))
+            claimed["claim_id"] = tasks.claim_id(row["task_id"])
             return {field: (claimed[field] or "") for field in SCS_TASK_FIELDS}
     return None
 
@@ -108,64 +109,6 @@ def _submission_fingerprint(payload: dict) -> str:
 def _submission_storage_key(idempotency_key: str) -> str:
     digest = hashlib.sha256(idempotency_key.encode("utf-8")).hexdigest()
     return f"scs-result:{digest}"
-
-
-def _submission_state(idempotency_key: str, fingerprint: str) -> tuple[str, dict | None]:
-    row = db.connect().execute(
-        "SELECT scope,result FROM idempotency WHERE key=?",
-        (_submission_storage_key(idempotency_key),),
-    ).fetchone()
-    if row is None:
-        return "new", None
-    if row["scope"] != SCS_IDEMPOTENCY_SCOPE:
-        return "conflict", None
-    try:
-        record = json.loads(row["result"])
-    except (TypeError, json.JSONDecodeError):
-        return "conflict", None
-    if record.get("fingerprint") != fingerprint:
-        return "conflict", None
-    if record.get("state") == "done" and isinstance(record.get("response"), dict):
-        return "replay", dict(record["response"])
-    return "pending", None
-
-
-def _reserve_submission(idempotency_key: str, fingerprint: str,
-                        task_id: str, status: str) -> tuple[bool, str]:
-    record = {
-        "fingerprint": fingerprint,
-        "state": "pending",
-        "task_id": task_id,
-        "status": status,
-    }
-    encoded = json.dumps(record, sort_keys=True, separators=(",", ":"))
-    conn = db.connect()
-    cur = conn.execute(
-        "INSERT OR IGNORE INTO idempotency(key,at,scope,result) VALUES(?,?,?,?)",
-        (_submission_storage_key(idempotency_key), util.now(), SCS_IDEMPOTENCY_SCOPE, encoded),
-    )
-    conn.commit()
-    return bool(cur.rowcount), encoded
-
-
-def _finish_submission(idempotency_key: str, fingerprint: str, response: dict) -> None:
-    record = {"fingerprint": fingerprint, "state": "done", "response": response}
-    conn = db.connect()
-    conn.execute(
-        "UPDATE idempotency SET result=? WHERE key=? AND scope=?",
-        (json.dumps(record, sort_keys=True, separators=(",", ":")),
-         _submission_storage_key(idempotency_key), SCS_IDEMPOTENCY_SCOPE),
-    )
-    conn.commit()
-
-
-def _release_pending_submission(idempotency_key: str, pending: str) -> None:
-    conn = db.connect()
-    conn.execute(
-        "DELETE FROM idempotency WHERE key=? AND scope=? AND result=?",
-        (_submission_storage_key(idempotency_key), SCS_IDEMPOTENCY_SCOPE, pending),
-    )
-    conn.commit()
 
 
 def read_secret(name: str = "AION_INTERFACE_TOKEN") -> str:
@@ -287,20 +230,6 @@ class InterfaceHandler(BaseHTTPRequestHandler):
             return None
         return payload
 
-    def _existing_scs_submission(self, idempotency_key: str, fingerprint: str) -> bool:
-        state, response = _submission_state(idempotency_key, fingerprint)
-        if state == "new":
-            return False
-        if state == "replay":
-            replay = dict(response or {})
-            replay["replayed"] = True
-            self._json(200, {"ok": True, "data": replay})
-        elif state == "pending":
-            self._json(409, {"error": "submission already in progress"})
-        else:
-            self._json(409, {"error": "idempotency key conflict"})
-        return True
-
     def _handle_scs_result(self, payload: dict) -> None:
         if not scs_handoff_enabled():
             return self._json(404, {"error": "not found"})
@@ -323,56 +252,23 @@ class InterfaceHandler(BaseHTTPRequestHandler):
         if status == "DONE" and (not normalized["TESTS"] or not normalized["RESULTS"]):
             return self._json(400, {"error": "DONE requires non-empty TESTS and RESULTS"})
 
-        fingerprint = _submission_fingerprint(normalized)
-        if self._existing_scs_submission(idempotency_key, fingerprint):
-            return
-
-        row = tasks.get(task_id)
-        if row is None:
-            return self._json(404, {"error": "task not found"})
-        if row["owner_agent"] != scs_agent_id() or row["status"] not in tasks.ACTIVE_STATES:
-            return self._json(409, {"error": "task is not actively claimed by this handoff"})
-
-        reserved, pending = _reserve_submission(idempotency_key, fingerprint, task_id, status)
-        if not reserved:
-            if self._existing_scs_submission(idempotency_key, fingerprint):
-                return
-            return self._json(409, {"error": "idempotency reservation failed"})
-
-        evidence_parts = []
-        for key in ("ACTIONS", "FILES_CHANGED", "TESTS", "RESULTS"):
-            if normalized[key]:
-                evidence_parts.append(f"{key}: {normalized[key]}")
-        evidence = "\n".join(evidence_parts)
-        mutated = False
+        if not normalized["claim_id"].isdigit():
+            return self._json(400, {"error": "invalid claim_id"})
+        if status == "HEARTBEAT" and any(normalized[k] for k in
+                ("ACTIONS", "FILES_CHANGED", "TESTS", "RESULTS", "BLOCKERS", "NEXT_ACTION")):
+            return self._json(400, {"error": "heartbeat is contact only"})
         try:
-            if status == "DONE":
-                tasks.complete(task_id, evidence=evidence, next_action=normalized["NEXT_ACTION"])
-            else:
-                updates = {
-                    "status": status,
-                    "evidence": evidence,
-                    "next_action": normalized["NEXT_ACTION"],
-                }
-                if status in {"BLOCKED", "NEEDS_REVIEW"}:
-                    updates["blockers"] = normalized["BLOCKERS"]
-                if status == "FAILED":
-                    updates["last_error"] = normalized["RESULTS"] or normalized["BLOCKERS"] or "reported by SCS"
-                tasks.update(task_id, **updates)
-            mutated = True
-            response = {"task_id": task_id, "status": status, "replayed": False}
-            _finish_submission(idempotency_key, fingerprint, response)
-            return self._json(200, {"ok": True, "data": response})
+            response = tasks.accept_worker_result(
+                normalized, owner_agent=scs_agent_id(),
+                key=_submission_storage_key(idempotency_key),
+                fingerprint=_submission_fingerprint(normalized),
+                scope=SCS_IDEMPOTENCY_SCOPE)
         except tasks.TaskError:
-            if not mutated:
-                _release_pending_submission(idempotency_key, pending)
-            return self._json(409, {"error": "task transition rejected"})
+            return self._json(409, {"error": "task claim or idempotency conflict"})
         except Exception:
-            # An unexpected failure may happen after the canonical task mutation
-            # committed (for example during checkpoint/event persistence). Keep
-            # the idempotency reservation pending so a retry cannot repeat
-            # potentially completed side effects. Recovery is explicit.
-            return self._json(500, {"error": "handoff update failed"})
+            return self._json(500, {"error": "handoff update failed; retry same packet"})
+        # Persistence finished before attempting the network return.
+        return self._json(200, {"ok": True, "data": response})
 
     def do_GET(self):  # noqa: N802
         parsed = urlsplit(self.path)

@@ -13,6 +13,8 @@ from pathlib import Path
 # AION_CLOUD_CMD exported, for instance, gives the worker loop an executor
 # the test explicitly set up to be absent.
 ISOLATED_ENV = (
+    "AION_SCS_HANDOFF_ENABLED",
+    "AION_SCS_HANDOFF_AGENT",
     "AION_HOME",
     "AION_DB",
     "AION_SECRETS",
