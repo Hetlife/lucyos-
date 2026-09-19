@@ -59,7 +59,26 @@ jobs:
       - name: Full unit suite
         env:
           AION_HOME: ${{ runner.temp }}/lucyos-test-home
-        run: python -m unittest discover -s tests -t . -q
+        shell: bash
+        run: |
+          set +e
+          python -m unittest discover -s tests -t . -q 2>&1 | tee "$RUNNER_TEMP/unittest.log"
+          rc=${PIPESTATUS[0]}
+          if [[ "$rc" -ne 0 ]]; then
+            python - <<'PYDIAG'
+          import os, pathlib, re
+          text = pathlib.Path(os.environ['RUNNER_TEMP'], 'unittest.log').read_text(errors='replace')
+          hits = []
+          for line in text.splitlines():
+              if line.startswith(('FAIL:', 'ERROR:', 'FAILED (', 'FAILED')):
+                  hits.append(line[:1000])
+          if not hits:
+              hits = [text[-4000:].replace('\n', ' | ')]
+          for item in hits[:20]:
+              print(f'::error title=unittest diagnostic::{item}')
+          PYDIAG
+          fi
+          exit "$rc"
 
   clean-bootstrap-health:
     name: clean-bootstrap-health
@@ -211,7 +230,23 @@ jobs:
       - name: Compile sources
         run: python -m compileall -q aion_core bridges tests scripts
       - name: Full unit suite on macOS
-        run: python -m unittest discover -s tests -t . -q
+        shell: bash
+        run: |
+          set +e
+          python -m unittest discover -s tests -t . -q 2>&1 | tee "$RUNNER_TEMP/unittest.log"
+          rc=${PIPESTATUS[0]}
+          if [[ "$rc" -ne 0 ]]; then
+            python - <<'PYDIAG'
+          import os, pathlib
+          text = pathlib.Path(os.environ['RUNNER_TEMP'], 'unittest.log').read_text(errors='replace')
+          hits = [line for line in text.splitlines() if line.startswith(('FAIL:', 'ERROR:', 'FAILED (', 'FAILED'))]
+          if not hits:
+              hits = [text[-4000:].replace('\n', ' | ')]
+          for item in hits[:20]:
+              print(f'::error title=unittest diagnostic::{item[:1000]}')
+          PYDIAG
+          fi
+          exit "$rc"
       - name: Clean init + boot on macOS
         run: |
           ./aion init
