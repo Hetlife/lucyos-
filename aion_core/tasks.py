@@ -5,6 +5,7 @@ import json
 import re
 import sqlite3
 import subprocess
+from contextlib import nullcontext
 from pathlib import Path
 
 from . import config, db, security, util
@@ -160,15 +161,16 @@ def update(task_id: str, **kw) -> None:
     _update(task_id, kw)
 
 
-def _update(task_id: str, kw: dict, *, reconcile: bool = False, expected=None) -> None:
+def _update(task_id: str, kw: dict, *, reconcile: bool = False, expected=None, _conn=None) -> None:
     allowed = set(FIELDS) | {"retry_count", "claimed_at", "started_at", "completed_at", "owner_agent"}
     bad = set(kw) - allowed
     if bad:
         raise TaskError(f"unknown task fields: {sorted(bad)}")
     kw = {k: (security.redact(v) if isinstance(v, str) else v) for k, v in kw.items()}
-    conn = db.connect()
-    with conn:
-        conn.execute("BEGIN IMMEDIATE")
+    conn = _conn or db.connect()
+    with (nullcontext() if _conn is not None else conn):
+        if _conn is None:
+            conn.execute("BEGIN IMMEDIATE")
         row = get(task_id)
         if row is None:
             raise TaskError(f"no such task {task_id}")
@@ -226,7 +228,7 @@ def _update(task_id: str, kw: dict, *, reconcile: bool = False, expected=None) -
         conn.execute(f"UPDATE tasks SET {sets} WHERE task_id=?", list(kw.values()) + [task_id])
         if kw.get("evidence") and kw["evidence"] != row["evidence"] and kw.get("status") == "DONE":
             _evidence_event(conn, task_id, "completion", kw["evidence"])
-    db.log_event("aion", "task.update", task_id, kw.get("status", ""))
+    _lifecycle_event(conn if _conn is not None else None, "aion", "task.update", task_id, kw.get("status", ""))
 
 
 def claim(task_id: str, agent_id: str) -> bool:
@@ -243,7 +245,7 @@ def claim(task_id: str, agent_id: str) -> bool:
             "UPDATE tasks SET status='CLAIMED', owner_agent=?, claimed_at=?, "
             "started_at=NULL, updated_at=? WHERE task_id=?",
             (agent_id, util.now(), util.now(), task_id))
-    db.log_event(agent_id, "task.claim", task_id)
+        _lifecycle_event(conn, agent_id, "task.claim", task_id)
     return True
 
 
@@ -342,7 +344,7 @@ def _complete(task_id: str, evidence: str, next_action: str = "", *, expected=No
     )
 
 
-def fail(task_id: str, error: str) -> str:
+def fail(task_id: str, error: str, *, _conn=None) -> str:
     """Apply deterministic recovery through the existing worker failure seam."""
     row = get(task_id)
     if row is None:
@@ -352,9 +354,77 @@ def fail(task_id: str, error: str) -> str:
     recovery = recovery_for(kind, retries)
     _update(task_id, dict(status=recovery["status"], retry_count=retries, last_error=error,
            blockers=(f"{kind}: {recovery['next_action']}" if recovery["status"] != "READY" else ""),
-           next_action=recovery["next_action"], owner_agent=None, claimed_at=None, started_at=None), expected=row)
-    db.log_event("aion", "task.failure", task_id, json.dumps(recovery, sort_keys=True))
+           next_action=recovery["next_action"], owner_agent=None, claimed_at=None, started_at=None), expected=row, _conn=_conn)
+    _lifecycle_event(_conn, "aion", "task.failure", task_id, json.dumps(recovery, sort_keys=True))
     return recovery["status"]
+
+
+def _lifecycle_event(conn, actor: str, kind: str, task_id: str, detail: str = "") -> None:
+    if conn is None:
+        db.log_event(actor, kind, task_id, detail)
+    else:
+        conn.execute("INSERT INTO events(at,day,actor,kind,subject,detail) VALUES(?,?,?,?,?,?)",
+                     (util.now(), util.today(), actor, kind, task_id, security.redact(detail)))
+
+
+def claim_id(task_id: str) -> str:
+    """Existing claim event is an attempt fence, including same-second retries."""
+    row = db.connect().execute("SELECT MAX(id) FROM events WHERE kind='task.claim' AND subject=?",
+                               (task_id,)).fetchone()
+    return str(row[0]) if row[0] is not None else ""
+
+
+def accept_worker_result(packet: dict, *, owner_agent: str, key: str, fingerprint: str,
+                         scope: str) -> dict:
+    """Atomically accept a worker claim and its receipt in the canonical store.
+
+    Output is never closure authority. A failed return can replay the receipt;
+    an interrupted transaction rolls back both lifecycle changes and receipt.
+    """
+    conn = db.connect()
+    with conn:
+        conn.execute("BEGIN IMMEDIATE")
+        saved = conn.execute("SELECT scope,result FROM idempotency WHERE key=?", (key,)).fetchone()
+        if saved:
+            if saved["scope"] != "scs-result-v2":
+                raise TaskError("idempotency key conflict")
+            record = json.loads(saved["result"])
+            if record["fingerprint"] != fingerprint:
+                raise TaskError("idempotency key conflict")
+            return dict(record["response"], replayed=True)
+        task_id = packet["task_id"]
+        row = get(task_id)
+        if (row is None or row["owner_agent"] != owner_agent or row["status"] not in ACTIVE_STATES
+                or claim_id(task_id) != packet["claim_id"]):
+            raise TaskError("packet is not from the current active claim")
+        status = packet["STATUS"]
+        if status not in {"HEARTBEAT", "PROGRESS", "DONE", "FAILED", "BLOCKED", "NEEDS_REVIEW"}:
+            raise TaskError("invalid worker result status")
+        if status == "DONE" and (not packet["TESTS"].strip() or not packet["RESULTS"].strip()):
+            raise TaskError("completion claim requires validation evidence")
+        if status == "HEARTBEAT":
+            heartbeat(task_id, owner_agent, _conn=conn)
+            result_status = row["status"]
+        else:
+            # Actions, filenames and untyped prose are claims, not measured progress.
+            if packet["TESTS"]:
+                record_evidence(task_id, "TESTS: " + packet["TESTS"] + "\nRESULTS: " + packet["RESULTS"],
+                                kind="validation", owner_agent=owner_agent, _conn=conn)
+            _lifecycle_event(conn, owner_agent, "task.worker_result", task_id,
+                             json.dumps({k: v for k, v in packet.items() if k != "idempotency_key"}, sort_keys=True))
+            if status == "FAILED":
+                result_status = fail(task_id, packet["BLOCKERS"] + "\n" + packet["RESULTS"], _conn=conn)
+            elif status == "PROGRESS":
+                result_status = row["status"]
+            else:
+                result_status = "NEEDS_REVIEW" if status == "DONE" else status
+                _update(task_id, dict(status=result_status, blockers=packet["BLOCKERS"],
+                                     next_action=packet["NEXT_ACTION"]), expected=get(task_id), _conn=conn)
+        response = {"task_id": task_id, "status": result_status, "replayed": False}
+        conn.execute("INSERT INTO idempotency(key,at,scope,result) VALUES(?,?,?,?)",
+                     (key, util.now(), scope,
+                      json.dumps({"fingerprint": fingerprint, "response": response}, sort_keys=True)))
+    return response
 
 
 def _evidence_event(conn, task_id: str, kind: str, evidence: str) -> None:
@@ -363,23 +433,24 @@ def _evidence_event(conn, task_id: str, kind: str, evidence: str) -> None:
                   json.dumps({"kind": kind, "evidence": security.redact(evidence)}, sort_keys=True)))
 
 
-def heartbeat(task_id: str, owner_agent: str) -> bool:
+def heartbeat(task_id: str, owner_agent: str, *, _conn=None) -> bool:
     """Contact only. Never manufactures progress evidence or changes ownership."""
-    conn = db.connect()
-    with conn:
+    conn = _conn or db.connect()
+    with (nullcontext() if _conn is not None else conn):
         cur = conn.execute("UPDATE tasks SET updated_at=? WHERE task_id=? AND owner_agent=? "
                            "AND status IN ('CLAIMED','RUNNING')",
                            (util.now(), task_id, owner_agent))
     return bool(cur.rowcount)
 
 
-def record_evidence(task_id: str, evidence: str, *, kind: str, owner_agent: str) -> None:
+def record_evidence(task_id: str, evidence: str, *, kind: str, owner_agent: str, _conn=None) -> None:
     """Record a measured artifact/validation/git observation, never a heartbeat."""
     if kind not in {"artifact", "validation", "git"} or not evidence.strip():
         raise TaskError("meaningful evidence requires artifact, validation or git proof")
-    conn = db.connect()
-    with conn:
-        conn.execute("BEGIN IMMEDIATE")
+    conn = _conn or db.connect()
+    with (nullcontext() if _conn is not None else conn):
+        if _conn is None:
+            conn.execute("BEGIN IMMEDIATE")
         row = get(task_id)
         if row is None or row["status"] not in ACTIVE_STATES or row["owner_agent"] != owner_agent:
             raise TaskError("evidence must come from the current task owner")
@@ -501,14 +572,14 @@ def value(row) -> float:
     return round(num / den, 3)
 
 
-def ready(limit: int = 10) -> list:
+def ready(limit: int | None = 10) -> list:
     rows = db.connect().execute(
         "SELECT * FROM tasks WHERE status IN ('READY','TRIAGE','INBOX') "
         "AND (blockers IS NULL OR blockers='')"
     ).fetchall()
     rows = [r for r in rows if _deps_met(r) and _approval_clear(r)]
     rows.sort(key=lambda r: (-value(r), r["priority"], r["created_at"]))
-    return rows[:limit]
+    return rows if limit is None else rows[:limit]
 
 
 def _deps_met(row) -> bool:

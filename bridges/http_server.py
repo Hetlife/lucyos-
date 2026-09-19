@@ -8,10 +8,12 @@ Bind to loopback by default and use an SSH or private-network tunnel remotely.
 from __future__ import annotations
 
 import argparse
+import hashlib
 import hmac
 import json
 import mimetypes
 import os
+import re
 import sys
 import time
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
@@ -20,7 +22,7 @@ from urllib.parse import parse_qs, urlsplit
 
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 
-from aion_core import api, approvals, bootstrap, config, db, router, security  # noqa: E402
+from aion_core import api, approvals, bootstrap, config, db, governor, metrics, router, security, tasks  # noqa: E402
 
 ROOT = Path(__file__).resolve().parent.parent
 WEB_ROOT = ROOT / "web"
@@ -46,6 +48,67 @@ V1_ROUTES = {
     "/api/v1/capabilities": api.capability_plan,
     "/api/v1/aux-providers": api.auxiliary_providers,
 }
+
+SCS_TASK_PATH = "/api/v1/scs/task"
+SCS_RESULT_PATH = "/api/v1/scs/result"
+SCS_TASK_FIELDS = (
+    "task_id", "title", "description", "success_criteria", "validation_method",
+    "next_action", "model_class", "data_class", "owner_agent", "claim_id",
+)
+SCS_RESULT_FIELDS = {
+    "task_id", "claim_id", "idempotency_key", "STATUS", "ACTIONS", "FILES_CHANGED",
+    "TESTS", "RESULTS", "BLOCKERS", "NEXT_ACTION",
+}
+SCS_RESULT_STATES = {"DONE", "BLOCKED", "FAILED", "NEEDS_REVIEW", "HEARTBEAT", "PROGRESS"}
+SCS_IDEMPOTENCY_SCOPE = "scs-result-v2"
+SCS_KEY_RE = re.compile(r"^[A-Za-z0-9_.:-]{1,128}$")
+SCS_TASK_ID_RE = re.compile(r"^[A-Za-z0-9_.:-]{1,128}$")
+_TRUE_VALUES = {"1", "true", "yes", "on"}
+
+
+def scs_handoff_enabled() -> bool:
+    return os.environ.get("AION_SCS_HANDOFF_ENABLED", "").strip().lower() in _TRUE_VALUES
+
+
+def scs_agent_id() -> str:
+    return os.environ.get("AION_SCS_HANDOFF_AGENT", "scs-admin01").strip() or "scs-admin01"
+
+
+def _claim_scs_task() -> dict | None:
+    if router.is_paused():
+        return None
+    safe_mode = router.is_safe_mode()
+    budget = metrics.budget_status()
+    governor_state = governor.state()
+    paid_b_held = (
+        budget["day_over"] or budget["month_over"]
+        or governor_state in {"RESERVE", "CRITICAL-ONLY", "HANDOFF", "STOP"}
+    )
+    agent = scs_agent_id()
+    for row in tasks.ready(None):
+        data_class = str(row["data_class"] or "INTERNAL").upper()
+        model_class = str(row["model_class"] or "B").upper()
+        if data_class == "SECRET" or model_class in {"C", "D"}:
+            continue
+        if safe_mode and model_class != "DET":
+            continue
+        if paid_b_held and model_class == "B":
+            continue
+        if tasks.claim(row["task_id"], agent):
+            claimed = dict(tasks.get(row["task_id"]))
+            claimed["claim_id"] = tasks.claim_id(row["task_id"])
+            return {field: (claimed[field] or "") for field in SCS_TASK_FIELDS}
+    return None
+
+
+def _submission_fingerprint(payload: dict) -> str:
+    canonical = json.dumps(payload, sort_keys=True, separators=(",", ":"), ensure_ascii=False)
+    return hashlib.sha256(canonical.encode("utf-8")).hexdigest()
+
+
+def _submission_storage_key(idempotency_key: str) -> str:
+    digest = hashlib.sha256(idempotency_key.encode("utf-8")).hexdigest()
+    return f"scs-result:{digest}"
 
 
 def read_secret(name: str = "AION_INTERFACE_TOKEN") -> str:
@@ -148,12 +211,75 @@ class InterfaceHandler(BaseHTTPRequestHandler):
         self.end_headers()
         self.wfile.write(body)
 
+    def _read_json_payload(self) -> dict | None:
+        try:
+            length = int(self.headers.get("Content-Length", "0"))
+        except ValueError:
+            self._json(400, {"error": "invalid content length"})
+            return None
+        if length <= 0 or length > MAX_BODY_BYTES:
+            self._json(413, {"error": "payload too large"})
+            return None
+        try:
+            payload = json.loads(self.rfile.read(length).decode("utf-8"))
+        except (json.JSONDecodeError, UnicodeDecodeError):
+            self._json(400, {"error": "invalid json"})
+            return None
+        if not isinstance(payload, dict):
+            self._json(400, {"error": "json object required"})
+            return None
+        return payload
+
+    def _handle_scs_result(self, payload: dict) -> None:
+        if not scs_handoff_enabled():
+            return self._json(404, {"error": "not found"})
+        if set(payload) != SCS_RESULT_FIELDS:
+            return self._json(400, {"error": "result packet fields do not match contract"})
+        if any(not isinstance(payload[key], str) for key in SCS_RESULT_FIELDS):
+            return self._json(400, {"error": "result packet values must be strings"})
+
+        normalized = {key: payload[key].strip() for key in SCS_RESULT_FIELDS}
+        normalized["STATUS"] = normalized["STATUS"].upper()
+        task_id = normalized["task_id"]
+        idempotency_key = normalized["idempotency_key"]
+        status = normalized["STATUS"]
+        if not SCS_TASK_ID_RE.fullmatch(task_id):
+            return self._json(400, {"error": "invalid task_id"})
+        if not SCS_KEY_RE.fullmatch(idempotency_key):
+            return self._json(400, {"error": "invalid idempotency_key"})
+        if status not in SCS_RESULT_STATES:
+            return self._json(400, {"error": "invalid STATUS"})
+        if status == "DONE" and (not normalized["TESTS"] or not normalized["RESULTS"]):
+            return self._json(400, {"error": "DONE requires non-empty TESTS and RESULTS"})
+
+        if not normalized["claim_id"].isdigit():
+            return self._json(400, {"error": "invalid claim_id"})
+        if status == "HEARTBEAT" and any(normalized[k] for k in
+                ("ACTIONS", "FILES_CHANGED", "TESTS", "RESULTS", "BLOCKERS", "NEXT_ACTION")):
+            return self._json(400, {"error": "heartbeat is contact only"})
+        try:
+            response = tasks.accept_worker_result(
+                normalized, owner_agent=scs_agent_id(),
+                key=_submission_storage_key(idempotency_key),
+                fingerprint=_submission_fingerprint(normalized),
+                scope=SCS_IDEMPOTENCY_SCOPE)
+        except tasks.TaskError:
+            return self._json(409, {"error": "task claim or idempotency conflict"})
+        except Exception:
+            return self._json(500, {"error": "handoff update failed; retry same packet"})
+        # Persistence finished before attempting the network return.
+        return self._json(200, {"ok": True, "data": response})
+
     def do_GET(self):  # noqa: N802
         parsed = urlsplit(self.path)
         path = parsed.path
         if path.startswith("/api/"):
             if not self._authorized():
                 return self._json(401, {"error": "unauthorized"})
+            if path == SCS_TASK_PATH:
+                if not scs_handoff_enabled():
+                    return self._json(404, {"error": "not found"})
+                return self._json(200, {"ok": True, "data": _claim_scs_task()})
             if path == "/api/v1/events":
                 qs = parse_qs(parsed.query)
                 try:
@@ -191,20 +317,15 @@ class InterfaceHandler(BaseHTTPRequestHandler):
 
     def do_POST(self):  # noqa: N802
         path = urlsplit(self.path).path
-        if path != "/api/command":
+        if path not in {"/api/command", SCS_RESULT_PATH}:
             return self._json(404, {"error": "not found"})
         if not self._authorized():
             return self._json(401, {"error": "unauthorized"})
-        try:
-            length = int(self.headers.get("Content-Length", "0"))
-        except ValueError:
-            return self._json(400, {"error": "invalid content length"})
-        if length <= 0 or length > MAX_BODY_BYTES:
-            return self._json(413, {"error": "payload too large"})
-        try:
-            payload = json.loads(self.rfile.read(length).decode("utf-8"))
-        except (json.JSONDecodeError, UnicodeDecodeError):
-            return self._json(400, {"error": "invalid json"})
+        payload = self._read_json_payload()
+        if payload is None:
+            return
+        if path == SCS_RESULT_PATH:
+            return self._handle_scs_result(payload)
         message = str(payload.get("message", "")).strip()
         if not message:
             return self._json(400, {"error": "empty message"})
