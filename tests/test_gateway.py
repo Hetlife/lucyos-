@@ -6,7 +6,7 @@ from datetime import datetime, timedelta, timezone
 from tests.base import AionTest
 
 
-@unittest.skipUnless(importlib.util.find_spec("pycose") and importlib.util.find_spec("cbor2"),
+@unittest.skipUnless(importlib.util.find_spec("scitt_cose") and importlib.util.find_spec("cbor2"),
                      "gateway dependency set is installed only in gateway-enabled environments")
 class GatewayEnvelopeTests(AionTest):
     def setUp(self):

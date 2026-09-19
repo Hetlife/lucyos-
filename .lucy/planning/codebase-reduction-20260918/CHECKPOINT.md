@@ -121,6 +121,13 @@
 - owner gate: choose a clean maintained COSE dependency graph or explicitly approve retiring Python 3.9 support after compatibility review
 - safety: no deployment, activation, public exposure, sensitive encryption or canonical/main promotion
 
+## 2026-09-19T20:05Z · SECURE GATEWAY · DEPENDENCY HOLD RESOLVED
+- target review: Python 3.9 remains an explicit CI/install/support target; Mac support is planned but has no separate pinned runtime floor
+- replacement: `scitt-cose==0.3.0` + `cbor2==5.9.0` + `cryptography==50.0.1`; Apache-2.0/standard-library-plus-two-dependencies; no ecdsa runtime dependency
+- OSV exact-version result: replacement packages 0 matching advisories; isolated real-wheel COSE and gateway tests 6 PASS
+- result: previous security hold resolved without a local owner action or Python-floor change
+- remaining: rerun final suite/gates on replacement set, checkpoint/push, then activation owner gate
+
 Newest block first. Format: `05_AUTONOMOUS_EXECUTION_LOOP.md` §5. A fresh controller session reads only the top block, then `06_TASK_GRAPH.json`, then open PRs.
 
 ## 2026-09-18T18:30Z · FABLE-05 · PASS
@@ -176,3 +183,12 @@ Newest block first. Format: `05_AUTONOMOUS_EXECUTION_LOOP.md` §5. A fresh contr
 - evidence: `AION_HOME`, `AION_DB`, `AION_CLOUD_CMD`, `AION_MACHINE`, and `OPENCLAW_HOME` injected; suite remained green
 - result: task branch ready for review; owner merge gate remains, main untouched
 - next_unlocked: owner review/merge, then S-48 or S-46
+
+# 2026-09-19T20:10Z · SCG Phase 1 · DEPENDENCY GATE RESOLVED
+- Python 3.9 remains an explicit supported target in CI/bootstrap; no runtime-floor change proposed.
+- Replaced the unsafe dependency set with `scitt-cose==0.3.0`, `cbor2==5.9.0`, and `cryptography==50.0.1`; all retain Python 3.9 support and direct OSV queries returned zero advisories.
+- `scitt-cose` provides RFC 9052 COSE_Sign1 with strict decoding, Apache-2.0 licensing, and only the selected CBOR/crypto dependencies; the prior `pycose` graph was rejected because `ecdsa` had an unfixed advisory.
+- Gateway focused tests: 6 PASS. Dependency-enabled full suite: 624 tests, 93.585 s, 1 skipped, PASS.
+- aion verify: READY. Portability, duplication, secret scan, compileall and diff-check: PASS.
+- Boundary strict scan still reports two pre-existing unratified sqlite imports (`aion_core/tasks.py`, `scripts/runtime_inventory.py`); not changed or weakened by SCG work and retained as a separate governance finding.
+- No local owner action required; implementation remains unactivated and not deployed.

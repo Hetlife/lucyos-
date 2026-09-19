@@ -13,10 +13,10 @@ from datetime import datetime, timezone
 
 try:
     import cbor2
-    from pycose.algorithms import EdDSA
-    from pycose.headers import Algorithm
-    from pycose.keys import OKPKey
-    from pycose.messages import Sign1Message
+    from cryptography.hazmat.primitives import serialization
+    from cryptography.hazmat.primitives.asymmetric.ed25519 import Ed25519PrivateKey, Ed25519PublicKey
+    from scitt_cose import CoseError, sign_sign1, verify_sign1
+    from scitt_cose.cose_sign1 import strict_decode
 except ImportError as exc:  # pragma: no cover - exercised by clean bootstrap
     raise RuntimeError("gateway dependencies are not installed; see requirements-gateway.txt") from exc
 
@@ -82,8 +82,10 @@ def register_device(device_id: str, identity: str, public_key: bytes, key_versio
     if not isinstance(key_version, int) or key_version < 1:
         raise GatewayError("invalid key version")
     conn = db.connect()
+    public_pem = Ed25519PublicKey.from_public_bytes(public_key).public_bytes(
+        serialization.Encoding.PEM, serialization.PublicFormat.SubjectPublicKeyInfo)
     conn.execute("INSERT INTO gateway_devices(device_id,owner_identity,public_key,key_version,enrolled_at) VALUES(?,?,?,?,?)",
-                 (device_id, identity, public_key, key_version, util.now()))
+                 (device_id, identity, public_pem, key_version, util.now()))
     conn.commit()
 
 
@@ -99,9 +101,10 @@ def revoke_device(device_id: str, reason: str) -> None:
 def sign_operation(operation: dict, signing_seed: bytes) -> bytes:
     if type(signing_seed) is not bytes or len(signing_seed) != 32:
         raise GatewayError("invalid signing key")
-    msg = Sign1Message(phdr={1: EdDSA}, payload=_payload(operation))
-    msg.key = OKPKey(crv=6, d=signing_seed)
-    return msg.encode()
+    pem = Ed25519PrivateKey.from_private_bytes(signing_seed).private_bytes(
+        serialization.Encoding.PEM, serialization.PrivateFormat.PKCS8,
+        serialization.NoEncryption())
+    return sign_sign1(_payload(operation), alg="EdDSA", private_key_pem=pem)
 
 
 def validate(message: bytes, parameters=None) -> dict:
@@ -109,17 +112,31 @@ def validate(message: bytes, parameters=None) -> dict:
     if type(message) is not bytes or not message or len(message) > MAX_MESSAGE:
         raise GatewayError("malformed or oversized envelope")
     try:
-        msg = Sign1Message.decode(message)
-        algorithm = msg.phdr.get(Algorithm)
-        if getattr(algorithm, "identifier", algorithm) != EdDSA.identifier or not isinstance(msg.payload, bytes):
-            raise GatewayError("unsupported COSE algorithm or payload")
-        operation = cbor2.loads(msg.payload)
-    except GatewayError:
-        raise
+        # Strictly parse only enough untrusted payload to locate the enrolled
+        # key; all authority checks happen after signature verification.
+        outer = strict_decode(message)
+        values = outer.value
+        if outer.tag != 18 or not isinstance(values, (list, tuple)) or len(values) != 4:
+            raise GatewayError("malformed COSE envelope")
+        operation = cbor2.loads(values[2])
     except Exception as exc:
+        if isinstance(exc, GatewayError):
+            raise
         raise GatewayError("malformed COSE envelope") from exc
     if not isinstance(operation, dict):
         raise GatewayError("payload must be a map")
+    row = db.connect().execute("SELECT * FROM gateway_devices WHERE device_id=?", (operation["device_id"],)).fetchone()
+    if row is None or row["status"] != ACTIVE or row["key_version"] != operation["key_version"] or row["epoch"] != operation["epoch"]:
+        raise GatewayError("device is not enrolled at this epoch")
+    try:
+        msg = verify_sign1(message, public_key_pem=bytes(row["public_key"]))
+        operation = cbor2.loads(msg.payload)
+        if not isinstance(operation, dict):
+            raise GatewayError("payload must be a map")
+    except Exception as exc:
+        if isinstance(exc, GatewayError):
+            raise
+        raise GatewayError("invalid signature or COSE envelope") from exc
     _payload(operation)
     if parameters is not None and operation["params_hash"] != parameters_hash(parameters):
         raise GatewayError("parameter digest mismatch")
@@ -132,17 +149,6 @@ def validate(message: bytes, parameters=None) -> dict:
     issued, expires = _parse_time(operation["issued_at"]), _parse_time(operation["expires_at"])
     if issued > now or expires <= now or (expires - issued).total_seconds() > MAX_LIFETIME:
         raise GatewayError("approval outside validity window")
-    row = db.connect().execute("SELECT * FROM gateway_devices WHERE device_id=?", (operation["device_id"],)).fetchone()
-    if row is None or row["status"] != ACTIVE or row["key_version"] != operation["key_version"] or row["epoch"] != operation["epoch"]:
-        raise GatewayError("device is not enrolled at this epoch")
-    msg.key = OKPKey(crv=6, x=bytes(row["public_key"]))
-    try:
-        if not msg.verify_signature():
-            raise GatewayError("invalid signature")
-    except GatewayError:
-        raise
-    except Exception as exc:
-        raise GatewayError("invalid signature") from exc
     conn = db.connect()
     try:
         conn.execute("INSERT INTO gateway_nonces(nonce,request_id,device_id,expires_at,consumed_at) VALUES(?,?,?,?,?)",
