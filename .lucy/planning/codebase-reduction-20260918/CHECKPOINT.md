@@ -1,5 +1,13 @@
 # CHECKPOINT — lucyos-codebase-reduction-20260918
 
+## 2026-09-19T13:05Z · GATEWAY FINAL PRE-IMPLEMENTATION REVIEW
+- decision: **REVISE**; existing transport/auth/task seams are reusable, but device-bound authorization and exact signed approval binding are not implemented
+- evidence: `docs/SECURE_CAPABILITY_GATEWAY_FINAL_REVIEW.md`
+- scope: design-only; no gateway code, credentials, new daemon, queue, secret store or crypto protocol added
+- owner gate: approve Phase-1 design/research only; implementation requires revised protocol, security/architecture review and abuse-test evidence
+- M5: accepted/closed; M6 remains measurement-gated/deferred
+- remote push: this review pending on integration branch; canonical/main unchanged
+
 ## 2026-09-19T12:47Z · M5 + GATEWAY OWNER REVIEW DESIGN
 - M5 cleanup remains evidence-blocked: `authorize_drive.py` restored because `scripts/*.py` manifest ownership is authoritative
 - final restored verification: 618 tests PASS, 1 skipped, 59.410 s; no retained code change
