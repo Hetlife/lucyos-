@@ -403,7 +403,7 @@ class TestHandoffAndMilestones(AionTest):
         self.assertIn("M0", milestones.reached())
 
 
-class TestCommandBlocklistHardening(unittest.TestCase):
+class TestCommandBlocklistHardening(AionTest):
     """Architect audit 2026-09-16: obvious shell escapes must be refused even
     when the command starts with an allowlisted prefix."""
 
@@ -424,7 +424,7 @@ class TestCommandBlocklistHardening(unittest.TestCase):
                 worker.check_command(cmd)
 
 
-class TestArgvExecutionBoundary(unittest.TestCase):
+class TestArgvExecutionBoundary(AionTest):
     """LQ-01: the boundary is argv-based, not a shell-string prefix check."""
 
     def test_per_binary_constraints_are_enforced(self):
