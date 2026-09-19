@@ -26,11 +26,27 @@ SCHEMA = "lucyos.approval/1"
 MAX_MESSAGE = 16 * 1024
 MAX_LIFETIME = 15 * 60
 ACTIVE = "ACTIVE"
+CANDIDATE = "CANDIDATE"
 ALLOWED_ACTIONS = {"status.read"}
 
 
 class GatewayError(Exception):
     pass
+
+
+def enabled() -> bool:
+    return db.get_meta("scg_enabled", "0") == "1"
+
+
+def set_enabled(value: bool) -> None:
+    db.set_meta("scg_enabled", "1" if value else "0")
+    db.log_event("owner", "gateway.enabled" if value else "gateway.disabled")
+
+
+def fingerprint(public_key: bytes) -> str:
+    if type(public_key) is not bytes or len(public_key) != 32:
+        raise GatewayError("invalid public key")
+    return hashlib.sha256(public_key).hexdigest()
 
 
 def _now() -> datetime:
@@ -87,6 +103,39 @@ def register_device(device_id: str, identity: str, public_key: bytes, key_versio
     conn.execute("INSERT INTO gateway_devices(device_id,owner_identity,public_key,key_version,enrolled_at) VALUES(?,?,?,?,?)",
                  (device_id, identity, public_pem, key_version, util.now()))
     conn.commit()
+
+
+def propose_device(device_id: str, identity: str, public_key: bytes, key_version: int = 1) -> str:
+    """Store public enrollment material only; owner confirmation is separate."""
+    if not device_id or not identity or type(public_key) is not bytes or len(public_key) != 32:
+        raise GatewayError("invalid enrollment candidate")
+    conn = db.connect()
+    pem = Ed25519PublicKey.from_public_bytes(public_key).public_bytes(
+        serialization.Encoding.PEM, serialization.PublicFormat.SubjectPublicKeyInfo)
+    conn.execute("INSERT INTO gateway_devices(device_id,owner_identity,public_key,key_version,status,enrolled_at) VALUES(?,?,?,?,?,?)",
+                 (device_id, identity, pem, key_version, CANDIDATE, util.now()))
+    conn.commit()
+    db.log_event("owner", "gateway.device.candidate", device_id, fingerprint(public_key))
+    return fingerprint(public_key)
+
+
+def confirm_device(device_id: str, confirmed_fingerprint: str) -> str:
+    row = db.connect().execute("SELECT * FROM gateway_devices WHERE device_id=?", (device_id,)).fetchone()
+    if row is None or row["status"] != CANDIDATE:
+        raise GatewayError("no pending enrollment")
+    actual = fingerprint(serialization.load_pem_public_key(bytes(row["public_key"])).public_bytes(
+        serialization.Encoding.Raw, serialization.PublicFormat.Raw))
+    if confirmed_fingerprint != actual:
+        raise GatewayError("fingerprint confirmation mismatch")
+    db.connect().execute("UPDATE gateway_devices SET status=? WHERE device_id=?", (ACTIVE, device_id))
+    db.connect().commit()
+    db.log_event("owner", "gateway.device.enrolled", device_id, actual)
+    return actual
+
+
+def device_status() -> list[dict]:
+    rows = db.connect().execute("SELECT device_id,owner_identity,key_version,epoch,status,enrolled_at,revoked_at FROM gateway_devices ORDER BY device_id").fetchall()
+    return [dict(r) for r in rows]
 
 
 def revoke_device(device_id: str, reason: str) -> None:
@@ -162,6 +211,8 @@ def validate(message: bytes, parameters=None) -> dict:
 
 def submit(message: bytes, *, title: str, parameters=None, **task_fields) -> str:
     """Validate once, create one canonical task, and attach existing approval policy."""
+    if not enabled():
+        raise GatewayError("SCG is disabled")
     operation = validate(message, parameters)
     digest = hashlib.sha256(_payload(operation)).digest()
     conn = db.connect()

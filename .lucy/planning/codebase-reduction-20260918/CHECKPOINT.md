@@ -192,3 +192,11 @@ Newest block first. Format: `05_AUTONOMOUS_EXECUTION_LOOP.md` §5. A fresh contr
 - aion verify: READY. Portability, duplication, secret scan, compileall and diff-check: PASS.
 - Boundary strict scan still reports two pre-existing unratified sqlite imports (`aion_core/tasks.py`, `scripts/runtime_inventory.py`); not changed or weakened by SCG work and retained as a separate governance finding.
 - No local owner action required; implementation remains unactivated and not deployed.
+
+# 2026-09-19T20:58Z · SCG ACTIVATION SURFACE · IMPLEMENTED, LOCAL VALIDATION BLOCKED
+- Added the smallest LucyOS-native SCG control surface: `aion scg status|enable|disable|enroll-candidate|confirm|revoke`.
+- Default remains OFF. Enrollment stores only the public key, identity, fingerprint-derived confirmation and device metadata; private key generation/retention remains device-side.
+- Candidate -> owner fingerprint confirmation -> ACTIVE -> REVOKED lifecycle tested in an isolated temporary AION_HOME; duplicate confirmation and revocation fail closed.
+- Existing SCG focused tests: 6 PASS; full suite: 624 tests, 1 skipped, PASS under dependency-enabled isolated test environment.
+- Local validation is blocked by missing Ubuntu `python3.12-venv`/ensurepip on Lucy-den; no system-wide install was attempted. SCG remains disabled and unactivated.
+- Remote integration HEAD before this checkpoint: 094a3c8; pending follow-up commit will be pushed after diff/gate verification.

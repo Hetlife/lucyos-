@@ -14,6 +14,7 @@ class GatewayEnvelopeTests(AionTest):
         from cryptography.hazmat.primitives.asymmetric.ed25519 import Ed25519PrivateKey
         from aion_core import gateway
         self.gateway = gateway
+        gateway.set_enabled(True)
         self.private = Ed25519PrivateKey.generate()
         self.raw = self.private.private_bytes_raw()
         self.public = self.private.public_key().public_bytes_raw()

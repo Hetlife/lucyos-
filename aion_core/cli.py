@@ -54,6 +54,9 @@ def _main(argv=None) -> int:
     bk = sub.add_parser("backup", help="create a backup and restore-test it")
     bk.add_argument("--verify-only", action="store_true")
     sub.add_parser("openclaw-check", help="loopback reachability probe for an optional OpenClaw gateway")
+    sg = sub.add_parser("scg", help="owner-controlled Secure Capability Gateway activation")
+    sg.add_argument("op", choices=["status", "enable", "disable", "enroll-candidate", "confirm", "revoke"])
+    sg.add_argument("value", nargs="*")
     sub.add_parser("export", help="write a portable archive of canonical state (no secrets)")
     im = sub.add_parser("import", help="verify and restore a portable archive into this AION_HOME")
     im.add_argument("archive", help="path to a lucyos-export-*.tar.gz")
@@ -345,6 +348,27 @@ def _main(argv=None) -> int:
     elif cmd == "openclaw-check":
         from bridges import openclaw_check
         _print(openclaw_check.check())
+    elif cmd == "scg":
+        from . import gateway
+        if args.op == "status":
+            _print({"enabled": gateway.enabled(), "devices": gateway.device_status()})
+        elif args.op in ("enable", "disable"):
+            gateway.set_enabled(args.op == "enable")
+            _print({"enabled": gateway.enabled()})
+        elif args.op == "enroll-candidate":
+            if len(args.value) != 3:
+                raise CliError("usage: aion scg enroll-candidate DEVICE_ID IDENTITY PUBLIC_KEY_HEX")
+            _print({"device_id": args.value[0], "fingerprint": gateway.propose_device(
+                args.value[0], args.value[1], bytes.fromhex(args.value[2]))})
+        elif args.op == "confirm":
+            if len(args.value) != 2:
+                raise CliError("usage: aion scg confirm DEVICE_ID FINGERPRINT")
+            _print({"device_id": args.value[0], "fingerprint": gateway.confirm_device(args.value[0], args.value[1]), "status": "ACTIVE"})
+        elif args.op == "revoke":
+            if len(args.value) != 2:
+                raise CliError("usage: aion scg revoke DEVICE_ID REASON")
+            gateway.revoke_device(args.value[0], args.value[1])
+            _print({"device_id": args.value[0], "status": "REVOKED"})
     elif cmd == "export":
         from . import portability
         path = portability.export()
