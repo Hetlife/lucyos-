@@ -67,3 +67,12 @@ Newest block first. Format: `05_AUTONOMOUS_EXECUTION_LOOP.md` §5. A fresh contr
 - Isolated task branch had one expected prerequisite error because S-41 dependency_graph evidence was absent there; this was not accepted as green.
 - Re-run on the complete research baseline: 10 targeted context tests PASS; full suite 590 PASS, 1 skipped; scan, portability, anti-dup and strict authority PASS.
 - S-45 DONE. S-47 and S-49 READY_TO_EXECUTE for bounded M3 pilots; main remains untouched.
+# 2026-09-19T11:34Z · S-49 · VERIFIED TASK BRANCH
+- task_branch: task/S-49-hermetic base: 1dbda69 pr: not opened
+- objective: stop the test suite inheriting host AION/OpenClaw environment
+- changes: isolated environment setup/restore in tests/base.py; regression coverage in tests/test_hermetic.py
+- tests: hermetic=6 PASS; full=596 PASS, 1 skipped, 54.158 s; hostile environment verified
+- gates: portability=clean; anti-dup=clean; strict=clean; diff-check=clean
+- evidence: `AION_HOME`, `AION_DB`, `AION_CLOUD_CMD`, `AION_MACHINE`, and `OPENCLAW_HOME` injected; suite remained green
+- result: task branch ready for review; owner merge gate remains, main untouched
+- next_unlocked: owner review/merge, then S-48 or S-46
