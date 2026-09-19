@@ -8,7 +8,7 @@ from tests.base import AionTest
 class TestAutonomyDays(AionTest):
     def _completion(self, day, owner="worker-b"):
         from aion_core import tasks
-        task_id = tasks.create(f"work {day}")
+        task_id = tasks.create(f"work {day}", status="RUNNING")
         tasks.update(task_id, status="DONE", owner_agent=owner,
                      completed_at=day + "T12:00:00+00:00", evidence="test proof")
 

@@ -23,6 +23,8 @@ def status() -> str:
     counts = tasks.counts()
     unblocked = len(tasks.ready(200))
     pend = approvals.pending()
+    stalled = sum(tasks.progress(r["task_id"])["stalled"]
+                  for state in tasks.ACTIVE_STATES for r in tasks.by_status(state))
     open_errs = errors.open_errors(limit=5)
     m = metrics.money()
     health = util.read_json(config.home() / "state" / "HEALTH.json", default={}) or {}
@@ -46,6 +48,7 @@ def status() -> str:
         f"Money: ₹{m['real_revenue_inr']} real revenue, ₹{m['real_cost_inr']} cost, "
         f"₹{m['real_net_inr']} net",
         f"Approvals waiting: {', '.join(r['approval_id'] for r in pend) or 'none'}",
+        f"Stalled without new evidence: {stalled}",
         f"Unresolved errors: {len(open_errs)}",
         f"Next action: {nxt['title'] if nxt else _nothing_runnable(counts)}",
     ]
@@ -58,7 +61,7 @@ def status() -> str:
 def _nothing_runnable(counts: dict) -> str:
     """Say *why* nothing is runnable — 'queue empty' is usually a lie."""
     if counts.get("WAITING"):
-        return f"{counts['WAITING']} task(s) waiting on a missing executor — send `blockers`"
+        return f"{counts['WAITING']} task(s) waiting on an executor or recovery condition — send `blockers`"
     if counts.get("BLOCKED"):
         return f"{counts['BLOCKED']} task(s) blocked — send `blockers`"
     if counts.get("NEEDS_APPROVAL"):
