@@ -1,5 +1,11 @@
 # CHECKPOINT — lucyos-codebase-reduction-20260918
 
+## 2026-09-19T12:30Z · FABLE-07 · M3/M4 CLOSED WITH FOLLOW-UPS
+- output: `evidence/M4_GATE.md`
+- result: M3/M4 close operationally healthy; context ≤10-file and runtime ≤+10% remain unresolved
+- next: M5 low-risk cleanup; defer M6 decomposition until new measurements
+- owner gate retained: S-48 required-CI promotion is L4; no canonical merge or security implementation
+
 ## 2026-09-19T12:15Z · S-46 · DONE WITH FOLLOW-UPS
 - outputs: `evidence/context_pilot_results.md`, `evidence/M3_GATE.md`
 - result: both pilots landed and measured; runtime/context targets explicitly not met

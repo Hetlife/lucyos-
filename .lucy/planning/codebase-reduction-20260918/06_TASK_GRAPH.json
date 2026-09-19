@@ -356,7 +356,7 @@
       "milestone": "M4",
       "level": "L1",
       "priority": "P3",
-      "status": "NEW",
+      "status": "DONE",
       "executor": "fable",
       "reviewer": "owner",
       "depends_on": [
