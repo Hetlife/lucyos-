@@ -37,6 +37,18 @@ class OpenClawLucyBridgeTest(unittest.TestCase):
             [str(DISPATCH)], input=stdin, env=env,
             stdout=subprocess.PIPE, stderr=subprocess.PIPE, check=False,
         )
+    def test_dispatch_defaults_to_repo_relative_aion(self):
+        env = os.environ.copy()
+        env.pop("LUCYOS_AION_BIN", None)
+        env["SSH_ORIGINAL_COMMAND"] = "status"
+        env["AION_HOME"] = str(self.tmp_path / "brain")
+        result = subprocess.run(
+            [str(DISPATCH)], env=env, stdout=subprocess.PIPE,
+            stderr=subprocess.PIPE, check=False,
+        )
+        self.assertEqual(result.returncode, 0, result.stderr.decode())
+        self.assertNotIn("/root/lucyos/aion", DISPATCH.read_text())
+
     def test_simple_command_maps_without_shell(self):
         result = self.dispatch("status")
         self.assertEqual(result.returncode, 0, result.stderr.decode())
@@ -49,11 +61,13 @@ class OpenClawLucyBridgeTest(unittest.TestCase):
             self.assertIn("bridge refused", result.stderr.decode())
 
     def test_context_requires_bounded_task_id(self):
-        good = self.dispatch("context TASK-ABC123")
-        self.assertEqual(good.returncode, 0, good.stderr.decode())
-        self.assertIn("ARGS=context|TASK-ABC123", good.stdout.decode())
-        bad = self.dispatch("context ../../etc/passwd")
-        self.assertNotEqual(bad.returncode, 0)
+        for task_id in ("TASK-ABC123", "S-48"):
+            good = self.dispatch(f"context {task_id}")
+            self.assertEqual(good.returncode, 0, good.stderr.decode())
+            self.assertIn(f"ARGS=context|{task_id}", good.stdout.decode())
+        for task_id in ("../../etc/passwd", "S-", "S-12345", "S-48;id"):
+            bad = self.dispatch(f"context {task_id}")
+            self.assertNotEqual(bad.returncode, 0)
 
     def test_work_dry_is_bounded(self):
         good = self.dispatch("work-dry 3")

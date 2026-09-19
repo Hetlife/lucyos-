@@ -14,11 +14,12 @@ import subprocess
 import sys
 from pathlib import Path
 
-AION = os.environ.get("LUCYOS_AION_BIN", "/root/lucyos/aion")
+REPO_ROOT = Path(__file__).resolve().parents[4]
+AION = os.environ.get("LUCYOS_AION_BIN", str(REPO_ROOT / "aion"))
 AION_HOME = os.environ.get("AION_HOME", "/root/openclaw/shared_brain")
 MAX_STDIN = 16 * 1024
 MAX_OUTPUT = 256 * 1024
-TASK_ID = re.compile(r"^TASK-[A-Z0-9]{6,}$")
+TASK_ID = re.compile(r"^(?:TASK-[A-Z0-9]{6,}|S-[0-9]{1,4})$")
 ATOM = re.compile(r"^[A-Za-z0-9_.:-]{1,64}$")
 
 SIMPLE = {

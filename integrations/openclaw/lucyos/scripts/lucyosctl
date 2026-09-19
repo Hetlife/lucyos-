@@ -7,7 +7,9 @@ if [[ "${LUCYOS_OPENCLAW_BRIDGE:-1}" != "1" ]]; then
 fi
 
 export AION_HOME="${AION_HOME:-/root/openclaw/shared_brain}"
-AION="${LUCYOS_AION_BIN:-/root/lucyos/aion}"
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+REPO_ROOT="$(cd "${SCRIPT_DIR}/../../../.." && pwd)"
+AION="${LUCYOS_AION_BIN:-${REPO_ROOT}/aion}"
 REMOTE_TARGET="${LUCYOS_REMOTE_SSH_TARGET:-}"
 REMOTE_PORT="${LUCYOS_REMOTE_SSH_PORT:-22}"
 REMOTE_KEY="${LUCYOS_REMOTE_SSH_KEY:-}"
@@ -72,7 +74,7 @@ case "${1:-}" in
     remote_exec "$1"
     ;;
   context)
-    [[ $# -eq 2 && "$2" =~ ^TASK-[A-Z0-9]{6,}$ ]] || { echo "usage: lucyosctl context TASK_ID" >&2; exit 2; }
+    [[ $# -eq 2 && "$2" =~ ^(TASK-[A-Z0-9]{6,}|S-[0-9]{1,4})$ ]] || { echo "usage: lucyosctl context TASK_ID" >&2; exit 2; }
     remote_exec context "$2"
     ;;
   route)
