@@ -167,7 +167,7 @@ def _update(task_id: str, kw: dict, *, reconcile: bool = False, expected=None, _
     if bad:
         raise TaskError(f"unknown task fields: {sorted(bad)}")
     kw = {k: (security.redact(v) if isinstance(v, str) else v) for k, v in kw.items()}
-    conn = db.connect()
+    conn = _conn or db.connect()
     with (nullcontext() if _conn is not None else conn):
         if _conn is None:
             conn.execute("BEGIN IMMEDIATE")
@@ -435,7 +435,7 @@ def _evidence_event(conn, task_id: str, kind: str, evidence: str) -> None:
 
 def heartbeat(task_id: str, owner_agent: str, *, _conn=None) -> bool:
     """Contact only. Never manufactures progress evidence or changes ownership."""
-    conn = db.connect()
+    conn = _conn or db.connect()
     with (nullcontext() if _conn is not None else conn):
         cur = conn.execute("UPDATE tasks SET updated_at=? WHERE task_id=? AND owner_agent=? "
                            "AND status IN ('CLAIMED','RUNNING')",
@@ -447,7 +447,7 @@ def record_evidence(task_id: str, evidence: str, *, kind: str, owner_agent: str,
     """Record a measured artifact/validation/git observation, never a heartbeat."""
     if kind not in {"artifact", "validation", "git"} or not evidence.strip():
         raise TaskError("meaningful evidence requires artifact, validation or git proof")
-    conn = db.connect()
+    conn = _conn or db.connect()
     with (nullcontext() if _conn is not None else conn):
         if _conn is None:
             conn.execute("BEGIN IMMEDIATE")
