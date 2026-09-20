@@ -1,0 +1,14 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "LUCY_STATE v1 display projection",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["version", "sequence", "timestamp", "state", "status"],
+  "properties": {
+    "version": {"const": 1},
+    "sequence": {"type": "integer", "minimum": 0},
+    "timestamp": {"type": "number"},
+    "state": {"enum": ["SLEEP", "WAKE", "IDLE", "LISTEN", "THINK", "WORK", "VERIFY", "SUCCESS", "NEEDS_YOU", "OFFLINE"]},
+    "status": {"type": "string", "maxLength": 48, "pattern": "^[A-Za-z0-9 .,!?':;()/-]*$"}
+  }
+}
