@@ -200,3 +200,11 @@ Newest block first. Format: `05_AUTONOMOUS_EXECUTION_LOOP.md` §5. A fresh contr
 - Existing SCG focused tests: 6 PASS; full suite: 624 tests, 1 skipped, PASS under dependency-enabled isolated test environment.
 - Local validation is blocked by missing Ubuntu `python3.12-venv`/ensurepip on Lucy-den; no system-wide install was attempted. SCG remains disabled and unactivated.
 - Remote integration HEAD before this checkpoint: 094a3c8; pending follow-up commit will be pushed after diff/gate verification.
+
+# 2026-09-20T01:17Z · M-SCG-VALIDATE · PASS
+- SCG was enabled locally with the pinned venv; no key rotation or re-enrollment occurred.
+- Active enrollment: device `lucy-den`, owner identity `owner`, key version 1, epoch 1, status ACTIVE.
+- Private key file exists only at the local protected path with mode 0600; public fingerprint matched the enrolled public key. No key material appeared in recent logs/output.
+- Signed harmless `status.read` accepted; exact replay rejected; invalid-device request rejected.
+- Fresh-process persistence check retained enrollment as ACTIVE.
+- No public exposure, canonical/main promotion, or consequential execution performed.
