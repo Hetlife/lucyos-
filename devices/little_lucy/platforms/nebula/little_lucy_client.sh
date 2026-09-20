@@ -29,6 +29,6 @@ while :; do
     mv "$FRAME.new" "$FRAME"
     /usr/bin/cmd_jpeg_display "$FRAME" >/dev/null 2>&1 || true
   fi
-  I=$(( (I + 1) % 12 ))
+  I=$(( (I + 1) % 18 ))
   sleep 0.16
 done
