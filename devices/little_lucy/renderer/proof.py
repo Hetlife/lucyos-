@@ -46,8 +46,8 @@ def encode_xrgb8888(data, order='BGRA'):
     """Pack white/black pixels; channel order remains selectable until measured."""
     if sorted(order) != sorted('BGRA'):
         raise ValueError('order must permute BGRA')
-    white = bytes(255 if ch != 'A' else 0 for ch in order)
-    black = bytes(0 for _ in order)
+    white = bytes(255 for ch in order)
+    black = bytes(255 if ch == 'A' else 0 for ch in order)
     return b''.join(white if p else black for p in data)
 
 
