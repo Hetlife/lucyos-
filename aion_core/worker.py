@@ -317,14 +317,22 @@ def _work_locked(max_tasks: int, session_id: str | None, summary: dict) -> dict:
     if requeued:
         summary["requeued"] = requeued
 
+    # Do not create a durable session merely to discover that there is no work.
+    # Executor-wait reconciliation above still runs first, so newly available
+    # workers can make a previously waiting task runnable before this check.
+    first_task = tasks.next_task() if max_tasks > 0 else None
+    if first_task is None:
+        summary["stopped"] = "no ready task"
+        return summary
+
     own_session = session_id is None
     if own_session:
         session_id = sessions.start("openclaw", model_class="DET",
                                     objective=f"autonomous execution of up to {max_tasks} tasks")
 
     try:
-        for _ in range(max_tasks):
-            task = tasks.next_task()
+        for index in range(max_tasks):
+            task = first_task if index == 0 else tasks.next_task()
             if task is None:
                 summary["stopped"] = "no ready task"
                 break

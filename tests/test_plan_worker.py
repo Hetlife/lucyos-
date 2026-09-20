@@ -80,6 +80,16 @@ class TestCommandSafety(AionTest):
 
 
 class TestWorkerLoop(AionTest):
+    def test_empty_queue_does_not_create_session_churn(self):
+        before = db.connect().execute("SELECT COUNT(*) FROM sessions").fetchone()[0]
+
+        result = worker.work(max_tasks=1)
+
+        after = db.connect().execute("SELECT COUNT(*) FROM sessions").fetchone()[0]
+        self.assertEqual(result["stopped"], "no ready task")
+        self.assertEqual(result["attempted"], 0)
+        self.assertEqual(after, before)
+
     @patch("aion_core.worker.ollama_available", return_value=True)
     def test_stale_a_executor_wait_is_requeued_when_a_appears(self, _availability):
         t = tasks.create("stale A wait", status="WAITING", model_class="A",
