@@ -101,3 +101,29 @@ h2 { font-size: 18px; margin-bottom: 0; }
 @media (prefers-reduced-motion: reduce) {
   *, *::before, *::after { animation-duration: .001ms !important; animation-iteration-count: 1 !important; transition-duration: .001ms !important; scroll-behavior: auto !important; }
 }
+
+/* Physical Lucy-Nest 480x272 live surface */
+.nest-device { width:480px; height:272px; overflow:hidden; margin:0; background:#090a09; color:#f2efe6; border:1px solid #262626; position:relative; font-family:Inter,ui-sans-serif,system-ui,sans-serif; user-select:none; touch-action:manipulation; transition:transform 350ms cubic-bezier(.16,1,.3,1), filter 180ms ease; }
+.nest-device:active,.nest-touched { transform:scale(.97); }
+.nest-device header { height:39px; padding:0 18px; display:flex; align-items:center; justify-content:space-between; border-bottom:1px solid #262626; font-size:11px; letter-spacing:.12em; }
+.nest-device header span { color:#73736f; font-size:9px; }
+.nest-eye-wrap { height:156px; display:flex; align-items:center; justify-content:center; gap:6px; }
+.nest-eye { width:292px; height:90px; border:4px solid #f2efe6; border-radius:50% / 62%; display:flex; align-items:center; justify-content:center; gap:70px; animation:nest-breathe 2400ms ease-in-out infinite; box-shadow:inset 0 0 0 1px rgba(242,239,230,.18); }
+.nest-eye i { width:26px; height:26px; border:3px solid #f2efe6; border-radius:50%; position:relative; }
+.nest-eye i:after { content:''; position:absolute; width:8px; height:8px; border-radius:50%; background:#f2efe6; left:6px; top:6px; }
+.nest-rib { width:20px; height:72px; opacity:.55; background:repeating-linear-gradient(to bottom,transparent 0 8px,#f2efe6 8px 10px); }
+.nest-working .nest-eye i:after { animation:nest-scan 900ms cubic-bezier(.16,1,.3,1) infinite alternate; }
+.nest-verify .nest-eye,.nest-verifying .nest-eye { height:58px; }
+.nest-needs-you .nest-copy h1,.nest-working .nest-copy h1,.nest-verify .nest-copy h1,.nest-verifying .nest-copy h1,.nest-offline .nest-copy h1 { color:#e33a35; }
+.nest-success .nest-eye,.nest-verified .nest-eye { box-shadow:0 0 24px rgba(242,239,230,.16),inset 0 0 0 1px rgba(242,239,230,.18); }
+.nest-copy { position:absolute; left:0; right:0; top:191px; text-align:center; }
+.nest-copy h1 { font-size:21px; line-height:1; letter-spacing:.02em; margin:0 0 9px; }
+.nest-copy p { margin:0; font-size:9px; font-weight:800; letter-spacing:.11em; color:#777772; text-transform:uppercase; }
+.nest-device footer { position:absolute; left:18px; right:18px; bottom:8px; display:flex; align-items:center; gap:10px; }
+.nest-signal { flex:1; height:2px; background:#262626; overflow:hidden; }.nest-signal span { display:block; width:18%; height:100%; background:#f2efe6; animation:nest-heartbeat 1600ms ease-in-out infinite; }
+.nest-working .nest-signal span,.nest-verify .nest-signal span,.nest-verifying .nest-signal span,.nest-needs-you .nest-signal span { background:#e33a35; }
+.nest-device footer small { color:#5e5e5a; font-size:7px; letter-spacing:.1em; }
+@keyframes nest-breathe { 0%,100%{transform:scale(1)} 50%{transform:scale(1.025)} }
+@keyframes nest-scan { from{transform:translateX(-8px)} to{transform:translateX(8px)} }
+@keyframes nest-heartbeat { 0%,100%{width:10%} 50%{width:36%} }
+@media (max-width:500px){ .nest-device{width:100vw;height:56.6667vw;max-height:100vh} }
