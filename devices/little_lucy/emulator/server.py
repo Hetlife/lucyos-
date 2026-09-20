@@ -5,6 +5,7 @@ import json
 import time
 
 from devices.little_lucy.protocol.state import STATES, validate
+from devices.little_lucy.renderer.proof import pixels, encode_xrgb8888
 
 STATIC = Path(__file__).with_name("static")
 
@@ -16,6 +17,9 @@ class Handler(BaseHTTPRequestHandler):
         if self.path == "/state":
             body = json.dumps({**self.state, "timestamp": time.time()}).encode()
             content_type = "application/json"
+        elif self.path == "/proof.raw":
+            body = encode_xrgb8888(pixels())
+            content_type = "application/octet-stream"
         elif self.path in ("/", "/index.html"):
             body = (STATIC / "index.html").read_bytes()
             content_type = "text/html; charset=utf-8"
