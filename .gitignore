@@ -23,3 +23,13 @@ cookies*
 
 # Local optional-dependency sandboxes and downloaded models.
 .sandbox/
+
+# Lucy-Nest reproducible build/dependency/cache output.
+packages/lucy-nest-design-system/dist/
+packages/lucy-nest-design-system/node_modules/
+packages/lucy-nest-design-system/*.tsbuildinfo
+
+# Little Lucy live/generated runtime state; operational scripts remain tracked.
+runtime/little-lucy/state.json
+runtime/little-lucy/current.jpg
+runtime/little-lucy/frames/
