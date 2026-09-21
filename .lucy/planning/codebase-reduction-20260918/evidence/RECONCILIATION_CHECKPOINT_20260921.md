@@ -41,6 +41,13 @@
 - No merge, force-push, activation, credential change, deletion, worktree pruning, or public exposure performed.
 - Owner gates remain: ambiguous worktree deletion/pruning; tracked cache untracking; public-key retirement; SCG activation; main promotion.
 
+## Verification update
+
+- GitHub transport repaired without credential rotation: existing `github-account-1` now uses official `ssh.github.com:443`, preserves the existing host-key alias, and disables the stalled SSH agent for this alias only.
+- SSH authentication: PASS; `git fetch`: PASS; branch push: fast-forward/no-op; remote branch verified at `7f46204`.
+- Exact integration `55546fe`: SCG targeted tests 9/9 PASS; full dependency-enabled unittest suite 627 tests, 10 skipped, PASS; portability PASS; secret scan PASS; boundary scan 0 violations/0 stale; live `aion verify --json`: READY.
+- Isolated-temp `aion verify` is intentionally not used as a health verdict because it lacks the machine's shared brain, secret store and backups; live AION_HOME verification is READY.
+
 ## Next action
 
 Obtain owner direction for the clearly identified cleanup candidates, then separately complete a full-suite run on exact integration `55546fe` with a bounded environment and reconcile the named stale integration worktree.
