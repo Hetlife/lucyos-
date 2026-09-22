@@ -121,6 +121,10 @@ def _main(argv=None) -> int:
     hc = sub.add_parser("health")
     hc.add_argument("--deep", action="store_true")
 
+    sv = sub.add_parser("supervisor", help="compact deterministic autonomy snapshot")
+    sv.add_argument("--deep", action="store_true")
+    sv.add_argument("--json", action="store_true", help="machine-readable output")
+
     ae = sub.add_parser("audit-export", help="export the events log as a hash-chained, tamper-evident file")
     ae.add_argument("--out", help="write JSON here instead of AION_HOME/state/AUDIT_EXPORT-<stamp>.json")
     av = sub.add_parser("audit-verify", help="verify a hash-chained audit export")
@@ -410,6 +414,9 @@ def _main(argv=None) -> int:
         else:
             print("FAILING: " + ", ".join(r["required_failing"]))
         return 0 if r["healthy"] else 1
+    elif cmd == "supervisor":
+        snap = health.supervisor_snapshot(deep=args.deep)
+        _print(snap if args.json else health.render_supervisor(snap))
     elif cmd == "audit-export":
         chain = reports.audit_export()
         out = Path(args.out) if args.out else (
