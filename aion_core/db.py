@@ -341,6 +341,66 @@ CREATE TABLE IF NOT EXISTS intake_records (
 CREATE INDEX IF NOT EXISTS idx_intake_project_tier ON intake_records(project, tier);
 CREATE INDEX IF NOT EXISTS idx_intake_hash ON intake_records(content_hash);
 
+CREATE TABLE IF NOT EXISTS taskcheck_templates (
+    template_id TEXT NOT NULL,
+    version INTEGER NOT NULL DEFAULT 1,
+    title TEXT NOT NULL,
+    description TEXT NOT NULL DEFAULT '',
+    checks_json TEXT NOT NULL,
+    critical_rules_json TEXT NOT NULL DEFAULT '[]',
+    created_at TEXT NOT NULL,
+    updated_at TEXT NOT NULL,
+    PRIMARY KEY(template_id, version)
+);
+
+CREATE TABLE IF NOT EXISTS taskcheck_runs (
+    taskcheck_id TEXT PRIMARY KEY,
+    aion_task_id TEXT NOT NULL UNIQUE REFERENCES tasks(task_id),
+    template_id TEXT NOT NULL,
+    template_version INTEGER NOT NULL DEFAULT 1,
+    title TEXT NOT NULL,
+    description TEXT NOT NULL DEFAULT '',
+    requester TEXT NOT NULL,
+    assignee TEXT NOT NULL,
+    location TEXT NOT NULL DEFAULT '',
+    priority INTEGER NOT NULL DEFAULT 3,
+    status TEXT NOT NULL DEFAULT 'CREATED',
+    result_status TEXT NOT NULL DEFAULT '',
+    access_token_hash TEXT NOT NULL UNIQUE,
+    expires_at TEXT,
+    revoked_at TEXT,
+    metadata_json TEXT NOT NULL DEFAULT '{}',
+    created_at TEXT NOT NULL,
+    updated_at TEXT NOT NULL,
+    opened_at TEXT,
+    started_at TEXT,
+    completed_at TEXT,
+    reviewed_at TEXT
+);
+CREATE INDEX IF NOT EXISTS idx_taskcheck_runs_status ON taskcheck_runs(status);
+
+CREATE TABLE IF NOT EXISTS taskcheck_checks (
+    taskcheck_id TEXT NOT NULL REFERENCES taskcheck_runs(taskcheck_id),
+    check_id TEXT NOT NULL,
+    ordinal INTEGER NOT NULL,
+    response TEXT,
+    note TEXT NOT NULL DEFAULT '',
+    answered_at TEXT,
+    PRIMARY KEY(taskcheck_id, check_id)
+);
+
+CREATE TABLE IF NOT EXISTS taskcheck_evidence (
+    evidence_id TEXT PRIMARY KEY,
+    taskcheck_id TEXT NOT NULL REFERENCES taskcheck_runs(taskcheck_id),
+    check_id TEXT NOT NULL,
+    file_path TEXT NOT NULL,
+    mime_type TEXT NOT NULL,
+    size_bytes INTEGER NOT NULL,
+    metadata_json TEXT NOT NULL DEFAULT '{}',
+    created_at TEXT NOT NULL
+);
+CREATE INDEX IF NOT EXISTS idx_taskcheck_evidence_task ON taskcheck_evidence(taskcheck_id, check_id);
+
 CREATE TABLE IF NOT EXISTS idempotency (
     key       TEXT PRIMARY KEY,
     at        TEXT NOT NULL,
