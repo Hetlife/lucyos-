@@ -44,6 +44,20 @@ def _platform_fit(platforms: list[str], target: str) -> bool:
     return "any" in normalized or target in normalized
 
 
+
+def _scheduler_plan(profile: dict) -> dict:
+    return host.deployment_plan(str(profile.get("os", "")))
+
+
+def _approval_state(lifecycle: str) -> str:
+    if lifecycle in {"OWNER_APPROVED", "INSTALLED_DISABLED", "TESTED", "ACTIVE",
+                     "DEGRADED", "DEPRECATED", "ROLLED_BACK"}:
+        return "SATISFIED_OR_PAST_GATE"
+    if lifecycle == "ARCHITECTURE_APPROVED":
+        return "OWNER_APPROVAL_REQUIRED"
+    return "NOT_YET_APPLICABLE"
+
+
 def resolve(*, profile: dict | None = None) -> dict:
     profile = profile or machine_profile()
     rows = {r["skill_id"]: r for r in skills.all_skills()}
@@ -76,11 +90,18 @@ def resolve(*, profile: dict | None = None) -> dict:
             "action": action,
             "cost_class": data["cost_class"],
             "risk_class": data["risk_class"],
+            "approval_rule": data.get("approval_rule"),
+            "approval_state": _approval_state(lifecycle),
+            "rollback": data.get("rollback"),
+            "rollback_ready": bool(data.get("rollback")),
+            "feature_flag": data.get("feature_flag"),
+            "evidence": list(data.get("references") or []),
         })
     items.sort(key=lambda x: (PRIORITY_ORDER.get(x["priority"], 9), x["skill_id"]))
     return {
         "profile": profile,
         "compatible": sum(1 for x in items if x["compatible"]),
         "incompatible": sum(1 for x in items if not x["compatible"]),
+        "scheduler": _scheduler_plan(profile),
         "items": items,
     }
