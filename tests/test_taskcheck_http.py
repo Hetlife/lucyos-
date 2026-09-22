@@ -1,4 +1,5 @@
-import json, threading, unittest, urllib.request, urllib.error
+import json, os, threading, unittest, urllib.request, urllib.error
+from unittest.mock import patch
 from aion_core import taskcheck
 from bridges.taskcheck_server import build_server
 from tests.base import AionTest
@@ -16,3 +17,9 @@ class TestTaskCheckHTTP(AionTest):
         for c in task['checks']: self.fetch(f'/api/taskcheck/{tok}/check/{c["id"]}',method='POST',body={'response':'PASS','note':''}).read()
         ev=json.loads(self.fetch(f'/api/taskcheck/{tok}/evidence/body_lens',method='POST',body=b'jpeg-fixture',ctype='image/jpeg').read()); self.assertTrue(ev['evidence']['evidence_id'].startswith('EVD-'))
         report=json.loads(self.fetch(f'/api/taskcheck/{tok}/submit',method='POST',body={}).read())['report']; self.assertEqual(report['result_status'],'READY_FOR_REVIEW')
+
+class TestTaskCheckNotification(AionTest):
+    def test_notifier_is_optional_and_transport_failure_does_not_raise(self):
+        from bridges import taskcheck_server
+        with patch.dict(os.environ, {}, clear=True):
+            self.assertEqual(taskcheck_server.notify_requester('TC-UNKNOWN')['status'], 'NOT_CONFIGURED')
