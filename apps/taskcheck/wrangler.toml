@@ -1,0 +1,21 @@
+name = "lucy-taskcheck"
+main = "worker/src/index.js"
+compatibility_date = "2026-09-22"
+
+[assets]
+directory = "./web"
+not_found_handling = "single-page-application"
+binding = "ASSETS"
+
+[[d1_databases]]
+binding = "DB"
+database_name = "lucy-taskcheck"
+database_id = "REPLACE_WITH_D1_DATABASE_ID"
+migrations_dir = "worker/migrations"
+
+[[r2_buckets]]
+binding = "EVIDENCE"
+bucket_name = "lucy-taskcheck-evidence"
+
+[vars]
+APP_NAME = "LUCY TaskCheck"
