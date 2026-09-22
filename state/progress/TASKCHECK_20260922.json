@@ -1,16 +1,25 @@
 {
   "mission": "LUCY TaskCheck MVP",
-  "status": "CORE_VERIFIED",
+  "status": "LIVE_TEST_DEPLOYED_WITH_WHATSAPP_BLOCKER",
   "base_sha": "bbb33068a55bff7b03d53284852c694ae4366f9e",
   "branch": "feature/lucy-taskcheck-20260922",
   "worktree": "/root/lucyos-wt-taskcheck",
   "integration_untouched": true,
-  "resume": "Deploy bounded HTTPS test endpoint on Mark-2, create canonical Insta360 task, verify public URL, then send via existing OpenClaw WhatsApp if URL passes.",
+  "resume": "Keep live TaskCheck URL if needed. To send via existing OpenClaw safely, configure an outbound-only recipient path for Aksh or explicitly authorize a narrowly-scoped messaging account that does not grant control-channel access. Do not merge integration/main without owner approval.",
   "focused_tests": "6 TaskCheck tests plus existing bridge regression passed",
   "full_regression": "430 passed; 1 optional dependency skipped",
   "secret_scan": "PASS",
   "architecture_guard": "PASS",
   "deployment": "NOT_YET_DEPLOYED",
   "whatsapp": "CONFIGURED; DRY_RUN_PASS; LIVE_SEND_NOT_YET_ATTEMPTED",
-  "completion_notification": "OpenClaw adapter implemented; focused and bridge regression passed; live notification pending real submission"
+  "completion_notification": "OpenClaw adapter implemented; focused and bridge regression passed; live notification pending real submission",
+  "head": "460e64ca833b255c60aa45785c22dfa10db752d2",
+  "live_taskcheck_id": "TC-C9E43889",
+  "live_aion_task_id": "TASK-35B5F13B",
+  "live_task_state": "OPENED; 0/14 answered; canonical AION task WAITING",
+  "https_test_deployment": "PASS; Cloudflare Quick Tunnel -> Mark-2 loopback:8790; no uptime guarantee",
+  "mobile_emulation": "PASS for 390x844 Chrome render; physical iPhone NOT VERIFIED",
+  "whatsapp_assignment": "BLOCKED: Mark-2 has no active WhatsApp Web listener; Lucy-den active channel refuses Aksh because recipient is outside allowFrom policy",
+  "whatsapp_security_decision": "Do not add Aksh to allowFrom because that would broaden control-channel authorization merely to send one outbound message",
+  "completion_callback": "Implemented via existing OpenClaw adapter; live delivery remains unverified and Mark-2 WhatsApp listener is inactive"
 }
