@@ -53,7 +53,7 @@ class Handler(BaseHTTPRequestHandler):
         try: t=taskcheck.public_task(token)
         except ValueError: return self.error_json(404,'task unavailable')
         tpl=(WEB/'index.html').read_text(); title=f"LUCY TaskCheck — {t['title']}"; desc=f"{len(t['checks'])}-point inspection checklist • mobile friendly"
-        body=tpl.replace('{{OG_TITLE}}',title).replace('{{OG_DESCRIPTION}}',desc).encode(); self.send_response(200); self.send_header('Content-Type','text/html; charset=utf-8'); self.send_header('Cache-Control','no-store'); self.security(); self.send_header('Content-Length',str(len(body))); self.end_headers(); self.wfile.write(body)
+        proto=self.headers.get('X-Forwarded-Proto','https'); host=self.headers.get('Host',''); image=f'{proto}://{host}/taskcheck-assets/preview.png' if host else '/taskcheck-assets/preview.png'; body=tpl.replace('{{OG_TITLE}}',title).replace('{{OG_DESCRIPTION}}',desc).replace('{{OG_IMAGE}}',image).encode(); self.send_response(200); self.send_header('Content-Type','text/html; charset=utf-8'); self.send_header('Cache-Control','no-store'); self.security(); self.send_header('Content-Length',str(len(body))); self.end_headers(); self.wfile.write(body)
     def token_parts(self,path):
         parts=[x for x in path.split('/') if x]
         return parts
@@ -61,10 +61,20 @@ class Handler(BaseHTTPRequestHandler):
         path=urlsplit(self.path).path; parts=self.token_parts(path)
         if path=='/taskcheck-assets/app.js': return self.asset('app.js')
         if path=='/taskcheck-assets/styles.css': return self.asset('styles.css')
+        if path=='/taskcheck-assets/preview.png': return self.asset('preview.png')
         if len(parts)==2 and parts[0]=='t': return self.page(parts[1])
+        if len(parts)==4 and parts[:2]==['api','taskcheck'] and parts[3]=='report':
+            try:
+                row=taskcheck._run_for_token(parts[2]); return self.json(200,{'ok':True,'report':taskcheck.report(row['taskcheck_id'])})
+            except ValueError as e: return self.error_json(404,str(e))
         if len(parts)==3 and parts[:2]==['api','taskcheck']:
             try: return self.json(200,{'ok':True,'task':taskcheck.public_task(parts[2])})
             except ValueError as e: return self.error_json(404,str(e))
+        if len(parts)==3 and parts[0]=='report' and parts[2]=='LUCY-TaskCheck-report.txt':
+            token=parts[1]
+            try:
+                row=taskcheck._run_for_token(token); text=taskcheck.text_report(row['taskcheck_id']).encode('utf-8'); self.send_response(200); self.send_header('Content-Type','text/plain; charset=utf-8'); self.send_header('Content-Disposition','attachment; filename="LUCY-TaskCheck-report.txt"'); self.send_header('Cache-Control','private, no-store'); self.security(); self.send_header('Content-Length',str(len(text))); self.end_headers(); self.wfile.write(text); return
+            except ValueError: return self.error_json(404,'report unavailable')
         if len(parts)==3 and parts[0]=='evidence':
             token,eid=parts[1],parts[2]
             try:
