@@ -1,0 +1,23 @@
+{
+  "schema_version": 1,
+  "skill_id": "core.taskcheck",
+  "name": "LUCY TaskCheck",
+  "version": "0.1.0",
+  "description": "Create, assign, track, complete and review token-scoped real-world checklists linked to canonical AION tasks and events.",
+  "capabilities": ["taskcheck_create","taskcheck_assign","taskcheck_status","taskcheck_report","taskcheck_review","taskcheck_templates"],
+  "executor_classes": ["DET"],
+  "platforms": ["linux","macos"],
+  "requirements": {"network": false, "ai": false, "offline_supported": true},
+  "cost_class": "F0",
+  "risk_class": "R1",
+  "data_class": "INTERNAL",
+  "priority": "P1",
+  "enabled": true,
+  "lifecycle_state": "ACTIVE",
+  "health_command": "python3 -m unittest tests.test_taskcheck -v",
+  "test_command": "python3 -m unittest tests.test_taskcheck -v",
+  "actions": ["create task","assign task","get task","check task status","generate report","review task","create task from template"],
+  "permissions": ["canonical_sqlite","taskcheck_evidence_store","lucyos_events"],
+  "fallback": [],
+  "implementation_notes": "TaskCheck is a domain subsystem over canonical AION task/event state, not a competing task queue."
+}
