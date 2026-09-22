@@ -2,7 +2,7 @@
 """Public mobile TaskCheck surface; token-scoped, no LucyOS control credentials in browser."""
 from __future__ import annotations
 
-import argparse, json, mimetypes, os, sys
+import argparse, json, mimetypes, os, shutil, subprocess, sys
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 from pathlib import Path
 from urllib.parse import urlsplit
@@ -14,6 +14,25 @@ ROOT=Path(__file__).resolve().parents[1]
 WEB=ROOT/'taskcheck_web'
 MAX_JSON=64*1024
 MAX_EVIDENCE=8*1024*1024
+
+
+def notify_requester(taskcheck_id: str) -> dict:
+    """Optional deterministic OpenClaw notification adapter. Submission remains durable if transport fails."""
+    target=os.environ.get("TASKCHECK_NOTIFY_TARGET","").strip()
+    binary=os.environ.get("TASKCHECK_OPENCLAW_BIN","").strip() or shutil.which("openclaw")
+    if not target or not binary:
+        return {"status":"NOT_CONFIGURED"}
+    message=taskcheck.text_report(taskcheck_id)
+    try:
+        result=subprocess.run([binary,"message","send","--channel","whatsapp","--target",target,"--message",message,"--json"],stdout=subprocess.PIPE,stderr=subprocess.DEVNULL,text=True,timeout=30,check=False)
+    except (OSError,subprocess.TimeoutExpired):
+        taskcheck._emit("task.notification.failed",taskcheck_id,channel="whatsapp")
+        return {"status":"FAILED"}
+    if result.returncode != 0:
+        taskcheck._emit("task.notification.failed",taskcheck_id,channel="whatsapp")
+        return {"status":"FAILED"}
+    taskcheck._emit("task.notification.sent",taskcheck_id,channel="whatsapp")
+    return {"status":"SENT"}
 
 class Handler(BaseHTTPRequestHandler):
     def log_message(self, fmt,*args): pass
@@ -71,7 +90,7 @@ class Handler(BaseHTTPRequestHandler):
                 if n<=0 or n>MAX_EVIDENCE: raise ValueError('invalid evidence size')
                 result=taskcheck.add_evidence(parts[2],parts[4],self.rfile.read(n),self.headers.get('Content-Type','').split(';')[0]); return self.json(201,{'ok':True,'evidence':result})
             if len(parts)==4 and parts[:2]==['api','taskcheck'] and parts[3]=='submit':
-                return self.json(200,{'ok':True,'report':taskcheck.complete(parts[2])})
+                report=taskcheck.complete(parts[2]); notification=notify_requester(report['taskcheck_id']); return self.json(200,{'ok':True,'report':report,'notification':notification})
         except ValueError as e: return self.error_json(400,str(e))
         return self.error_json(404,'not found')
 

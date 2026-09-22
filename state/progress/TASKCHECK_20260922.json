@@ -6,10 +6,11 @@
   "worktree": "/root/lucyos-wt-taskcheck",
   "integration_untouched": true,
   "resume": "Deploy bounded HTTPS test endpoint on Mark-2, create canonical Insta360 task, verify public URL, then send via existing OpenClaw WhatsApp if URL passes.",
-  "focused_tests": "5 passed",
+  "focused_tests": "6 TaskCheck tests plus existing bridge regression passed",
   "full_regression": "430 passed; 1 optional dependency skipped",
   "secret_scan": "PASS",
   "architecture_guard": "PASS",
   "deployment": "NOT_YET_DEPLOYED",
-  "whatsapp": "CONFIGURED; DRY_RUN_PASS; LIVE_SEND_NOT_YET_ATTEMPTED"
+  "whatsapp": "CONFIGURED; DRY_RUN_PASS; LIVE_SEND_NOT_YET_ATTEMPTED",
+  "completion_notification": "OpenClaw adapter implemented; focused and bridge regression passed; live notification pending real submission"
 }

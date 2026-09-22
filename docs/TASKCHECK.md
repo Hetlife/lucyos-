@@ -24,7 +24,7 @@ Run `python3 bridges/taskcheck_server.py --host 127.0.0.1 --port 8790` behind HT
 
 ## WhatsApp
 
-Use the existing OpenClaw WhatsApp channel. Generate assignment text with `taskcheck.whatsapp_assignment(...)` and send with OpenClaw's deterministic message command. Do not create a second WhatsApp provider when the configured channel is healthy.
+Use the existing OpenClaw WhatsApp channel. Generate assignment text with `taskcheck.whatsapp_assignment(...)` and send with OpenClaw's deterministic message command. Do not create a second WhatsApp provider when the configured channel is healthy. For automatic requester completion reports, start the public server with `TASKCHECK_NOTIFY_TARGET` set server-side to the requester WhatsApp target and optionally `TASKCHECK_OPENCLAW_BIN`; the browser never receives either value. Transport failure emits `task.notification.failed` but never discards a submitted result.
 
 ## Templates
 
@@ -36,4 +36,4 @@ Routine status is deterministic. Any HIGH/CRITICAL failure yields `HOLD_PAYMENT`
 
 ## Security / deployment
 
-Serve only through HTTPS for external assignees. Tokens are unique, revocable and expiring. The server validates task ownership, file type/size and token scope. Never place provider secrets in frontend assets. A stable production deployment should use the existing Mark-2 host behind a managed HTTPS ingress/domain or a future approved Cloudflare tunnel.
+Configuration: `TASKCHECK_PUBLIC_BASE_URL` is used by the CLI when generating links; `TASKCHECK_NOTIFY_TARGET` and optional `TASKCHECK_OPENCLAW_BIN` configure server-side completion notification. Serve only through HTTPS for external assignees. Tokens are unique, revocable and expiring. The server validates task ownership, file type/size and token scope. Never place provider secrets in frontend assets. A stable production deployment should use the existing Mark-2 host behind a managed HTTPS ingress/domain or a future approved Cloudflare tunnel.
