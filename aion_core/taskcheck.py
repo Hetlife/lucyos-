@@ -132,7 +132,16 @@ def _template_map(row) -> tuple[dict, dict]:
     return template, {c["id"]: c for c in template["checks"]}
 
 
-def public_task(token: str, *, mark_opened: bool = True) -> dict:
+def mark_opened(token: str) -> dict:
+    row = _run_for_token(token)
+    if not row["opened_at"]:
+        now = util.now(); conn = db.connect()
+        conn.execute("UPDATE taskcheck_runs SET status=CASE WHEN status='ASSIGNED' THEN 'OPENED' ELSE status END, opened_at=?, updated_at=? WHERE taskcheck_id=?", (now, now, row["taskcheck_id"]))
+        conn.commit(); _emit("task.opened", row["taskcheck_id"], assignee=row["assignee"])
+    return {"ok": True, "taskcheck_id": row["taskcheck_id"]}
+
+
+def public_task(token: str, *, mark_opened: bool = False) -> dict:
     row = _run_for_token(token); conn = db.connect()
     if mark_opened and not row["opened_at"]:
         now=util.now(); conn.execute("UPDATE taskcheck_runs SET status='OPENED',opened_at=?,updated_at=? WHERE taskcheck_id=?", (now,now,row["taskcheck_id"])); conn.commit(); _emit("task.opened", row["taskcheck_id"], assignee=row["assignee"]); row=_run_for_token(token)
