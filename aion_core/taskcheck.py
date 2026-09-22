@@ -87,6 +87,9 @@ def expire_due(now: str | None = None) -> list[str]:
             "UPDATE taskcheck_runs SET status='EXPIRED',updated_at=? WHERE taskcheck_id=?",
             (cutoff,row["taskcheck_id"]),
         )
+        # Current AION task updates use BEGIN IMMEDIATE. Commit the TaskCheck
+        # state transition first so we never nest write transactions.
+        conn.commit()
         tasks.update(
             row["aion_task_id"], status="CANCELLED",
             blockers="TaskCheck deadline expired",
