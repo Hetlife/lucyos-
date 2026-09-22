@@ -3,6 +3,7 @@ from __future__ import annotations
 
 import subprocess
 import platform
+import os
 from pathlib import Path
 
 from .base import REPO, HostAdapter
@@ -34,11 +35,28 @@ class LinuxHost(HostAdapter):
             return False
         return None
 
+    def _user_systemd_env(self) -> dict[str, str]:
+        """Return an environment that can reach the current user's systemd bus.
+
+        Remote/non-login shells commonly omit XDG_RUNTIME_DIR and
+        DBUS_SESSION_BUS_ADDRESS even while the user manager is alive.  For a
+        numeric uid the systemd runtime directory is deterministic, so fill
+        only missing values and preserve any explicit caller environment.
+        """
+        env = os.environ.copy()
+        uid = os.getuid()
+        runtime = Path(f"/run/user/{uid}")
+        if runtime.is_dir():
+            env.setdefault("XDG_RUNTIME_DIR", str(runtime))
+            env.setdefault("DBUS_SESSION_BUS_ADDRESS", f"unix:path={runtime}/bus")
+        return env
+
     def scheduler_available(self) -> bool:
         try:
             result = subprocess.run(
                 ["systemctl", "--user", "is-system-running"],
-                capture_output=True, timeout=5, text=True)
+                capture_output=True, timeout=5, text=True,
+                env=self._user_systemd_env())
         except (OSError, subprocess.TimeoutExpired):
             return False
         # A state response such as "running" or "degraded" proves that the
