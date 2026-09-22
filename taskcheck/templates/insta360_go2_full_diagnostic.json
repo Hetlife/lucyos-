@@ -1,0 +1,262 @@
+{
+  "template_id": "insta360_go2_full_diagnostic",
+  "version": 1,
+  "title": "INSTA360 GO 2 — Full Diagnostic",
+  "description": "Full used-camera health diagnostic before any purchase or repair. Do not reset, open, repair, buy, or modify the camera. Test only, record evidence, and submit results.",
+  "critical_rules": [],
+  "checks": [
+    {
+      "id": "physical_body",
+      "title": "Step 1A — Camera body",
+      "instruction": "Inspect body for cracks, dents, separation, impact marks or deformation. Add a note for any defect.",
+      "help": "",
+      "expected_result": "No structural cracks or serious impact damage.",
+      "required": true,
+      "severity": "HIGH",
+      "evidence_allowed": true,
+      "note_allowed": true
+    },
+    {
+      "id": "physical_lens",
+      "title": "Step 1B — Lens",
+      "instruction": "Inspect lens glass closely for scratches, chips, cracks, haze or coating damage.",
+      "help": "",
+      "expected_result": "Lens surface is clear and undamaged.",
+      "required": true,
+      "severity": "HIGH",
+      "evidence_allowed": true,
+      "note_allowed": true
+    },
+    {
+      "id": "physical_contacts",
+      "title": "Step 1C — Charging contacts",
+      "instruction": "Inspect charging contacts on camera and case for dirt, corrosion, wear or damage.",
+      "help": "",
+      "expected_result": "Contacts clean, aligned and undamaged.",
+      "required": true,
+      "severity": "HIGH",
+      "evidence_allowed": true,
+      "note_allowed": true
+    },
+    {
+      "id": "physical_case",
+      "title": "Step 1D — Charging case condition",
+      "instruction": "Inspect charging case body, hinge, connector and seating of camera.",
+      "help": "",
+      "expected_result": "Case intact and camera seats correctly.",
+      "required": true,
+      "severity": "MEDIUM",
+      "evidence_allowed": true,
+      "note_allowed": true
+    },
+    {
+      "id": "physical_controls",
+      "title": "Step 1E — Buttons/display",
+      "instruction": "Press buttons and verify case display/indicators respond normally.",
+      "help": "",
+      "expected_result": "Controls and display/indicators work normally.",
+      "required": true,
+      "severity": "HIGH",
+      "evidence_allowed": true,
+      "note_allowed": true
+    },
+    {
+      "id": "power_basic",
+      "title": "Step 1F — Power on",
+      "instruction": "Turn camera on normally and observe boot behaviour.",
+      "help": "",
+      "expected_result": "Camera powers on without repeated attempts, errors or abnormal delay.",
+      "required": true,
+      "severity": "HIGH",
+      "evidence_allowed": true,
+      "note_allowed": true
+    },
+    {
+      "id": "case_recognition",
+      "title": "Step 1G — Case recognizes camera",
+      "instruction": "Insert camera into case and confirm recognition/charging indication.",
+      "help": "",
+      "expected_result": "Case detects camera reliably.",
+      "required": true,
+      "severity": "HIGH",
+      "evidence_allowed": true,
+      "note_allowed": true
+    },
+    {
+      "id": "phone_connection",
+      "title": "Step 1H — Phone/app connection",
+      "instruction": "Connect camera to the Insta360 app on the phone. Do not reset or remove another owner account.",
+      "help": "",
+      "expected_result": "Phone/app connects and camera is controllable.",
+      "required": true,
+      "severity": "HIGH",
+      "evidence_allowed": true,
+      "note_allowed": true
+    },
+    {
+      "id": "storage_capacity",
+      "title": "Step 1I — Confirm storage",
+      "instruction": "Confirm whether the camera is 32GB or 64GB. Write the exact capacity in the note.",
+      "help": "",
+      "expected_result": "Storage capacity clearly identified as 32GB or 64GB.",
+      "required": true,
+      "severity": "MEDIUM",
+      "evidence_allowed": true,
+      "note_allowed": true
+    },
+    {
+      "id": "photos_overview",
+      "title": "Step 1J — Overview photos",
+      "instruction": "Take 2–3 clear photos showing camera body, lens and charging case. Upload them here.",
+      "help": "",
+      "expected_result": "2–3 clear evidence photos attached.",
+      "required": true,
+      "severity": "MEDIUM",
+      "evidence_allowed": true,
+      "note_allowed": true
+    },
+    {
+      "id": "full_charge",
+      "title": "Step 2 — Full charge",
+      "instruction": "Charge camera and case to 100%. In the note write the time both reach 100%. Do not begin battery recording until both are fully charged.",
+      "help": "",
+      "expected_result": "Camera and case both reach 100%; charge completion time recorded.",
+      "required": true,
+      "severity": "HIGH",
+      "evidence_allowed": true,
+      "note_allowed": true
+    },
+    {
+      "id": "battery_camera",
+      "title": "Step 3 — Camera-only battery test",
+      "instruction": "Remove camera from case. Set Pro Video + FlowState. Start at 100% and record continuously until it automatically stops/shuts down. In the note record start time, end time, total minutes, and whether temperature was Normal / Warm / Very Hot.",
+      "help": "",
+      "expected_result": "Complete uninterrupted camera-only runtime recorded from 100% to automatic stop.",
+      "required": true,
+      "severity": "HIGH",
+      "evidence_allowed": true,
+      "note_allowed": true
+    },
+    {
+      "id": "battery_shutdown",
+      "title": "Step 3B — Shutdown/heat behaviour",
+      "instruction": "During the camera-only battery test, note any unexpected shutdown, recording error, overheating warning or abnormal heat.",
+      "help": "",
+      "expected_result": "No unexpected shutdown or abnormal thermal behaviour.",
+      "required": true,
+      "severity": "HIGH",
+      "evidence_allowed": true,
+      "note_allowed": true
+    },
+    {
+      "id": "case_recharge",
+      "title": "Step 4A — Charging case recharge test",
+      "instruction": "Put depleted camera into case. In the note record camera % before, case % before, camera % after, and case % after when charging ends.",
+      "help": "",
+      "expected_result": "Case meaningfully recharges the camera and charging stops normally.",
+      "required": true,
+      "severity": "HIGH",
+      "evidence_allowed": true,
+      "note_allowed": true
+    },
+    {
+      "id": "battery_second",
+      "title": "Step 4B — Second recording test",
+      "instruction": "After the case recharge, repeat Pro Video + FlowState continuous recording. Record the second runtime in minutes.",
+      "help": "",
+      "expected_result": "Second runtime measured and recorded.",
+      "required": true,
+      "severity": "HIGH",
+      "evidence_allowed": true,
+      "note_allowed": true
+    },
+    {
+      "id": "video_daylight",
+      "title": "Step 5A — Daylight video",
+      "instruction": "Record three 20–30s clips: outdoor, walking/moving, stationary. Review sharpness, colours, exposure and stabilization. Upload a sample if useful.",
+      "help": "",
+      "expected_result": "Daylight image quality and stabilization assessed; note Good / Average / Poor and any issue.",
+      "required": true,
+      "severity": "MEDIUM",
+      "evidence_allowed": true,
+      "note_allowed": true
+    },
+    {
+      "id": "video_indoor",
+      "title": "Step 5B — Indoor video",
+      "instruction": "Record 20–30s office/indoor clip and a person speaking. Review noise/grain, exposure and sharpness.",
+      "help": "",
+      "expected_result": "Indoor quality assessed; note Good / Average / Poor and any issue.",
+      "required": true,
+      "severity": "MEDIUM",
+      "evidence_allowed": true,
+      "note_allowed": true
+    },
+    {
+      "id": "video_lowlight",
+      "title": "Step 5C — Low-light video",
+      "instruction": "Record a short indoor/night-ish clip. Review noise, retained detail and exposure.",
+      "help": "",
+      "expected_result": "Low-light quality assessed; note Good / Average / Poor and any issue.",
+      "required": true,
+      "severity": "MEDIUM",
+      "evidence_allowed": true,
+      "note_allowed": true
+    },
+    {
+      "id": "audio",
+      "title": "Step 6 — Audio test",
+      "instruction": "Record someone speaking for ~30 seconds. Check voice clarity, buzzing, crackling, dropouts and A/V sync.",
+      "help": "",
+      "expected_result": "Audio is clear, synchronized and free of buzzing/crackling/dropouts.",
+      "required": true,
+      "severity": "HIGH",
+      "evidence_allowed": true,
+      "note_allowed": true
+    },
+    {
+      "id": "transfer",
+      "title": "Step 7A — File transfer",
+      "instruction": "Record 3–5 short clips and transfer them to a phone or computer.",
+      "help": "",
+      "expected_result": "Files transfer without errors.",
+      "required": true,
+      "severity": "HIGH",
+      "evidence_allowed": true,
+      "note_allowed": true
+    },
+    {
+      "id": "playback",
+      "title": "Step 7B — File integrity/playback",
+      "instruction": "Play transferred clips fully. Verify video, audio and file integrity.",
+      "help": "",
+      "expected_result": "No corrupted files; videos and audio play normally.",
+      "required": true,
+      "severity": "HIGH",
+      "evidence_allowed": true,
+      "note_allowed": true
+    },
+    {
+      "id": "storage_behavior",
+      "title": "Step 7C — Storage behaviour",
+      "instruction": "Check that recording, saving and browsing clips behaves normally and free-space reporting looks plausible.",
+      "help": "",
+      "expected_result": "Storage behaves normally with no write/read errors.",
+      "required": true,
+      "severity": "HIGH",
+      "evidence_allowed": true,
+      "note_allowed": true
+    },
+    {
+      "id": "final_report",
+      "title": "Step 8 — Final health report",
+      "instruction": "In the note summarize: Storage GB; camera-only battery min; total useful time with case; temperature; Daylight/Indoor/Low-light/Stabilization ratings; Audio rating; File transfer; Charging case; Physical condition; Working properly = Yes / Warning / No; problems found; possible repair/replacement items. Do not make a purchase decision.",
+      "help": "",
+      "expected_result": "Complete factual diagnostic summary entered.",
+      "required": true,
+      "severity": "HIGH",
+      "evidence_allowed": true,
+      "note_allowed": true
+    }
+  ]
+}

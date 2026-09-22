@@ -50,7 +50,7 @@ class Handler(BaseHTTPRequestHandler):
         if not path.is_file(): return self.error_json(404,'not found')
         body=path.read_bytes(); kind=mimetypes.guess_type(path.name)[0] or 'application/octet-stream'; self.send_response(200); self.send_header('Content-Type',kind+('; charset=utf-8' if kind.startswith('text/') or kind=='application/javascript' else '')); self.security(); self.send_header('Cache-Control','public, max-age=3600'); self.send_header('Content-Length',str(len(body))); self.end_headers(); self.wfile.write(body)
     def page(self,token):
-        try: t=taskcheck.public_task(token)
+        try: t=taskcheck.public_task(token, mark_opened=False)
         except ValueError: return self.error_json(404,'task unavailable')
         tpl=(WEB/'index.html').read_text(); title=f"LUCY TaskCheck — {t['title']}"; desc=f"{len(t['checks'])}-point inspection checklist • mobile friendly"
         proto=self.headers.get('X-Forwarded-Proto','https'); host=self.headers.get('Host',''); image=f'{proto}://{host}/taskcheck-assets/preview.png' if host else '/taskcheck-assets/preview.png'; body=tpl.replace('{{OG_TITLE}}',title).replace('{{OG_DESCRIPTION}}',desc).replace('{{OG_IMAGE}}',image).encode(); self.send_response(200); self.send_header('Content-Type','text/html; charset=utf-8'); self.send_header('Cache-Control','no-store'); self.security(); self.send_header('Content-Length',str(len(body))); self.end_headers(); self.wfile.write(body)
@@ -68,7 +68,7 @@ class Handler(BaseHTTPRequestHandler):
                 row=taskcheck._run_for_token(parts[2]); return self.json(200,{'ok':True,'report':taskcheck.report(row['taskcheck_id'])})
             except ValueError as e: return self.error_json(404,str(e))
         if len(parts)==3 and parts[:2]==['api','taskcheck']:
-            try: return self.json(200,{'ok':True,'task':taskcheck.public_task(parts[2])})
+            try: return self.json(200,{'ok':True,'task':taskcheck.public_task(parts[2], mark_opened=False)})
             except ValueError as e: return self.error_json(404,str(e))
         if len(parts)==3 and parts[0]=='report' and parts[2]=='LUCY-TaskCheck-report.txt':
             token=parts[1]
@@ -92,6 +92,8 @@ class Handler(BaseHTTPRequestHandler):
     def do_POST(self):
         parts=self.token_parts(urlsplit(self.path).path)
         try:
+            if len(parts)==4 and parts[:2]==['api','taskcheck'] and parts[3]=='opened':
+                return self.json(200,taskcheck.mark_opened(parts[2]))
             if len(parts)==5 and parts[:2]==['api','taskcheck'] and parts[3]=='check':
                 data=self.read_json(); result=taskcheck.answer_check(parts[2],parts[4],str(data.get('response','')),str(data.get('note',''))); return self.json(200,{'ok':True,'result':result})
             if len(parts)==5 and parts[:2]==['api','taskcheck'] and parts[3]=='evidence':
