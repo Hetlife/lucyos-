@@ -1,20 +1,29 @@
 #!/usr/bin/env python3
 from __future__ import annotations
-import argparse, json, os, sys
+import argparse, json, os, subprocess, sys
 from pathlib import Path
 sys.path.insert(0,str(Path(__file__).resolve().parents[1]))
 from aion_core import bootstrap, taskcheck
 
 def main():
     p=argparse.ArgumentParser(prog='taskcheck'); sub=p.add_subparsers(dest='cmd',required=True)
-    c=sub.add_parser('create'); c.add_argument('--template',required=True); c.add_argument('--title',required=True); c.add_argument('--description',default=''); c.add_argument('--requester',required=True); c.add_argument('--assignee',required=True); c.add_argument('--location',default=''); c.add_argument('--item',default=''); c.add_argument('--price',default=''); c.add_argument('--base-url',default=os.environ.get('TASKCHECK_PUBLIC_BASE_URL',''))
+    c=sub.add_parser('create'); c.add_argument('--template',required=True); c.add_argument('--title',required=True); c.add_argument('--description',default=''); c.add_argument('--requester',required=True); c.add_argument('--assignee',required=True); c.add_argument('--location',default=''); c.add_argument('--item',default=''); c.add_argument('--price',default=''); c.add_argument('--expires-hours',type=int,default=72); c.add_argument('--base-url',default=os.environ.get('TASKCHECK_PUBLIC_BASE_URL',''))
     s=sub.add_parser('status'); s.add_argument('taskcheck_id')
     r=sub.add_parser('report'); r.add_argument('taskcheck_id')
     v=sub.add_parser('review'); v.add_argument('taskcheck_id'); v.add_argument('--reviewer',default='owner')
     sub.add_parser('templates')
     a=p.parse_args(); bootstrap.ensure(); taskcheck.load_builtin_templates()
     if a.cmd=='create':
-        meta={k:v for k,v in {'item':a.item,'asking_price_display':a.price}.items() if v}; out=taskcheck.create_task(template_id=a.template,title=a.title,description=a.description,requester=a.requester,assignee=a.assignee,location=a.location,metadata=meta,public_base_url=a.base_url); print(json.dumps(out,indent=2)); return
+        meta={k:v for k,v in {'item':a.item,'asking_price_display':a.price}.items() if v}; out=taskcheck.create_task(template_id=a.template,title=a.title,description=a.description,requester=a.requester,assignee=a.assignee,location=a.location,metadata=meta,expires_hours=a.expires_hours,public_base_url=a.base_url)
+        if not out.get('url') and os.environ.get('TASKCHECK_AUTO_HOST','1')!='0':
+            host=Path(__file__).resolve().with_name('taskcheck_host')
+            r=subprocess.run([sys.executable,str(host),'reconcile'],stdout=subprocess.PIPE,stderr=subprocess.PIPE,text=True,timeout=15,check=False,env=os.environ.copy())
+            if r.returncode==0:
+                try:
+                    h=json.loads(r.stdout); base=str(h.get('public_url') or '').rstrip('/')
+                    if base: out['url']=f"{base}/t/{out['access_token']}"
+                except json.JSONDecodeError: pass
+        print(json.dumps(out,indent=2)); return
     if a.cmd=='status' or a.cmd=='report': print(json.dumps(taskcheck.report(a.taskcheck_id),indent=2)); return
     if a.cmd=='review': print(json.dumps(taskcheck.review(a.taskcheck_id,a.reviewer),indent=2)); return
     rows=taskcheck.db.connect().execute('SELECT template_id,version,title FROM taskcheck_templates ORDER BY template_id,version').fetchall(); print(json.dumps([dict(x) for x in rows],indent=2))
