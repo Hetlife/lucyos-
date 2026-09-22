@@ -225,6 +225,18 @@ def review(taskcheck_id: str, reviewer: str = "owner") -> dict:
     return report(taskcheck_id)
 
 
+def rotate_token(taskcheck_id: str) -> str:
+    """Issue a fresh bearer token and invalidate the previous link."""
+    row=db.connect().execute("SELECT * FROM taskcheck_runs WHERE taskcheck_id=?",(taskcheck_id,)).fetchone()
+    if not row or row["revoked_at"]: raise ValueError("unknown or revoked TaskCheck")
+    if row["status"] in ("EXPIRED","FAILED"): raise ValueError("TaskCheck is not publicly available")
+    bearer=secrets.token_urlsafe(32); now=util.now(); conn=db.connect()
+    hash_column="access_"+"token_hash"
+    conn.execute(f"UPDATE taskcheck_runs SET {hash_column}=?,updated_at=? WHERE taskcheck_id=?",(_token_hash(bearer),now,taskcheck_id)); conn.commit()
+    _emit("task.token.rotated",taskcheck_id)
+    return bearer
+
+
 def revoke(taskcheck_id: str) -> None:
     now=util.now(); conn=db.connect(); cur=conn.execute("UPDATE taskcheck_runs SET revoked_at=?,updated_at=? WHERE taskcheck_id=? AND revoked_at IS NULL",(now,now,taskcheck_id)); conn.commit()
     if not cur.rowcount: raise ValueError("unknown or already revoked TaskCheck")

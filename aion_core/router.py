@@ -15,7 +15,7 @@ from __future__ import annotations
 
 import re
 
-from . import approvals, db, health, memory, metrics, reports, resume, security, tasks, util
+from . import approvals, db, health, memory, metrics, owner_actions, reports, resume, security, tasks, util
 
 SECRET_REFUSAL = (
     "I did not store that message. It looks like it contains a credential.\n"
@@ -25,8 +25,9 @@ SECRET_REFUSAL = (
 )
 
 HELP = """AION commands
-status · today · money · tasks · blockers · errors · agents
+status · today · money · tasks · het tasks · blockers · errors · agents
 approve <ID> · reject <ID> (same as deny)
+open <TC-ID> · fresh secure Het Task link
 pause · resume · safe mode · safe mode off
 deep check · why <ID> · report · help
 
@@ -46,6 +47,7 @@ INTENTS = [
     ("report", re.compile(r"(?i)\b(report|full report|detailed report|end of day|evening report)\b")),
     ("today", re.compile(r"(?i)\b(today|what happened|since this morning|day so far)\b")),
     ("money", re.compile(r"(?i)\b(money|revenue|profit|earnings|costs?|spend|budget|finance)\b")),
+    ("het_tasks", re.compile(r"(?i)\b(het tasks?|my manual tasks?|what do you need me to do)\b")),
     ("blockers", re.compile(r"(?i)\b(blockers?|blocked|what do you need|need from me|waiting on me)\b")),
     ("errors", re.compile(r"(?i)\b(errors?|failures?|what broke|crashes?)\b")),
     ("agents", re.compile(r"(?i)\b(agents?|workers?|who is working)\b")),
@@ -53,6 +55,8 @@ INTENTS = [
     ("status", re.compile(r"(?i)\b(status|how are things|sitrep|update|health|everything ok)\b")),
     ("help", re.compile(r"(?i)\b(help|commands|what can you do)\b")),
 ]
+
+OPEN_HET_TASK = re.compile(r"(?i)^\s*open\s+(?P<id>TC-[A-Z0-9]{4,16})\s*$")
 
 APPROVE_STRICT = re.compile(r"(?i)^\s*(approve|deny|reject)\s+(?P<id>[a-z]+-[a-z0-9]{1,12})\s*$")
 
@@ -71,6 +75,13 @@ def handle(message: str, *, sender: str = "owner") -> str:
 
     db.log_event(sender, "whatsapp.in", raw[:200])
 
+    open_task = OPEN_HET_TASK.match(raw)
+    if open_task:
+        try:
+            return "HET TASK LINK\n" + owner_actions.reissue_link(open_task.group("id").upper())
+        except ValueError as exc:
+            return str(exc)
+
     strict = APPROVE_STRICT.match(raw)
     if strict:
         verb = strict.group(1).lower()
@@ -79,7 +90,7 @@ def handle(message: str, *, sender: str = "owner") -> str:
     lowered = raw.lower().strip(" .!?")
     simple = {
         "status": _status, "today": reports.today, "money": reports.money,
-        "tasks": reports.task_list, "blockers": reports.blockers, "errors": reports.error_list,
+        "tasks": reports.task_list, "het tasks": owner_actions.daily_digest, "blockers": reports.blockers, "errors": reports.error_list,
         "agents": reports.agent_list, "report": reports.full_report, "help": lambda: HELP,
         "pause": lambda: _pause(sender), "resume": lambda: _resume(sender),
         "safe mode": lambda: _safe_mode(True, sender), "safe mode off": lambda: _safe_mode(False, sender),
@@ -100,7 +111,7 @@ def handle(message: str, *, sender: str = "owner") -> str:
             return memory.why(m.group("id"))
         return {
             "status": _status, "today": reports.today, "money": reports.money,
-            "tasks": reports.task_list, "blockers": reports.blockers,
+            "tasks": reports.task_list, "het_tasks": owner_actions.daily_digest, "blockers": reports.blockers,
             "errors": reports.error_list, "agents": reports.agent_list,
             "report": reports.full_report, "help": lambda: HELP,
             "deep_check": _deep_check, "pause": lambda: _pause(sender),
