@@ -19,18 +19,24 @@ PROVIDERS = {
         "secret": "OPENROUTER_API_KEY",
         "default_model": "openrouter/free",
         "model_meta": "provider.openrouter_free.model",
+        "cost_class": "E0",
     },
     "groq_free": {
         "endpoint": "https://api.groq.com/openai/v1/chat/completions",
         "secret": "GROQ_API_KEY",
         "default_model": "",
         "model_meta": "provider.groq_free.model",
+        "cost_class": "E0",
     },
     "cerebras_free": {
         "endpoint": "https://api.cerebras.ai/v1/chat/completions",
         "secret": "CEREBRAS_API_KEY",
         "default_model": "",
         "model_meta": "provider.cerebras_free.model",
+        # Cerebras currently offers trial credit before paid Developer usage.
+        # Keep the integration visible, but never auto-route it through this
+        # zero-cost-only gateway. A paid path needs a separate owner gate.
+        "cost_class": "E1",
     },
 }
 DATA_POLICY = {"PUBLIC": True, "INTERNAL": False, "CONFIDENTIAL": False, "SECRET": False}
@@ -69,7 +75,7 @@ def provider_status() -> list[dict]:
             "model": model,
             "circuit_open": open_until > now,
             "failures": failures,
-            "cost_class": "E0",
+            "cost_class": spec["cost_class"],
             "allowed_data": [k for k, allowed in DATA_POLICY.items() if allowed],
         })
     return out
@@ -79,7 +85,8 @@ def eligible(*, data_class: str = "PUBLIC") -> list[str]:
     dc = data_class.upper()
     if not DATA_POLICY.get(dc, False):
         return []
-    return [x["provider"] for x in provider_status() if x["configured"] and not x["circuit_open"]]
+    return [x["provider"] for x in provider_status()
+            if x["configured"] and not x["circuit_open"] and x["cost_class"] == "E0"]
 
 
 def _mark_success(provider_id: str) -> None:
@@ -112,6 +119,8 @@ def complete(prompt: str, *, data_class: str = "PUBLIC", max_tokens: int = 384,
     candidates = [provider] if provider else eligible(data_class=dc)
     if provider and provider not in PROVIDERS:
         raise ValueError(f"unknown provider {provider}")
+    if provider and PROVIDERS[provider]["cost_class"] != "E0":
+        raise PermissionError(f"provider {provider} is not guaranteed zero-cost; owner approval is required")
     if not candidates:
         return {"ok": False, "reason": "no eligible configured free provider", "attempted": []}
     attempted = []
