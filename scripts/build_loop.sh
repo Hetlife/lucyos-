@@ -23,4 +23,9 @@ fi
 
 "${AION}" work --max "${MAX_TASKS}"
 "${AION}" sync-docs >/dev/null 2>&1
+# Best-effort, deterministic supervisor surface for phone/agent observability.
+# Advisory only: a rendering failure must never stall the canonical work loop.
+if ! "${AION}" supervisor >/dev/null 2>&1; then
+  echo "warning: supervisor snapshot failed" >&2
+fi
 exit 0
