@@ -368,6 +368,7 @@ CREATE TABLE IF NOT EXISTS taskcheck_runs (
     result_status TEXT NOT NULL DEFAULT '',
     access_token_hash TEXT NOT NULL UNIQUE,
     expires_at TEXT,
+    public_access_until TEXT,
     revoked_at TEXT,
     metadata_json TEXT NOT NULL DEFAULT '{}',
     created_at TEXT NOT NULL,
@@ -565,6 +566,9 @@ _ADDED_COLUMNS = {
     # and both nullable: a permanent agent has neither a parent nor an
     # expiry, and nothing here ever spawns a row that sets them -- that is
     # explicitly future work, gated on this schema existing first.
+    "taskcheck_runs": [
+        ("public_access_until", "TEXT"),
+    ],
     "agents": [
         ("parent_agent_id", "TEXT"),
         ("expires_at", "TEXT"),

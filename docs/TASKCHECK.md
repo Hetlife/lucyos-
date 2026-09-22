@@ -37,3 +37,13 @@ Routine status is deterministic. Any HIGH/CRITICAL failure yields `HOLD_PAYMENT`
 ## Security / deployment
 
 Configuration: `TASKCHECK_PUBLIC_BASE_URL` is used by the CLI when generating links; `TASKCHECK_NOTIFY_TARGET` and optional `TASKCHECK_OPENCLAW_BIN` configure server-side completion notification. Serve only through HTTPS for external assignees. Tokens are unique, revocable and expiring. The server validates task ownership, file type/size and token scope. Never place provider secrets in frontend assets. A stable production deployment should use the existing Mark-2 host behind a managed HTTPS ingress/domain or a future approved Cloudflare tunnel.
+
+## Expiry and demand-driven hosting
+
+Each TaskCheck has two independent clocks. `expires_at` is the real-world completion deadline. `public_access_until` is the bearer-link exposure deadline. New tasks start with both deadlines equal. If a task is submitted early, public access is shortened to at most 60 minutes after submission so the assignee can download/share the report without leaving the link online for days.
+
+Overdue incomplete TaskChecks transition to `EXPIRED`; their linked AION task transitions to `CANCELLED`, while stored answers/evidence remain in canonical AION storage. `task.expired` is recorded in the existing event log.
+
+On Mark-2, `scripts/taskcheck_host reconcile` starts the loopback TaskCheck server and Cloudflare public ingress only while at least one unexpired public TaskCheck exists. With no public TaskChecks, it stops only those TaskCheck processes; it never shuts down Mark-2 or unrelated LucyOS/OpenClaw services. Mark-2 runs this reconciliation every five minutes through cron.
+
+Create tasks with an explicit deadline using `--expires-hours <N>`. When no `--base-url` is supplied, the CLI can bring up the TaskCheck host and return the current public URL automatically. Completed reports/evidence remain local after public exposure closes.

@@ -10,9 +10,10 @@ import secrets
 from . import config, db, security, tasks, util
 
 RESPONSES = {"PASS", "FAIL", "SKIP"}
-RUN_STATES = {"CREATED", "ASSIGNED", "OPENED", "STARTED", "COMPLETED", "REVIEWED", "FAILED"}
+RUN_STATES = {"CREATED", "ASSIGNED", "OPENED", "STARTED", "COMPLETED", "REVIEWED", "FAILED", "EXPIRED"}
 RESULT_STATES = {"READY_FOR_REVIEW", "REVIEW_REQUIRED", "HOLD_PAYMENT", "WALK_AWAY"}
 MAX_NOTE = 1000
+POST_COMPLETION_PUBLIC_MINUTES = 60
 
 
 def _json(value) -> str:
@@ -62,7 +63,7 @@ def create_task(*, template_id: str, title: str, description: str, requester: st
     expires = (datetime.now(timezone.utc) + timedelta(hours=max(1, expires_hours))).replace(microsecond=0).isoformat()
     aion_task_id = tasks.create(title, project="lucyos", description=description, status="WAITING", priority=priority, human_dependence=1.0, kind="taskcheck", blockers="Awaiting external TaskCheck assignee", success_criteria="TaskCheck submitted and requester reviewed structured result", validation_method="TaskCheck result + review event", output_location=f"taskcheck:{tcid}", next_action=f"Wait for TaskCheck {tcid} completion")
     conn = db.connect()
-    conn.execute("INSERT INTO taskcheck_runs(taskcheck_id,aion_task_id,template_id,template_version,title,description,requester,assignee,location,priority,status,access_token_hash,expires_at,metadata_json,created_at,updated_at) VALUES(?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)", (tcid,aion_task_id,template_id,template["version"],security.redact(title),security.redact(description),security.redact(requester),security.redact(assignee),security.redact(location),priority,"ASSIGNED",_token_hash(token),expires,_json(metadata or {}),now,now))
+    conn.execute("INSERT INTO taskcheck_runs(taskcheck_id,aion_task_id,template_id,template_version,title,description,requester,assignee,location,priority,status,access_token_hash,expires_at,public_access_until,metadata_json,created_at,updated_at) VALUES(?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)", (tcid,aion_task_id,template_id,template["version"],security.redact(title),security.redact(description),security.redact(requester),security.redact(assignee),security.redact(location),priority,"ASSIGNED",_token_hash(token),expires,expires,_json(metadata or {}),now,now))
     for i, item in enumerate(template["checks"], 1): conn.execute("INSERT INTO taskcheck_checks(taskcheck_id,check_id,ordinal) VALUES(?,?,?)", (tcid,item["id"],i))
     conn.commit()
     _emit("task.created", tcid, requester=requester, assignee=assignee, aion_task_id=aion_task_id)
@@ -70,11 +71,59 @@ def create_task(*, template_id: str, title: str, description: str, requester: st
     base = public_base_url.rstrip("/")
     return {"taskcheck_id":tcid,"aion_task_id":aion_task_id,"access_token":token,"url":f"{base}/t/{token}" if base else "","expires_at":expires}
 
+def expire_due(now: str | None = None) -> list[str]:
+    """Expire overdue public TaskChecks while preserving their stored evidence/report data."""
+    cutoff = now or util.now()
+    conn = db.connect()
+    rows = conn.execute(
+        "SELECT taskcheck_id,aion_task_id FROM taskcheck_runs "
+        "WHERE revoked_at IS NULL AND expires_at IS NOT NULL AND expires_at<=? "
+        "AND status NOT IN ('COMPLETED','REVIEWED','EXPIRED')",
+        (cutoff,),
+    ).fetchall()
+    expired=[]
+    for row in rows:
+        conn.execute(
+            "UPDATE taskcheck_runs SET status='EXPIRED',updated_at=? WHERE taskcheck_id=?",
+            (cutoff,row["taskcheck_id"]),
+        )
+        tasks.update(
+            row["aion_task_id"], status="CANCELLED",
+            blockers="TaskCheck deadline expired",
+            next_action="Create a fresh TaskCheck if the inspection is still required",
+        )
+        _emit("task.expired",row["taskcheck_id"],aion_task_id=row["aion_task_id"],expired_at=cutoff)
+        expired.append(row["taskcheck_id"])
+    conn.commit()
+    return expired
+
+
+def active_public_window(now: str | None = None) -> dict:
+    """Return deterministic public-hosting demand from links that should remain reachable."""
+    expire_due(now)
+    cutoff = now or util.now()
+    rows = db.connect().execute(
+        "SELECT taskcheck_id,expires_at,public_access_until,status FROM taskcheck_runs "
+        "WHERE revoked_at IS NULL AND COALESCE(public_access_until,expires_at)>? "
+        "AND status NOT IN ('FAILED','EXPIRED') ORDER BY COALESCE(public_access_until,expires_at)",
+        (cutoff,),
+    ).fetchall()
+    deadlines=[r["public_access_until"] or r["expires_at"] for r in rows]
+    return {
+        "active_count": len(rows),
+        "next_public_expiry": deadlines[0] if deadlines else None,
+        "last_public_expiry": deadlines[-1] if deadlines else None,
+        "taskcheck_ids": [r["taskcheck_id"] for r in rows],
+    }
+
+
 def _run_for_token(token: str):
+    expire_due()
     row = db.connect().execute("SELECT * FROM taskcheck_runs WHERE access_token_hash=?", (_token_hash(token),)).fetchone()
     if not row: raise ValueError("invalid task token")
     if row["revoked_at"]: raise ValueError("task token revoked")
-    if row["expires_at"] and datetime.fromisoformat(row["expires_at"]) < datetime.now(timezone.utc): raise ValueError("task token expired")
+    access_deadline = row["public_access_until"] or row["expires_at"]
+    if access_deadline and datetime.fromisoformat(access_deadline) < datetime.now(timezone.utc): raise ValueError("task public access expired")
     return row
 
 
@@ -95,7 +144,7 @@ def public_task(token: str, *, mark_opened: bool = True) -> dict:
     checks=[]
     for item in template["checks"]:
         a=answers[item["id"]]; merged=dict(item); merged.update({"response":a["response"],"note":a["note"],"answered_at":a["answered_at"],"evidence":evidence.get(item["id"],[]) }); checks.append(merged)
-    return {"taskcheck_id":row["taskcheck_id"],"title":row["title"],"description":row["description"],"requester":row["requester"],"assignee":row["assignee"],"location":row["location"],"status":row["status"],"result_status":row["result_status"],"expires_at":row["expires_at"],"metadata":json.loads(row["metadata_json"]),"template":{"id":template["template_id"],"version":template["version"],"title":template["title"]},"checks":checks}
+    return {"taskcheck_id":row["taskcheck_id"],"title":row["title"],"description":row["description"],"requester":row["requester"],"assignee":row["assignee"],"location":row["location"],"status":row["status"],"result_status":row["result_status"],"expires_at":row["expires_at"],"public_access_until":row["public_access_until"],"metadata":json.loads(row["metadata_json"]),"template":{"id":template["template_id"],"version":template["version"],"title":template["title"]},"checks":checks}
 
 
 def answer_check(token: str, check_id: str, response: str, note: str = "") -> dict:
@@ -143,7 +192,9 @@ def complete(token: str) -> dict:
     required={c["id"] for c in template["checks"] if c.get("required",True)}
     missing=[cid for cid in summary["unanswered"] if cid in required]
     if missing: raise ValueError("required checks incomplete: "+", ".join(missing))
-    now=util.now(); conn=db.connect(); conn.execute("UPDATE taskcheck_runs SET status='COMPLETED',result_status=?,completed_at=?,updated_at=? WHERE taskcheck_id=?",(summary["result_status"],now,now,row["taskcheck_id"])); conn.commit()
+    now=util.now(); access_until=(datetime.now(timezone.utc)+timedelta(minutes=POST_COMPLETION_PUBLIC_MINUTES)).replace(microsecond=0).isoformat()
+    if row["expires_at"] and row["expires_at"] < access_until: access_until=row["expires_at"]
+    conn=db.connect(); conn.execute("UPDATE taskcheck_runs SET status='COMPLETED',result_status=?,completed_at=?,public_access_until=?,updated_at=? WHERE taskcheck_id=?",(summary["result_status"],now,access_until,now,row["taskcheck_id"])); conn.commit()
     tasks.update(row["aion_task_id"],status="NEEDS_REVIEW",blockers="Requester review required",evidence=f"TaskCheck {row['taskcheck_id']} submitted: {summary['result_status']}",next_action=f"Review TaskCheck {row['taskcheck_id']}")
     _emit("task.completed",row["taskcheck_id"],requester=row["requester"],assignee=row["assignee"],result_id=row["taskcheck_id"],status=summary["result_status"])
     return report(row["taskcheck_id"])

@@ -1,5 +1,6 @@
 import json, os, tempfile, unittest
 from pathlib import Path
+from datetime import datetime, timedelta, timezone
 from unittest.mock import patch
 from tests.base import AionTest
 from aion_core import db, taskcheck, tasks
@@ -25,5 +26,15 @@ class TestTaskCheck(AionTest):
     def test_token_is_hashed_and_revocable(self):
         created=self.make(); row=db.connect().execute('SELECT access_token_hash FROM taskcheck_runs WHERE taskcheck_id=?',(created['taskcheck_id'],)).fetchone(); self.assertNotEqual(row['access_token_hash'],created['access_token']); taskcheck.revoke(created['taskcheck_id'])
         with self.assertRaises(ValueError): taskcheck.public_task(created['access_token'])
+    def test_expiry_cancels_linked_aion_task(self):
+        created=self.make(); future=(datetime.fromisoformat(created['expires_at'])+timedelta(seconds=1)).isoformat()
+        expired=taskcheck.expire_due(future); self.assertIn(created['taskcheck_id'],expired)
+        row=db.connect().execute('SELECT status FROM taskcheck_runs WHERE taskcheck_id=?',(created['taskcheck_id'],)).fetchone(); self.assertEqual(row['status'],'EXPIRED')
+        self.assertEqual(tasks.get(created['aion_task_id'])['status'],'CANCELLED')
+    def test_completion_shortens_public_access_window(self):
+        created=self.make(); token=created['access_token']; public=taskcheck.public_task(token,mark_opened=False)
+        for c in public['checks']: taskcheck.answer_check(token,c['id'],'PASS')
+        taskcheck.complete(token); row=db.connect().execute('SELECT completed_at,expires_at,public_access_until FROM taskcheck_runs WHERE taskcheck_id=?',(created['taskcheck_id'],)).fetchone()
+        self.assertLessEqual(row['public_access_until'],row['expires_at']); self.assertLessEqual(datetime.fromisoformat(row['public_access_until'])-datetime.fromisoformat(row['completed_at']),timedelta(minutes=60,seconds=1))
     def test_report_is_factual(self):
         created=self.make(); msg=taskcheck.whatsapp_assignment(taskcheck.public_task(created['access_token'],mark_opened=False),created['url']); self.assertIn('PASS / FAIL / SKIP',msg); self.assertNotIn('buy it',msg.lower()); self.assertNotIn('do not buy',msg.lower())
