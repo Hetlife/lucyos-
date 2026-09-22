@@ -9,7 +9,8 @@ import subprocess
 import sys
 from pathlib import Path
 
-from . import config, db, errors, host, metrics, packets, tasks, util, worker
+from . import (approvals, config, db, errors, host, metrics, packets, resume,
+               semantic_recall, sessions, tasks, util, worker)
 
 
 def _run(cmd: list[str], timeout: int = 8) -> tuple[int, str]:
@@ -486,3 +487,125 @@ def _headline(verdict: str) -> str:
         return ("LucyOS is sound here; finish the owner steps above, "
                 "then re-run `aion verify`.")
     return "Do not run work on this machine until the blocking failures above are fixed."
+
+
+# Compact deterministic autonomy supervision. This deliberately makes no LLM
+# calls and writes only rebuildable status surfaces under AION_HOME.
+def supervisor_state(report: dict, counts: dict, pending: list, open_errors: list) -> str:
+    if not report["healthy"]:
+        return "DEGRADED"
+    if open_errors:
+        return "REPAIR_REQUIRED"
+    if counts.get("RUNNING", 0) or counts.get("READY", 0):
+        return "ACTIVE"
+    if pending:
+        return "OWNER_ACTION"
+    if counts.get("BLOCKED", 0) or counts.get("WAITING", 0):
+        return "WAITING"
+    return "IDLE"
+
+
+def supervisor_next_action(report: dict, counts: dict, pending: list,
+                           open_errors: list, ready) -> str:
+    if not report["healthy"]:
+        return "run: aion health --deep; repair measured failing checks first"
+    if open_errors:
+        return "run: aion errors; root-cause and resolve before adding work"
+    if counts.get("RUNNING", 0):
+        return "continue current RUNNING task; require fresh evidence before completion"
+    if ready is not None:
+        return f"run: aion work --max 1  # {ready['task_id']}"
+    if pending:
+        return "run: aion approvals; owner decision is the current boundary"
+    if counts.get("BLOCKED", 0) or counts.get("WAITING", 0):
+        return "run: aion blockers; re-triage stale blocker text against live evidence"
+    return "decompose the current objective into a small evidence-backed task"
+
+
+def supervisor_bottleneck(report: dict, counts: dict, pending: list,
+                          open_errors: list, ready) -> str:
+    if counts.get("RUNNING", 0):
+        return f"{counts['RUNNING']} task(s) running — require fresh evidence before completion"
+    waiting = counts.get("WAITING", 0) + counts.get("BLOCKED", 0)
+    if report["healthy"] and not open_errors and ready is None and not pending and waiting:
+        return f"{waiting} task(s) waiting/blocked — re-triage against live evidence"
+    return resume.identify_bottleneck(report, pending, open_errors, ready)
+
+
+def supervisor_snapshot(*, deep: bool = False, persist: bool = True) -> dict:
+    """Measure one bounded supervisor snapshot without invoking an LLM."""
+    report = run_all(deep=deep)
+    counts = tasks.counts()
+    pending = list(approvals.pending())
+    open_errors = list(errors.open_errors(limit=20))
+    ready = tasks.next_task()
+    checkpoint = resume.load()
+    semantic = semantic_recall.dependency_status()
+    capability = worker.capability_report()
+    git = check_git()
+    memory_count = db.connect().execute("SELECT COUNT(*) FROM memory").fetchone()[0]
+    open_sessions = list(sessions.open_sessions())
+
+    result = {
+        "at": util.now(),
+        "mode": "DETERMINISTIC_NO_LLM",
+        "state": supervisor_state(report, counts, pending, open_errors),
+        "health": {"healthy": report["healthy"], "failing": report["failing"]},
+        "machine": machine(),
+        "git": git,
+        "queue": counts,
+        "approvals": [r["approval_id"] for r in pending],
+        "errors": [r["error_id"] for r in open_errors],
+        "sessions": [r["session_id"] for r in open_sessions],
+        "checkpoint": {
+            "at": checkpoint.get("at"),
+            "current_task": checkpoint.get("current_task"),
+            "bottleneck": checkpoint.get("bottleneck"),
+            "next_action": checkpoint.get("next_action"),
+        },
+        "memory": {
+            "canonical": "sqlite_fts5" if db.HAS_FTS else "sqlite_like",
+            "rows": memory_count,
+            "semantic_derived_ready": semantic["ready"],
+            "semantic_dependencies": semantic,
+        },
+        "executors": {k: capability.get(k) for k in (
+            "ollama", "ollama_model", "cloud_worker", "allowlisted_prefixes",
+            "paused", "safe_mode", "governor")},
+        "budget": metrics.budget_status(),
+        "bottleneck": supervisor_bottleneck(report, counts, pending, open_errors, ready),
+        "next_action": supervisor_next_action(report, counts, pending, open_errors, ready),
+        "routing_policy": ["DET", "LOCAL", "BOUNDED_CLOUD"],
+    }
+    if persist:
+        util.write_json(config.home() / "state" / "SUPERVISOR.json", result)
+        util.atomic_write(config.home() / "SUPERVISOR.md", render_supervisor(result))
+    return result
+
+
+def render_supervisor(result: dict) -> str:
+    """Human-readable, compact enough for phone delivery and agent context."""
+    queue = result["queue"]
+    mem = result["memory"]
+    exe = result["executors"]
+    health_text = "healthy" if result["health"]["healthy"] else (
+        "failing: " + ", ".join(result["health"]["failing"]))
+    return "\n".join([
+        "# AION SUPERVISOR",
+        "",
+        f"Generated: {result['at']} · mode {result['mode']}",
+        f"State: **{result['state']}** · Health: {health_text}",
+        f"Git: {result['git']['detail']}",
+        ("Queue: " + ", ".join(f"{k}={v}" for k, v in sorted(queue.items()))),
+        f"Approvals: {', '.join(result['approvals']) or 'none'}",
+        f"Errors: {', '.join(result['errors']) or 'none'}",
+        f"Open sessions: {', '.join(result['sessions']) or 'none'}",
+        (f"Memory: {mem['canonical']} · {mem['rows']} rows · semantic derived index "
+         f"{'ready' if mem['semantic_derived_ready'] else 'not ready'}"),
+        (f"Executors: DET first · Ollama={'yes' if exe['ollama'] else 'no'} "
+         f"({exe['ollama_model'] or 'n/a'}) · bounded cloud={'yes' if exe['cloud_worker'] else 'no'} "
+         f"· governor={exe['governor']}"),
+        f"Bottleneck: {result['bottleneck']}",
+        f"Next: {result['next_action']}",
+        "",
+    ])
