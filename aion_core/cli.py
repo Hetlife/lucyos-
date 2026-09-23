@@ -133,6 +133,9 @@ def _main(argv=None) -> int:
 
     vf = sub.add_parser("verify", help="is LucyOS sound on THIS machine, and what can it do")
     vf.add_argument("--deep", action="store_true", help="also run the full test suite here")
+    vf.add_argument("--deploy-readiness", action="store_true",
+                     help="also report exact-SHA deploy readiness (authority hash drift), "
+                          "separate from runtime health")
     vf.add_argument("--json", action="store_true", help="machine-readable output")
 
     rt = sub.add_parser("route", help="decide which model class should do a task")
@@ -396,8 +399,16 @@ def _main(argv=None) -> int:
     elif cmd == "health":
         r = health.run_all(deep=args.deep)
         for c in r["checks"]:
-            print(f"{'OK  ' if c['ok'] else 'FAIL'} {c['name']}: {c['detail']}")
-        print("healthy" if r["healthy"] else "FAILING: " + ", ".join(r["failing"]))
+            mark = "OK  " if c["ok"] else ("WARN" if not c.get("required", True) else "FAIL")
+            print(f"{mark} {c['name']}: {c['detail']}")
+        advisory = [n for n in r["failing"] if n not in r["required_failing"]]
+        if r["healthy"]:
+            msg = "healthy"
+            if advisory:
+                msg += " (advisory: " + ", ".join(advisory) + ")"
+            print(msg)
+        else:
+            print("FAILING: " + ", ".join(r["required_failing"]))
         return 0 if r["healthy"] else 1
     elif cmd == "audit-export":
         chain = reports.audit_export()
@@ -418,7 +429,7 @@ def _main(argv=None) -> int:
     elif cmd == "learnrepo-status":
         _print(learnrepo.status())
     elif cmd == "verify":
-        result = health.verify(deep=args.deep)
+        result = health.verify(deep=args.deep, deploy_readiness_check=args.deploy_readiness)
         _print(result if args.json else health.render_verify(result))
         return result["exit_code"]
     elif cmd == "route":
