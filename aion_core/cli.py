@@ -322,7 +322,7 @@ def _main(argv=None) -> int:
     elif cmd == "sync-docs":
         _print("\n".join(reports.render_markdown_surfaces()))
     elif cmd == "owner-setup":
-        _print(owner_setup.write())
+        _print(owner_setup.write(probe_external=True))
     elif cmd == "fable-pack":
         _print("\n".join(fable.build_pack()))
     elif cmd == "fable-ready":
