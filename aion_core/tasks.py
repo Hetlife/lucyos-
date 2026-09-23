@@ -68,7 +68,7 @@ FAILURE_RULES = (
     ("NO_ROUTE", ("no route", "no executor", "missing executor", "no available provider")),
     ("PROVIDER_TIMEOUT", ("timed out", "timeout", "executor window ended")),
     ("TEST_FAILURE", ("validation failed", "test failed", "tests failed", "assertionerror")),
-    ("STATIC_TASK_CONTRACT_DEFECT", ("no exec_command", "plan is incomplete")),
+    ("STATIC_TASK_CONTRACT_DEFECT", ("no exec_command", "a det step has no exec_command")),
 )
 RECOVERY = {
     "OWNER_APPROVAL_REQUIRED": ("NEEDS_APPROVAL", "obtain owner approval", False),

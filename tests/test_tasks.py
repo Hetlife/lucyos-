@@ -75,6 +75,14 @@ class TestTasks(AionTest):
         # A held task requires an explicit human requeue, not a bounded auto-retry.
         self.assertFalse(tasks.claim(t, "agent-a"))
 
+    def test_unrelated_plan_incomplete_message_is_not_classified_as_static_contract_defect(self):
+        # "plan is incomplete" on its own is not the local-worker DET/no-exec
+        # signature; an unrelated failure that happens to use that phrase must
+        # not be quarantined as a static contract defect.
+        message = "review plan is incomplete: missing sign-off from owner"
+        self.assertNotEqual(tasks.classify_failure(message), "STATIC_TASK_CONTRACT_DEFECT")
+        self.assertEqual(tasks.classify_failure(message), "UNKNOWN")
+
     def test_ordinary_det_and_class_b_failures_still_retry_and_block_as_before(self):
         t = tasks.create("flaky det step", model_class="DET", exec_command="echo ok")
         self.assertEqual(tasks.fail(t, "boom 1"), "READY")
