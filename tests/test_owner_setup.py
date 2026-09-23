@@ -184,4 +184,3 @@ class TestOwnerSetupProbePolicy(AionTest):
         read_probe.assert_not_called()
         write_probe.assert_not_called()
         self.assertFalse(caps["github_probe_performed"])
-
