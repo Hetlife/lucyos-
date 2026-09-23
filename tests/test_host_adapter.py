@@ -81,7 +81,10 @@ class TestLinuxHost(unittest.TestCase):
             self.assertFalse(self.host.scheduler_available())
 
     def test_scheduler_probe_supplies_user_bus_env_for_remote_shell(self):
-        with patch("aion_core.host.linux.os.getuid", return_value=1000),              patch("aion_core.host.linux.Path.is_dir", return_value=True),              patch("subprocess.run", return_value=_completed(0, "running\n")) as run:
+        with patch.dict("aion_core.host.linux.os.environ", {}, clear=True), \
+             patch("aion_core.host.linux.os.getuid", return_value=1000), \
+             patch("aion_core.host.linux.Path.is_dir", return_value=True), \
+             patch("subprocess.run", return_value=_completed(0, "running\n")) as run:
             self.assertTrue(self.host.scheduler_available())
         env = run.call_args.kwargs["env"]
         self.assertEqual(env["XDG_RUNTIME_DIR"], "/run/user/1000")
