@@ -7,6 +7,7 @@ import shutil
 import socket
 import subprocess
 import sys
+import uuid
 from pathlib import Path
 
 from . import (approvals, config, db, errors, host, metrics, packets, resume,
@@ -211,6 +212,57 @@ def deploy_readiness() -> dict:
             "violations": violations}
 
 
+def check_github_remote() -> dict:
+    """Repository remote usability, measured without requiring a PAT.
+
+    A read-only `git ls-remote` proves the configured remote (SSH, HTTPS+
+    credential-helper, or otherwise) is reachable for reads. It deliberately
+    does not claim write authority; `check_github_write()` measures that
+    separately without mutating the remote.
+    """
+    repo = Path(__file__).resolve().parent.parent
+    code, remotes = _run(["git", "-C", str(repo), "remote"])
+    if code != 0 or not remotes.strip():
+        return {"name": "github_remote", "ok": False, "required": False,
+                "detail": "no git remote configured"}
+    remote = remotes.splitlines()[0].strip()
+    code, out = _run(["git", "-C", str(repo), "ls-remote", "--exit-code", remote, "HEAD"],
+                      timeout=6)
+    if code == 0:
+        return {"name": "github_remote", "ok": True, "required": False,
+                "detail": f"remote '{remote}' reachable (read access verified, no PAT required)"}
+    return {"name": "github_remote", "ok": False, "required": False,
+            "detail": f"remote '{remote}' configured but read access not proven (git exit {code})"}
+
+
+def check_github_write() -> dict:
+    """Repo write (push) capability, proven without mutating the remote.
+
+    `git push --dry-run` exercises the exact auth/ACL check a real push
+    would — the remote validates the update and reports success or
+    rejection — but `--dry-run` stops before the ref is actually updated,
+    so the remote is never mutated. This is the only way to prove the
+    owner requirement (repo read *and* write) rather than read-only
+    `check_github_remote`, which cannot distinguish a read-only deploy key
+    from a read/write credential.
+    """
+    repo = Path(__file__).resolve().parent.parent
+    code, remotes = _run(["git", "-C", str(repo), "remote"])
+    if code != 0 or not remotes.strip():
+        return {"name": "github_write", "ok": False, "required": False,
+                "detail": "no git remote configured"}
+    remote = remotes.splitlines()[0].strip()
+    probe_ref = f"refs/heads/aion-write-probe-{uuid.uuid4().hex[:8]}"
+    code, out = _run(
+        ["git", "-C", str(repo), "push", "--dry-run", remote, f"HEAD:{probe_ref}"],
+        timeout=10)
+    if code == 0:
+        return {"name": "github_write", "ok": True, "required": False,
+                "detail": f"remote '{remote}' write access verified (dry-run push, no mutation)"}
+    return {"name": "github_write", "ok": False, "required": False,
+            "detail": f"remote '{remote}' write access not proven (dry-run push exit {code})"}
+
+
 def check_drive_bridge() -> dict:
     from bridges.drive_bridge import capability
     cap = capability()
@@ -222,9 +274,9 @@ def check_drive_bridge() -> dict:
 CHECKS = [check_db, check_shared_brain, check_disk, check_inbox, check_tasks, check_errors,
           check_budget, check_git, check_ollama, check_network, check_secrets, check_backup,
           check_learnrepo, check_skill_registry, check_openclaw, check_authority]
-# Shells out to rclone with a network round-trip; too slow to run on every
-# ordinary health check, so it only runs when deep=True asks for it.
-DEEP_ONLY_CHECKS = [check_drive_bridge]
+# Shells out with a network round-trip; too slow to run on every ordinary
+# health check, so these only run when deep=True asks for them.
+DEEP_ONLY_CHECKS = [check_drive_bridge, check_github_remote, check_github_write]
 
 
 def run_all(deep: bool = False) -> dict:
