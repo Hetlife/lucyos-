@@ -46,6 +46,28 @@ def system_snapshot() -> dict:
     }
 
 
+def live_activity() -> dict:
+    """Cheap read-only supervisor view for Lucy Nest. No model calls."""
+    conn = db.connect()
+    active = [dict(r) for r in conn.execute(
+        "SELECT task_id,project,title,status,owner_agent,model_class,next_action,updated_at,claimed_at,started_at,retry_count,last_error FROM tasks WHERE status IN ('RUNNING','VERIFYING') ORDER BY updated_at DESC LIMIT 8").fetchall()]
+    ready = [dict(r) for r in conn.execute(
+        "SELECT task_id,project,title,status,owner_agent,model_class,next_action,updated_at,retry_count,last_error FROM tasks WHERE status='READY' ORDER BY priority ASC, updated_at ASC LIMIT 8").fetchall()]
+    blocked = [dict(r) for r in conn.execute(
+        "SELECT task_id,project,title,status,blockers,next_action,updated_at FROM tasks WHERE status IN ('BLOCKED','WAITING') ORDER BY updated_at DESC LIMIT 8").fetchall()]
+    pending = [dict(r) for r in approvals.pending()]
+    unresolved = [dict(r) for r in conn.execute(
+        "SELECT error_id,task_id,component,kind,message,created_at FROM errors WHERE resolved_at IS NULL ORDER BY created_at DESC LIMIT 8").fetchall()]
+    needs_owner = bool(pending) or any("OWNER_" in ((r.get("blockers") or "")+" "+(r.get("next_action") or "")) for r in blocked)
+    warning = bool(unresolved) or needs_owner
+    mode = "needs-you" if needs_owner else ("warning" if warning else ("working" if active else ("ready" if ready else "idle")))
+    recent = [dict(r) for r in conn.execute("SELECT id,at,actor,kind,subject,detail FROM events ORDER BY id DESC LIMIT 12").fetchall()]
+    return {"as_of": util.now(), "mode": mode, "working": bool(active), "warning": warning,
+            "needs_owner": needs_owner, "counts": tasks.counts(), "active": active, "ready": ready,
+            "blocked": blocked, "pending_approvals": pending, "unresolved_errors": unresolved,
+            "recent_events": recent, "source": "canonical-sqlite", "ai_calls": 0}
+
+
 def money_split() -> dict:
     """Real (ACTUAL) and simulated (everything else) money, never combined."""
     conn = db.connect()

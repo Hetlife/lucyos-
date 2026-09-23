@@ -41,6 +41,7 @@ API_COMMANDS = {
 # same response envelope. The text routes are untouched; this is additive.
 V1_ROUTES = {
     "/api/v1/snapshot": api.system_snapshot,
+    "/api/v1/live-activity": api.live_activity,
     "/api/v1/money": api.money_split,
     "/api/v1/projects": api.projects,
     "/api/v1/costs": api.costs,

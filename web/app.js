@@ -7,6 +7,7 @@ const COSTS_KEY = "aion.interface.costs.v1";
 const HEALTH_KEY = "aion.interface.health.v1";
 const TASKS_KEY = "aion.interface.tasks.v1";
 const PROJECTS_KEY = "aion.interface.projects.v1";
+const ACTIVITY_KEY = "aion.interface.activity.v1";
 const QUEUE_KEY = "aion.interface.capture-queue.v1";
 const EVENT_CURSOR_KEY = "aion.interface.event-cursor.v1";
 const SNAPSHOT_FIELDS = ["status", "blockers", "today"];
@@ -133,6 +134,24 @@ function renderHealth(snapshot) {
   }
 }
 
+function renderActivity(activity) {
+  if (!activity) return;
+  const nebula = byId("nebula");
+  nebula.className = "nebula " + (activity.mode || "idle");
+  const active = activity.active || [], ready = activity.ready || [];
+  const errors = activity.unresolved_errors || [], approvals = activity.pending_approvals || [];
+  let title = "LucyOS is idle", summary = "No active or ready work. Supervisor is still watching canonical state.";
+  if (activity.mode === "working") { title = "LucyOS is working"; summary = active.length + " active · " + ready.length + " ready"; }
+  else if (activity.mode === "needs-you") { title = "Het action needed"; summary = approvals.length + " approvals · " + errors.length + " unresolved failures"; }
+  else if (activity.mode === "warning") { title = "LucyOS needs attention"; summary = errors.length + " unresolved failures"; }
+  else if (activity.mode === "ready") { title = "LucyOS has work queued"; summary = ready.length + " tasks ready to run"; }
+  byId("nest-title").textContent = title; byId("nest-summary").textContent = summary;
+  const detail = byId("nest-detail"); detail.replaceChildren();
+  const rows = active.length ? active : ready;
+  if (rows.length) rows.slice(0,5).forEach(row => { const item=document.createElement("p"); item.textContent=row.status+" · "+row.title+(row.next_action ? " → "+row.next_action : ""); detail.append(item); });
+  else { const item=document.createElement("p"); item.textContent=activity.needs_owner ? "Open Needs You below for the owner action." : "No background task is currently executing."; detail.append(item); }
+}
+
 function renderTasks(rows) {
   const root = byId("tasks");
   root.replaceChildren();
@@ -210,13 +229,14 @@ async function refresh() {
   state.busy = true;
   try {
     const names = [...SNAPSHOT_FIELDS, "approvals"];
-    const [values, moneySplit, costs, health, rankedTasks, projectRows] = await Promise.all([
+    const [values, moneySplit, costs, health, rankedTasks, projectRows, activity] = await Promise.all([
       Promise.all(names.map(name => api(`/api/${name}`))),
       api("/api/v1/money"),
       api("/api/v1/costs"),
       api("/api/v1/snapshot"),
       api("/api/v1/tasks"),
       api("/api/v1/projects"),
+      api("/api/v1/live-activity"),
     ]);
     const live = Object.fromEntries(names.map((name, index) => [name, values[index]]));
     live.asOf = new Date().toISOString();
@@ -227,6 +247,7 @@ async function refresh() {
     renderHealth(health);
     renderTasks(rankedTasks);
     renderProjects(projectRows);
+    renderActivity(activity);
     localStorage.setItem(SNAPSHOT_KEY, JSON.stringify(Object.fromEntries(
       [...SNAPSHOT_FIELDS, "asOf"].map(name => [name, live[name]])
     )));
@@ -235,6 +256,7 @@ async function refresh() {
     localStorage.setItem(HEALTH_KEY, JSON.stringify(health));
     localStorage.setItem(TASKS_KEY, JSON.stringify(rankedTasks));
     localStorage.setItem(PROJECTS_KEY, JSON.stringify(projectRows));
+    localStorage.setItem(ACTIVITY_KEY, JSON.stringify(activity));
     setConnection(true);
     await flushQueue();
   } catch (error) {
@@ -344,6 +366,8 @@ byId("capture-form").addEventListener("submit", async event => {
   toast("Saved on this device");
   try { await flushQueue(); toast("Added to AION"); } catch (_) { setConnection(false); }
 });
+byId("lucy-nest").addEventListener("click", () => { const detail=byId("nest-detail"); detail.hidden=!detail.hidden; byId("nebula").classList.add("looking"); setTimeout(()=>byId("nebula").classList.remove("looking"),700); });
+byId("lucy-nest").addEventListener("keydown", event => { if(event.key==="Enter"||event.key===" "){event.preventDefault();byId("lucy-nest").click();} });
 byId("refresh").addEventListener("click", refresh);
 byId("forget").addEventListener("click", () => {
   stopLiveEvents(); localStorage.removeItem(TOKEN_KEY); state.token = ""; location.reload();
@@ -360,6 +384,8 @@ const cachedTasks = storedJSON(TASKS_KEY, null);
 if (cachedTasks) renderTasks(cachedTasks);
 const cachedProjects = storedJSON(PROJECTS_KEY, null);
 if (cachedProjects) renderProjects(cachedProjects);
+const cachedActivity = storedJSON(ACTIVITY_KEY, null);
+if (cachedActivity) renderActivity(cachedActivity);
 if (state.token) { showDashboard(); refresh(); startAutoRefresh(); startLiveEvents(); }
 if ("serviceWorker" in navigator) navigator.serviceWorker.register("/service-worker.js").catch(() => {});
 
