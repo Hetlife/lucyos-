@@ -1,6 +1,7 @@
 """Deterministic health checks.  Every value here is measured, never assumed."""
 from __future__ import annotations
 
+import json
 import os
 import shutil
 import socket
@@ -165,6 +166,50 @@ def check_skill_registry() -> dict:
 
 
 
+def _run_authority(args: list[str]) -> dict:
+    """Invoke the existing authority verifier as a bounded subprocess.
+
+    Reuses `scripts/verify_authority.py` rather than re-implementing hash/git
+    checks here; a crash or timeout degrades to a reported failure, never a
+    raised exception.
+    """
+    repo = Path(__file__).resolve().parent.parent
+    script = repo / "scripts" / "verify_authority.py"
+    code, out = _run([sys.executable, str(script), *args], timeout=20)
+    try:
+        return json.loads(out)
+    except (ValueError, TypeError):
+        return {"ok": False, "violations": [out or f"verifier exited {code} with no output"]}
+
+
+def check_authority() -> dict:
+    """Authority/deploy drift, reported as visible-but-non-blocking runtime signal.
+
+    Deliberately not in BLOCKING or SETUP_REQUIRED: a healthy, working local
+    runtime can coexist with stale protected-file hashes (e.g. before a
+    refreeze). Drift is surfaced here for visibility; `deploy_readiness()`
+    is the authoritative answer to "is this tree deployable".
+    """
+    report = _run_authority(["self"])
+    violations = report.get("violations", [])
+    return {"name": "authority", "ok": report.get("ok", False), "required": False,
+            "detail": "no drift" if not violations else f"{len(violations)} drift: {', '.join(violations[:4])}"}
+
+
+def deploy_readiness() -> dict:
+    """Explicit, separate verdict: can this exact tree be deployed?
+
+    Never folded into `verify()`'s READY/SETUP_REQUIRED/BROKEN verdict —
+    a machine can be a perfectly sound place to develop on while its tree
+    is not yet frozen/deployable, and the reverse.
+    """
+    report = _run_authority(["deploy"])
+    violations = report.get("violations", [])
+    return {"ready": bool(report.get("ok", False)),
+            "fable_freeze_sha": report.get("fable_freeze_sha"),
+            "violations": violations}
+
+
 def check_drive_bridge() -> dict:
     from bridges.drive_bridge import capability
     cap = capability()
@@ -175,7 +220,7 @@ def check_drive_bridge() -> dict:
 
 CHECKS = [check_db, check_shared_brain, check_disk, check_inbox, check_tasks, check_errors,
           check_budget, check_git, check_ollama, check_network, check_secrets, check_backup,
-          check_learnrepo, check_skill_registry, check_openclaw]
+          check_learnrepo, check_skill_registry, check_openclaw, check_authority]
 # Shells out to rclone with a network round-trip; too slow to run on every
 # ordinary health check, so it only runs when deep=True asks for it.
 DEEP_ONLY_CHECKS = [check_drive_bridge]
@@ -189,11 +234,13 @@ def run_all(deep: bool = False) -> dict:
         except Exception as exc:
             results.append({"name": fn.__name__, "ok": False, "detail": f"check crashed: {exc}"})
     failing = [r for r in results if not r["ok"]]
+    required_failing = [r for r in failing if r.get("required", True)]
     report = {
         "at": util.now(),
-        "healthy": not failing,
+        "healthy": not required_failing,
         "checks": results,
         "failing": [r["name"] for r in failing],
+        "required_failing": [r["name"] for r in required_failing],
         "deep": deep,
     }
     if deep:
@@ -337,7 +384,7 @@ def _test_count(output: str) -> int | None:
     return None
 
 
-def verify(*, deep: bool = False) -> dict:
+def verify(*, deep: bool = False, deploy_readiness_check: bool = False) -> dict:
     """The full acceptance check.  Returns a verdict plus the evidence for it.
 
     Never raises.  This is the command an owner reaches for when a machine is
@@ -362,6 +409,9 @@ def verify(*, deep: bool = False) -> dict:
 
     if deep:
         result["tests"] = run_tests(Path(__file__).resolve().parent.parent)
+
+    if deploy_readiness_check:
+        result["deploy_readiness"] = deploy_readiness()
 
     result["verdict"] = _verdict(tiers, result.get("tests"))
     result["exit_code"] = EXIT_CODES[result["verdict"]]
@@ -418,6 +468,12 @@ def render_verify(result: dict) -> str:
         lines += ["", f"Test suite: {mark} — {count} · {tests['detail']}"]
     else:
         lines += ["", "Test suite: not run (use --deep to run it here)"]
+
+    dr = result.get("deploy_readiness")
+    if dr is not None:
+        mark = "READY" if dr["ready"] else "NOT READY"
+        lines += ["", f"Deploy readiness (exact-SHA authority): {mark}"]
+        lines += [f"  ✗ {v}" for v in dr["violations"]]
 
     lines += ["", _headline(result["verdict"])]
     return "\n".join(lines)
