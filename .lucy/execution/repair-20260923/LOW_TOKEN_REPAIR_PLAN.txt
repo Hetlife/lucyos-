@@ -1,0 +1,339 @@
+LUCYOS — LOW-TOKEN REPAIR, INTEGRATION & DEPLOYMENT EXECUTION PLAN
+Date: 2026-09-23
+Target: Hetlife/lucyos- / Mark-2
+Canonical runtime when first researched: bd2546c; package base refreshed to origin/main a6f214d
+Execution philosophy: high-quality plan once; cheap/deterministic execution many times.
+
+MISSION
+Repair the current autonomous-execution failure, prove the full AION lifecycle end-to-end, reconcile stale state/docs, restore trustworthy authority/deployment status, verify OpenClaw owner-control integration, and leave LucyOS ready to scale without creating duplicate control planes.
+
+NON-NEGOTIABLE ARCHITECTURE
+1. LucyOS/AION remains the single canonical control plane.
+2. Reuse the existing SQLite state, task queue, approval engine, error/event store, sessions/resume state, health system, resource governor, skill registry and backup system.
+3. Do NOT create a second queue, scheduler, approval system, secret store, canonical database or always-on LLM loop.
+4. Deterministic execution first; local model second; bounded class-B/cloud worker third.
+5. No third-party Python dependency in aion_core. Current policy is Python stdlib only.
+6. Never share the SQLite WAL database over a network filesystem.
+7. No real money, external account creation, credential changes, destructive operations, contract/legal commitments, or production exposure without the existing owner-approval path.
+8. Never modify protected/constitutional files unless current authority explicitly allows it.
+9. One bounded task per branch/patch. Smallest robust fix. No opportunistic refactors.
+10. Never mark DONE without independent evidence and a clean resume/checkpoint state.
+
+LIVE GROUND TRUTH
+- AION runtime is healthy on Mark-2.
+- Current package base is origin/main @ a6f214d0bb3542873c2b66a972abfd7aeeeb3c63.
+- SQLite integrity/backup/restore checks passed.
+- Ollama and bounded cloud/Codex executors are available.
+- TASK-AA93D718 is READY: Prove autonomous project execution end-to-end.
+- ERR-A62774E4 is OPEN: a DET step has no exec_command — the plan is incomplete.- Root contract mismatch: plan.validate() rejects DET without exec_command, but tasks.create()/READY lifecycle can still admit one.
+- Authority verifier currently FAILS on canonical runtime because protected hashes are stale for aion_core/config.py, aion_core/db.py, and aion_core/router.py.
+- Current fable_freeze_sha remains 2a7002043ceca4ffff2da09bf59860708954370e.
+- Therefore runtime health != deployment authority health.
+- Deployment contract is protected and stale relative to the currently running canonical SHA.
+- OpenClaw is installed/running, but AION reports openclaw_port not configured.
+- OWNER_SETUP_REQUIRED.md contains stale capability/setup information.
+
+MANDATORY PREFLIGHT FOR EVERY CODING TASK
+1. cd to the exact working tree.
+2. git status --short; stop if unexpected dirty files overlap the task.
+3. Read repository START_HERE.md.
+4. Read integrations/openclaw/lucyos/SKILL.md.
+5. Read .lucy/authority/HIGH_MODEL_BASELINE.json.
+6. Run ./aion status, ./aion health, ./aion capabilities, ./aion tasks --limit 20, ./aion errors.
+7. Build a bounded architecture proposal and run the existing architecture-check before editing.
+8. Confirm proposed files are not protected or that an explicit current override exists.
+9. If a protected/constitutional change is required, STOP that task and return an evidence packet for high-model/owner review. Continue independent non-protected tasks.
+
+EXECUTION PHASE 0 — ESTABLISH TRUSTED BASELINE
+Goal: make the worker operate from measured reality, not stale docs.
+Read-only commands:
+- git rev-parse HEAD
+- git status --short
+- python3 scripts/verify_authority.py self
+- python3 scripts/verify_authority.py deploy
+- ./aion verify
+- ./aion health
+- ./aion capabilities
+- ./aion backup --verify-only
+- ./aion learnrepo-status
+Record contradictions explicitly. Do not modify authority/deployment files.
+PHASE 1 — FIX THE TASK EXECUTION CONTRACT
+Goal: malformed deterministic work must never reach execution as a normal READY task.
+
+Preferred implementation area:
+- aion_core/tasks.py
+- aion_core/plan.py only if needed
+- focused tests in tests/
+Avoid aion_core/worker.py because it is protected unless a protected-path approval is explicitly supplied.
+
+Implement a single reusable task-contract validator, e.g. execution_contract_issues(row or candidate):
+- Explicit DET task entering READY/CLAIMED/RUNNING must have exec_command.
+- Approval/dependency/blocker checks remain authoritative and unchanged.
+- Do not globally require validation_command for all task types because existing model tasks intentionally fall to NEEDS_REVIEW when independent validation is absent.
+- Do not change default queue semantics unnecessarily.
+
+Shift the failure left:
+- create/update should reject or quarantine an explicitly DET + runnable task with no exec_command.
+- claim must defensively refuse legacy malformed rows.
+- A malformed legacy row should move to NEEDS_REVIEW or equivalent non-runnable state with a precise machine-authored reason, not burn a normal execution retry.
+- Add a deterministic failure class such as TASK_CONTRACT_INVALID if this can be done entirely in non-protected tasks.py.
+- It must not be classified as UNKNOWN.
+- It must not loop.
+
+Regression tests:
+A. explicit DET READY without exec_command cannot become RUNNING.
+B. legacy malformed READY row is quarantined safely.
+C. no retry is consumed for a static plan/task contract defect.
+D. valid DET task still claims exactly once and executes.
+E. A/B task behavior remains unchanged.
+F. approvals, stale-claim recovery and dependency ordering remain unchanged.
+Validation:
+python3 -m unittest tests.test_plan_worker tests.test_tasks tests.test_task_reliability -v
+python3 -m unittest discover -s tests -t . -q
+./aion scan .
+git diff --check
+
+PHASE 2 — REPAIR AND PROVE TASK-AA93D718
+Goal: canonical READY -> CLAIMED -> RUNNING -> independently VERIFIED -> DONE -> CHECKPOINT.
+
+Use supported AION/task APIs. Never raw-edit SQLite.
+Repair TASK-AA93D718 with:
+- model_class: DET
+- reversible local exec_command
+- independent validation_command
+- explicit success_criteria
+
+Recommended proof workload:
+- create a disposable marker under a designated work/proof path using existing scripts/touch_marker.py
+- validate the marker independently with test -f/test -s
+- run a focused autonomous-worker regression as part of the proof
+- remove only disposable proof artifacts when appropriate
+
+After execution verify:
+1. exactly one current claim event for the successful attempt
+2. task status DONE
+3. evidence is non-empty and contains validation exit 0
+4. owner_agent/claim state is closed correctly
+5. no stale claim remains
+6. RESUME/checkpoint points to the next real task
+7. no unresolved error remains for this task
+
+Only after the task is proven, resolve ERR-A62774E4 with the supported `aion error-resolve` command and record root cause, fix, and reusable lesson.
+Suggested resolution text:
+ROOT CAUSE: Runnable DET task was admitted without exec_command; plan validation and direct task lifecycle were inconsistent.
+FIX: Execution-contract validation now rejects/quarantines malformed deterministic tasks before execution; current task was repaired through supported APIs and re-proven.
+LESSON: Validate executable contracts at queue admission and again at claim time; worker runtime checks are the final fence, not the primary validator.
+
+PHASE 3 — MAKE HEALTH REPORT AUTHORITY REALITY
+Goal: prevent AION READY from being interpreted as safe to deploy when authority verification fails.
+
+Do NOT edit scripts/verify_authority.py or HIGH_MODEL_BASELINE.json.
+Preferred non-protected change:
+- extend aion_core/health.py / related non-protected verification surfaces to report authority status separately:
+  runtime_health = healthy/degraded
+  authority_self = pass/fail
+  deploy_authorized = pass/fail
+- execute the existing verifier as a bounded local subprocess or reuse an existing seam if present.
+- authority failure should make deployment readiness false, but should not falsely declare the already-running local runtime corrupted.
+- add tests proving hash drift is surfaced.
+
+Target owner message:
+Runtime healthy; deployment authority drift detected; do not deploy a new SHA until re-freeze.
+
+PHASE 4 — AUTHORITY RECONCILIATION GATE
+This is NOT a low-token protected-file edit task.
+Evidence package must include:
+- current HEAD
+- current fable_freeze_sha
+- exact self/deploy verifier output
+- list of protected files that drifted
+- git history showing how/when the drift landed
+- whether the changed content passed current tests/security checks
+- recommended freeze candidate SHA
+- no speculative edits
+STOP and request high-model/owner action to:
+- review the protected-file diffs
+- decide whether they are accepted canonical behavior
+- re-freeze protected hashes if accepted
+- name the exact deployment SHA in the protected deployment contract
+
+The low-token worker must never rewrite these authority files on its own.
+
+PHASE 5 — RECONCILE GENERATED SHARED-BRAIN SURFACES
+After Phase 1-4 evidence is stable:
+- ./aion sync-docs
+- regenerate OWNER_SETUP_REQUIRED.md through its supported generator
+- confirm generated docs reflect live capabilities, not old setup assumptions
+- distinguish AION local integration not configured from capability unavailable globally
+- verify Ollama detection is accurate
+- verify cloud worker detection is accurate
+- verify GitHub wording does not claim the repo cannot be operated if integration exists outside AION
+- preserve honest missing-local-secret notices
+
+Tests:
+- focused tests for owner_setup, capabilities, health, generated docs
+- full suite + scan
+
+PHASE 6 — OPENCLAW <-> AION OWNER CONTROL
+Goal: OpenClaw stays the channel/execution surface; LucyOS remains the brain.
+Do not add a new WhatsApp queue or state store.
+
+Measure first:
+- existing OpenClaw gateway service state
+- loopback listener/port
+- integrations/openclaw/lucyos current status
+- AION openclaw_port metadata
+- bridge tests
+
+If a safe existing local port can be proven, configure only non-secret openclaw_port metadata through supported AION state APIs and keep the listener loopback-only.
+Run ./aion openclaw-check.
+Prove channel input maps to LucyOS context/route/approval/task operations without transport-owned state.
+Required proof:
+owner message -> OpenClaw -> LucyOS/AION -> safe deterministic action or approval -> response
+No secret is sent through WhatsApp.
+
+PHASE 7 — RELIABILITY / UNATTENDED OPERATION
+Run controlled fault-injection tests, one at a time:
+- overlapping worker loop -> second loop refused
+- process crash -> execution lock releases
+- stale claim -> recovered within retry policy
+- provider timeout -> partial work preserved, no retry burn when executor window ends
+- validation failure -> never DONE
+- reboot/boot -> checkpoint/resume
+- backup/restore integrity
+- timer persistence
+- budget governor holds only paid work
+- owner approval boundary cannot be bypassed
+
+Target:
+one evidence-derived hands-off operating day with zero false completion and zero stale claims.
+
+PHASE 8 — DEPLOYMENT METHOD
+Do not deploy from a moving branch name.
+Once high-model/owner has named an exact approved SHA:
+1. Snapshot previous SHA.
+2. AION backup + restore verification.
+3. Capture pre-deploy health and timer state.
+4. Fetch exact SHA.
+5. Detached checkout of exact SHA.
+6. verify_authority.py deploy MUST pass.
+7. Full tests.
+8. secret scan.
+9. boot additive migrations.
+10. SQLite integrity check.11. registry check.
+12. diff installed service definitions vs repo.
+13. If service definitions changed unexpectedly: STOP for owner review.
+14. Restart only approved timers/services.
+15. health gate.
+16. second boot/resume proof.
+17. observe one full work-timer cycle.
+18. return evidence.
+19. rollback to PREVIOUS_SHA if any post-switch health gate fails.
+
+Do not edit code during deployment.
+
+PHASE 9 — CI / RELEASE DISCIPLINE
+Keep current PR CI concurrency.
+Every repair PR must pass:
+- compile
+- portability
+- secret scan
+- unit suite
+- clean bootstrap
+- upgrade-from-main schema
+- authority gate as applicable
+- macOS advisory test
+
+Protected CI workflow changes are high-model/owner work.
+Later, after authority reconciliation, consider a protected deployment environment and one-at-a-time deployment concurrency. Do not add this in the low-token repair cycle.
+
+PHASE 10 — FUTURE SCALING WITHOUT PREMATURE COMPLEXITY
+CURRENT SCALE:
+SQLite WAL + BEGIN IMMEDIATE + process singleton lock is the correct single-host control-plane design.
+
+DO NOT:
+- put SQLite/WAL on NFS/network filesystem
+- let Mark-2 and Lucy-den both write the same SQLite file
+- introduce Redis/Celery/Temporal/Kafka as a second canonical queue now
+DEFINE SCALE TRIGGERS:
+Only propose a backend migration when one or more is measured:
+- multiple hosts need to claim tasks concurrently
+- SQLite writer contention becomes material
+- queue throughput/latency target cannot be met
+- HA/failover requires an external transactional store
+- WAL/checkpoint behavior becomes an operational bottleneck
+
+MULTI-HOST FUTURE:
+High-model architecture task, not current low-token task.
+Preserve the current task/state/idempotency contract and add a backend seam.
+Candidate next backend: PostgreSQL using row-level transactional claims and SKIP LOCKED for queue consumers.
+Canonical state must still be one database/control plane.
+Migration must have dual-read/verification or export/import rehearsal, rollback, schema compatibility tests and owner approval.
+
+DURABLE WORKFLOW ENGINES:
+Temporal-like durable execution may be evaluated later as an executor/workflow backend, never silently introduced as a second authority plane.
+Any such change requires architecture audit + owner/high-model decision.
+
+OBSERVABILITY:
+Keep current events/errors/sessions as canonical evidence.
+Add structured correlation identifiers where useful: task_id, claim_id, session_id, plan_id, approval_id, worker_id.
+Do not add a third-party telemetry dependency to aion_core now.
+Later, expose an optional OpenTelemetry adapter/exporter outside core if scale requires distributed traces.
+
+MAC FUTURE:
+Maintain one core codebase.
+Linux systemd and macOS launchd remain host adapters.
+Do not fork core logic.
+Make macOS advisory CI green first; promotion to required is a protected CI policy decision.
+LOW-TOKEN WORK RULES
+- Read only the files named by the current task plus directly imported dependencies.
+- Do not reread the whole repository every turn.
+- Use AION context packets instead of chat history.
+- Work one task at a time.
+- Maximum two materially different attempts.
+- If two attempts fail, record evidence and escalate; do not loop.
+- No broad refactor.
+- No dependency addition.
+- No generated duplicate docs/control planes.
+- No direct DB edits.
+- No protected-file edits without explicit authority.
+- Run focused tests before full tests.
+- Commit, push, and open PRs only within the mission scope; never self-merge.
+- Never merge.
+
+TASK ORDER
+R-01 / P0-1: execution-contract validator + regression tests
+R-02 / P0-2: repair/prove TASK-AA93D718 and resolve ERR-A62774E4
+R-03 / P0-4: authority-health visibility
+R-07 partial: produce authority re-freeze evidence package
+R-04 / P1-1: refresh generated owner/shared-brain state
+R-05 / P1-2: reconcile OpenClaw loopback health configuration and owner-control path
+R-06 / P1-3: unattended reliability/fault tests
+R-07: final integration audit and exact-SHA deployment readiness package
+
+DEFINITION OF DONE
+- TASK-AA93D718 is DONE with independent evidence.
+- ERR-A62774E4 is RESOLVED with root cause/fix/lesson.
+- malformed DET tasks cannot execute or burn retries.
+- runtime health explicitly distinguishes deployment-authority drift.
+- authority verifier passes for the exact future deployment SHA after owner/high-model re-freeze.
+- generated docs match live capability state.
+- OpenClaw owner-control path is proven without duplicate state.- full regression + scan pass.
+- backup/restore integrity passes.
+- no stale claims.
+- no unresolved errors.
+- exact resume point exists.
+- no secrets exposed.
+- no owner boundary crossed.
+- no second queue/scheduler/database/approval system introduced.
+
+RESULT PACKET AFTER EACH TASK
+STATUS:
+ACTIONS:
+FILES_CHANGED:
+TESTS:
+RESULTS:
+BLOCKERS:
+NEXT_ACTION:
+
+Keep it concise and evidence-based. If BLOCKERS contains an owner/high-model gate, continue with the next independent safe task instead of stopping the entire program.

@@ -1,0 +1,96 @@
+{
+  "plan_id": "PLAN-LUCYOS-REPAIR-SCALE-20260923",
+  "objective": "Restore trustworthy autonomous execution, authority-aware health, channel integration, and exact-SHA deployment without creating duplicate control planes.",
+  "bottleneck": "Malformed runnable task contract plus stale authority/deployment state prevents trustworthy autonomous deployment.",
+  "success": "Autonomous task lifecycle is proven end-to-end, authority/deploy status is explicit, owner channel is reconciled, and all gates pass for an exact approved SHA.",
+  "steps": [
+    {
+      "id": "p0_1",
+      "title": "Harden deterministic task execution contract",
+      "kind": "code",
+      "model_class": "B",
+      "depends_on": [],
+      "prompt": "Implement the P0-1 section of the companion repair plan. Prefer aion_core/tasks.py and tests; avoid protected worker.py. Make malformed explicit DET runnable tasks reject/quarantine before execution and avoid retry burn.",
+      "validation_command": "python3 -m unittest tests.test_plan_worker tests.test_tasks tests.test_task_reliability -q",
+      "success_criteria": "Malformed DET tasks never become RUNNING; valid task behavior unchanged.",
+      "impact": 5,
+      "cost": 1,
+      "risk": 1
+    },
+    {
+      "id": "p0_2",
+      "title": "Repair and prove autonomous end-to-end task",
+      "kind": "test_run",
+      "model_class": "DET",
+      "depends_on": ["p0_1"],
+      "exec_command": "./aion work --max 1",
+      "validation_command": "./aion status && ./aion errors",
+      "success_criteria": "TASK-AA93D718 is proven with evidence and no stale claim or new unresolved failure.",
+      "impact": 5,
+      "cost": 1,
+      "risk": 1
+    },    {
+      "id": "p0_3",
+      "title": "Surface authority drift in health",
+      "kind": "code",
+      "model_class": "B",
+      "depends_on": ["p0_2"],
+      "prompt": "Implement P0-4 from the companion plan without editing protected authority verifier/baseline files. Runtime health and deploy authority must be distinct and tested.",
+      "validation_command": "python3 -m unittest tests.test_verify tests.test_authority_verifier -q",
+      "success_criteria": "Health reports authority drift without falsely declaring runtime corruption.",
+      "impact": 5,
+      "cost": 1,
+      "risk": 1
+    },
+    {
+      "id": "p0_4",
+      "title": "Prepare protected authority re-freeze evidence",
+      "kind": "research",
+      "model_class": "B",
+      "depends_on": ["p0_3"],
+      "prompt": "Collect the exact evidence package described in Phase 4. Do not edit protected files.",
+      "success_criteria": "Owner/Fable receives SHA, drift files, history, test/security evidence, and recommended freeze candidate.",
+      "impact": 5,
+      "cost": 1,
+      "risk": 1
+    },
+    {
+      "id": "p1_1",
+      "title": "Refresh generated state surfaces",
+      "kind": "code",
+      "model_class": "B",
+      "depends_on": ["p0_3"],      "prompt": "Implement Phase 5 from the companion plan: fix only non-protected generator logic if needed, regenerate surfaces through supported commands, and test capability wording.",
+      "validation_command": "python3 -m unittest discover -s tests -t . -q",
+      "success_criteria": "Generated setup/state docs match measured runtime capabilities.",
+      "impact": 4,
+      "cost": 1,
+      "risk": 1
+    },
+    {
+      "id": "p1_2",
+      "title": "Reconcile OpenClaw loopback integration",
+      "kind": "code",
+      "model_class": "B",
+      "depends_on": ["p1_1"],
+      "prompt": "Implement Phase 6. Reuse existing OpenClaw/LucyOS integration and canonical AION state; no new transport queue or daemon.",
+      "validation_command": "python3 -m unittest tests.test_openclaw_check tests.test_openclaw_lucyos_bridge tests.test_bridge -q",
+      "success_criteria": "Loopback OpenClaw health and owner control path are proven using existing integration.",
+      "impact": 4,
+      "cost": 1,
+      "risk": 1
+    },
+    {
+      "id": "p1_3",
+      "title": "Run unattended reliability proof",
+      "kind": "test_run",
+      "model_class": "DET",
+      "depends_on": ["p1_2"],
+      "exec_command": "python3 -m unittest tests.test_plan_worker tests.test_recovery_injection tests.test_task_reliability tests.test_backup_encryption -q",
+      "validation_command": "./aion health",
+      "success_criteria": "Fault/recovery gates pass with no stale claims, false completion, or unresolved errors.",
+      "impact": 5,
+      "cost": 1,
+      "risk": 1
+    }
+  ]
+}
