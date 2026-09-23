@@ -68,6 +68,7 @@ FAILURE_RULES = (
     ("NO_ROUTE", ("no route", "no executor", "missing executor", "no available provider")),
     ("PROVIDER_TIMEOUT", ("timed out", "timeout", "executor window ended")),
     ("TEST_FAILURE", ("validation failed", "test failed", "tests failed", "assertionerror")),
+    ("STATIC_TASK_CONTRACT_DEFECT", ("no exec_command", "a det step has no exec_command")),
 )
 RECOVERY = {
     "OWNER_APPROVAL_REQUIRED": ("NEEDS_APPROVAL", "obtain owner approval", False),
@@ -82,6 +83,9 @@ RECOVERY = {
     "PROVIDER_TIMEOUT": ("READY", "reconcile partial work before bounded retry", True),
     "TEST_FAILURE": ("READY", "inspect failing validation before bounded retry", True),
     "UNKNOWN": ("READY", "inspect failure before bounded retry", True),
+    # A plan/task with no exec_command can never succeed by retrying; quarantine
+    # it immediately and do not burn a retry attempt on a static defect.
+    "STATIC_TASK_CONTRACT_DEFECT": ("BLOCKED", "supply exec_command in the task contract, then requeue explicitly", False),
 }
 
 
