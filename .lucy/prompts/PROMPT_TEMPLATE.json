@@ -1,0 +1,22 @@
+{
+  "prompt_id": "PRM-YYYYMMDD-SHORT-NAME",
+  "title": "",
+  "created_at": "",
+  "created_by": "owner",
+  "project": "LucyOS",
+  "objective": "",
+  "source_context": [],
+  "required_inputs": [],
+  "execution_instructions": [],
+  "authority_limits": [],
+  "success_criteria": [],
+  "expected_output": [],
+  "status": "PENDING",
+  "linked_task_id": "",
+  "linked_session_id": "",
+  "starting_git_sha": "",
+  "final_git_sha": "",
+  "result_summary": "",
+  "evidence": [],
+  "archive_status": "NOT_ARCHIVED"
+}
