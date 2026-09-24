@@ -2,7 +2,7 @@ import copy
 import unittest
 from unittest import mock
 
-from aion_core import prompt_orders
+from aion_core import context as prompt_orders
 
 
 def base(status="PENDING"):
@@ -44,8 +44,8 @@ class PromptOrderTests(unittest.TestCase):
                 [{"prompt_id": "PRM-A"}, {"prompt_id": "PRM-B"}], []
             )
 
-    @mock.patch("aion_core.prompt_orders.sessions.summary", return_value={"session_id": "SES-1"})
-    @mock.patch("aion_core.prompt_orders.tasks.get", return_value={"task_id": "TASK-1"})
+    @mock.patch("aion_core.context.sessions.summary", return_value={"session_id": "SES-1"})
+    @mock.patch("aion_core.context.tasks.get", return_value={"task_id": "TASK-1"})
     def test_processing_requires_and_verifies_existing_links(self, _task, _session):
         out = prompt_orders.transition(base(), "PROCESSING", task_id="TASK-1", session_id="SES-1")
         self.assertEqual(out["status"], "PROCESSING")
