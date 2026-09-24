@@ -9,13 +9,12 @@ from __future__ import annotations
 import hashlib
 import json
 import re
-import sqlite3
 import subprocess
 import time
 from collections import defaultdict
 from pathlib import Path
 
-from . import config, security, util
+from .. import config, db, security, util
 
 DEFAULT_BUDGET_BYTES = 28 * 1024
 MIN_BUDGET_BYTES = 4 * 1024
@@ -64,25 +63,23 @@ def _hash(value) -> str:
     return hashlib.sha256(raw.encode("utf-8")).hexdigest()
 
 
-def _ro_connection(path: Path) -> sqlite3.Connection:
+def _ro_connection(path: Path):
     path = path.resolve()
     if not path.is_file():
         raise ContextCompilerError(f"canonical database missing: {path}")
+    if path != config.db_path().resolve():
+        raise ContextCompilerError("compiler may read only the configured canonical database")
     try:
-        conn = sqlite3.connect(f"file:{path}?mode=ro", uri=True)
-        conn.row_factory = sqlite3.Row
-        conn.execute("PRAGMA query_only=ON")
+        conn = db.connect()
         integrity = conn.execute("PRAGMA integrity_check").fetchone()[0]
-    except sqlite3.Error as exc:
+    except Exception as exc:
         raise ContextCompilerError(f"canonical database unreadable: {exc}") from exc
     if integrity != "ok":
-        conn.close()
         raise ContextCompilerError(f"canonical database integrity failure: {integrity}")
     required = {"tasks", "sessions", "approvals", "errors", "memory"}
     present = {r[0] for r in conn.execute("SELECT name FROM sqlite_master WHERE type='table'")}
     missing = sorted(required - present)
     if missing:
-        conn.close()
         raise ContextCompilerError("canonical database missing tables: " + ", ".join(missing))
     return conn
 
@@ -173,7 +170,7 @@ def _discover(repo: Path, db_path: Path, metrics: dict) -> tuple[list[dict], dic
                                 f"sqlite:memory:{r['memory_id']}|source:{r['source']}", metrics)
             items.append(item); hashes[item["id"]] = item["content_hash"]
     finally:
-        conn.close()
+        pass
     def git(*args: str) -> str:
         p = subprocess.run(["git", *args], cwd=repo, text=True, capture_output=True, check=False)
         return p.stdout.strip() if p.returncode == 0 else ""

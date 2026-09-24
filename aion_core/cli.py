@@ -652,7 +652,7 @@ def _main(argv=None) -> int:
         except (ValueError, OSError) as exc:
             raise CliError(security.redact(str(exc))) from None
     elif cmd == "context-compile":
-        from . import context_compiler
+        from .recall import context_compiler
         _print(context_compiler.compile_context(
             repo=Path(__file__).resolve().parents[1], task_id=args.task,
             project=args.project,
