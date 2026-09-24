@@ -5,7 +5,8 @@ import tempfile
 from pathlib import Path
 
 from tests.base import AionTest
-from aion_core import approvals, context_compiler, db, memory, sessions, tasks
+from aion_core import approvals, db, memory, sessions, tasks
+from aion_core.recall import context_compiler
 
 
 class ContextCompilerTest(AionTest):
