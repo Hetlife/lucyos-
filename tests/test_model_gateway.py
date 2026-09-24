@@ -22,6 +22,25 @@ class TestModelGateway(AionTest):
             with self.assertRaises(PermissionError):
                 model_gateway.complete("private", data_class=cls, transport=lambda *_: {})
 
+
+    def test_trial_or_paid_provider_is_not_auto_eligible(self):
+        bootstrap.set_secret("CEREBRAS_API_KEY", "test-owner-supplied-key")
+        db.set_meta("provider.cerebras_free.model", "gpt-oss-120b")
+        statuses = {row["provider"]: row for row in model_gateway.provider_status()}
+        self.assertEqual(statuses["cerebras_free"]["cost_class"], "E1")
+        self.assertNotIn("cerebras_free", model_gateway.eligible(data_class="PUBLIC"))
+
+    def test_trial_or_paid_provider_cannot_bypass_free_only_gate(self):
+        bootstrap.set_secret("CEREBRAS_API_KEY", "test-owner-supplied-key")
+        db.set_meta("provider.cerebras_free.model", "gpt-oss-120b")
+        called = []
+        with self.assertRaises(PermissionError):
+            model_gateway.complete(
+                "public", data_class="PUBLIC", provider="cerebras_free",
+                transport=lambda *args: called.append(args),
+            )
+        self.assertEqual(called, [])
+
     def test_no_key_means_no_external_call(self):
         bootstrap.set_secret("OPENROUTER_API_KEY", "")
         called = []
