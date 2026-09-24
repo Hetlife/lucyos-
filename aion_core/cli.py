@@ -285,6 +285,12 @@ def _main(argv=None) -> int:
     ctx = sub.add_parser("context", help="build a task-specific context packet")
     ctx.add_argument("task_id")
 
+    cctx = sub.add_parser("context-compile", help="build read-only derived local context")
+    cctx.add_argument("--task", default=None)
+    cctx.add_argument("--project", default=None)
+    cctx.add_argument("--budget-bytes", type=int, default=28 * 1024)
+    cctx.add_argument("--output-root", default=None)
+
     args = p.parse_args(argv)
     cmd = args.cmd
 
@@ -625,6 +631,13 @@ def _main(argv=None) -> int:
     elif cmd == "context":
         from . import context
         _print(context.build(args.task_id))
+    elif cmd == "context-compile":
+        from . import context_compiler
+        _print(context_compiler.compile_context(
+            repo=Path(__file__).resolve().parents[1], task_id=args.task,
+            project=args.project,
+            output_root=Path(args.output_root) if args.output_root else None,
+            budget_bytes=args.budget_bytes))
     return 0
 
 
