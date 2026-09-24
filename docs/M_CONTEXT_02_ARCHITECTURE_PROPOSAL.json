@@ -1,0 +1,31 @@
+{
+  "skill_id": "core.architecture-audit",
+  "candidate_id": "M-CONTEXT-02",
+  "reuse_canonical_sqlite": true,
+  "reuse_task_queue": true,
+  "reuse_approval_engine": true,
+  "reuse_health": true,
+  "reuse_resource_governor": true,
+  "feature_flagged": true,
+  "rollback_defined": true,
+  "evidence_defined": true,
+  "new_canonical_state": false,
+  "new_global_queue": false,
+  "new_scheduler": false,
+  "new_approval_system": false,
+  "new_secret_store": false,
+  "always_on_llm_health": false,
+  "mandatory_cloud_dependency": false,
+  "direct_saas_core_coupling": false,
+  "broad_autonomous_installer": false,
+  "new_daemon": false,
+  "new_recurring_cost": false,
+  "new_privilege": false,
+  "notes": "Extend the existing worker claim/execution seam with M1 deterministic context. The canonical context_compiler_enabled meta flag defaults on; disabling it blocks worker start rather than permitting an uncontextualized bypass. Rollback is a commit revert.",
+  "evidence": {
+    "canonical_state": "aion_core/db.py and tasks.py",
+    "execution_seam": "aion_core/worker.py",
+    "derived_context": "aion_core/recall/context_compiler.py",
+    "tests": "tests/test_context_worker_integration.py"
+  }
+}
