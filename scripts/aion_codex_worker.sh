@@ -17,6 +17,7 @@ Do not read or expose secrets, private_state, browser data, OAuth tokens, creden
 Do not spend money, change accounts, make external commitments, use real capital, or bypass owner approval boundaries.
 Do not commit, push, force-push, or alter canonical operating-loop semantics.
 Prefer targeted reads and existing tests. Make the smallest robust change that satisfies the objective.
+For substantial or multi-part work, use the installed unlazy completion discipline: write observable gates before implementation, inspect inherited CHECK commands before any approval, and reverify the gates immediately before reporting completion.
 Run relevant tests and git diff --check before finishing when code changes are made.
 If blocked, state the blocker precisely and leave recoverable state. Never claim success without evidence.
 Return a compact result packet with: STATUS, ACTIONS, FILES_CHANGED, TESTS, RESULTS, BLOCKERS, NEXT_ACTION.

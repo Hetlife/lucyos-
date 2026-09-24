@@ -6,7 +6,7 @@ repository or the whole chat history.  This is the main token-waste control.
 """
 from __future__ import annotations
 
-from . import agents, db, errors, memory, resume, security, tasks
+from . import agents, completion, db, errors, memory, resume, security, tasks
 
 
 def build(task_id: str) -> str:
@@ -42,6 +42,9 @@ def build(task_id: str) -> str:
         "",
         "## VALIDATION METHOD",
         row["validation_method"] or "run the repo test suite and record the command + result",
+        "",
+        "## COMPLETION CONTRACT",
+        *completion.contract_lines(row),
         "",
         "## CONSTRAINTS",
         "- Do not mark DONE without evidence (a command run, a measurement, an observation).",

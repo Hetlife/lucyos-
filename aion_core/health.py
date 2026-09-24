@@ -1,9 +1,11 @@
 """Deterministic health checks.  Every value here is measured, never assumed."""
 from __future__ import annotations
 
+import json
 import shutil
 import socket
 import subprocess
+import sys
 from pathlib import Path
 
 from . import config, db, errors, metrics, packets, tasks, util
@@ -113,6 +115,29 @@ def check_secrets() -> dict:
             "detail": f"{sf} mode {mode} (must be 0o600)"}
 
 
+def check_unlazy_skill() -> dict:
+    repo = Path(__file__).resolve().parent.parent
+    script = repo / "scripts" / "install_unlazy_skills.py"
+    if not script.is_file():
+        return {"name": "unlazy_skill", "ok": False, "detail": "installer/doctor script missing"}
+    wanted = []
+    if shutil.which("claude"):
+        wanted.append("claude")
+    if shutil.which("codex"):
+        wanted.append("codex")
+    if not wanted:
+        return {"name": "unlazy_skill", "ok": True, "required": False,
+                "detail": "no Claude Code or Codex CLI detected"}
+    failures = []
+    for target in wanted:
+        code, out = _run([sys.executable, str(script), "--check", "--target", target, "--json"], timeout=8)
+        if code != 0:
+            failures.append(target)
+    return {"name": "unlazy_skill", "ok": not failures,
+            "detail": ("pinned skill healthy for " + ", ".join(wanted)) if not failures
+                      else "missing or drifted skill: " + ", ".join(failures)}
+
+
 def check_backup() -> dict:
     d = config.home() / "BACKUPS"
     if not d.is_dir():
@@ -126,7 +151,7 @@ def check_backup() -> dict:
 
 
 CHECKS = [check_db, check_shared_brain, check_disk, check_inbox, check_tasks, check_errors,
-          check_budget, check_git, check_ollama, check_network, check_secrets, check_backup]
+          check_budget, check_git, check_ollama, check_unlazy_skill, check_network, check_secrets, check_backup]
 
 
 def run_all(deep: bool = False) -> dict:

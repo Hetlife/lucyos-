@@ -29,6 +29,8 @@ layer never silently overrides a higher one.
 |---|---|
 | No secrets in state, git, logs or WhatsApp | `aion_core/security.py`, `aion scan` |
 | DONE requires evidence | `tasks.complete` refuses an empty evidence string |
+| Substantial agent work has an acceptance contract | `aion_core/completion.py`, `context.build`, worker preflight |
+| Agent-side completion skill stays pinned/healthy | `scripts/install_unlazy_skills.py`, `health.check_unlazy_skill` |
 | One approval holds one action only | `approvals.create` touches just its own task |
 | Casual talk is not authorization | `router.APPROVE_STRICT` |
 | Cheapest capable model wins | `agents.route`, `agents.escalate` |

@@ -29,7 +29,7 @@ import urllib.error
 import urllib.request
 from pathlib import Path
 
-from . import (agents, approvals, config, context, db, errors, governor, metrics,
+from . import (agents, approvals, completion, config, context, db, errors, governor, metrics,
                router, security, sessions, tasks, util)
 
 # Prefixes a plan may execute without asking.  Everything here is reversible,
@@ -326,6 +326,16 @@ def _execute(task, cls: str, *, dry_run: bool, session_id: str | None) -> dict:
     task_id = task["task_id"]
     route = agents.route(task["kind"] or "code", complexity=min(5, task["priority"] + 1))
     agent_id = route["agent_id"] or "openclaw"
+
+    guard = completion.preflight(task)
+    if not guard["ok"]:
+        detail = "completion preflight: " + guard["detail"]
+        tasks.update(task_id, status="NEEDS_REVIEW", owner_agent=None, claimed_at=None,
+                     evidence=detail[:900], last_error="")
+        if session_id:
+            sessions.log(session_id, "result", f"{task_id} NEEDS_REVIEW — {detail[:150]}")
+        return {"task_id": task_id, "status": "NEEDS_REVIEW", "class": cls,
+                "detail": detail[:300]}
 
     if not tasks.claim(task_id, agent_id):
         return {"task_id": task_id, "status": "SKIPPED", "detail": "claimed by another worker"}

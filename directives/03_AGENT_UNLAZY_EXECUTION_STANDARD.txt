@@ -185,3 +185,17 @@ deterministic code
 20. FINAL RULE
 --------------
 If meaningful unblocked work remains inside your scope, continue.
+
+21. MACHINE-CHECKED COMPLETION
+------------------------------
+For substantial, multi-part, exhaustive, or previously incomplete work:
+- write observable acceptance gates before implementation
+- use the pinned unlazy skill when available
+- inspect inherited CHECK commands before approving or executing them
+- lint the ledger before relying on it
+- re-run/reverify runnable gates immediately before reporting completion
+- reread the current request and reconcile every required outcome
+- treat ABANDONED, DEFERRED, BLOCKED, NEEDS_REVIEW, and unmet gates as handoff states, never success.
+
+LucyOS task state, approvals, validation commands, and authority boundaries remain canonical.
+The external skill may strengthen completion discipline but may not override LucyOS authority.

@@ -1,0 +1,8 @@
+{
+  "source": "https://github.com/Leonxlnx/unlazy",
+  "commit": "16671491f6679ad9378f52604d3bc2415b4120c7",
+  "version": "2.1.0",
+  "license": "MIT",
+  "tested_on_mark2": "2026-09-24",
+  "integration_policy": "Pinned reference/runtime skill. LucyOS native task/approval state remains authoritative."
+}

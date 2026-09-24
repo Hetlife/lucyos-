@@ -20,3 +20,8 @@ rclone.conf
 *oauth*.json
 *credentials*.json
 cookies*
+# Unlazy runtime/session state is local evidence, not source.
+GATES.md
+.unlazy/
+.unlazy-hook-state.json
+.claude/settings.local.json
