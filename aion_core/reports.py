@@ -9,7 +9,7 @@ import hashlib
 import json
 
 from . import (agents, approvals, config, db, errors, governor, memory, metrics,
-               packets, resume, security, tasks, util)
+               packets, resume, security, sevaa, tasks, util)
 
 AUDIT_GENESIS_HASH = "0" * 64
 _AUDIT_CHAIN_FIELDS = ("id", "at", "day", "actor", "kind", "subject", "detail", "prev_hash")
@@ -52,6 +52,10 @@ def status() -> str:
         f"Unresolved errors: {len(open_errs)}",
         f"Next action: {nxt['title'] if nxt else _nothing_runnable(counts)}",
     ]
+    if sevaa.automation_token():
+        # Only shown once SEVAA is actually configured; a plain AION install
+        # never mentions it.
+        lines.append(sevaa.status_line())
     alert = governor.pending_alert()
     if alert:
         lines += ["", f"⚠ {alert}"]
