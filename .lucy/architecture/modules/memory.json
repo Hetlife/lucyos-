@@ -1,0 +1,15 @@
+{
+  "module": "memory",
+  "purpose": "Memory, recall and task context construction.",
+  "public_api": ["aion_core.memory.search", "aion_core.memory.remember", "aion_core.memory.decide", "aion_core.memory.why", "aion_core.context.build"],
+  "owned_files": ["aion_core/memory.py", "aion_core/semantic_recall.py", "aion_core/context.py", "aion_core/recall/**/*.py"],
+  "allowed_dependencies": ["execution", "kernel.state", "kernel.tasks"],
+  "forbidden_dependencies": [],
+  "state_touched": ["Memory and decisions in canonical SQLite", "Derived semantic recall index"],
+  "side_effects": ["Database and derived index I/O; optional embedding requests"],
+  "tests": ["tests/test_semantic_recall.py", "tests/test_context_contract.py"],
+  "invariants": ["Semantic recall is derived state, not a second canonical store."],
+  "adrs": [],
+  "risk_level": "medium",
+  "protected_paths": []
+}
