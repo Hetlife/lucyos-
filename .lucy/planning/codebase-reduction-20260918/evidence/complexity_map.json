@@ -412,14 +412,14 @@
         },
         {
           "line": 34,
-          "loc": 595,
+          "loc": 615,
           "name": "_main"
         }
       ],
       "functions_over_120": [
         {
           "line": 34,
-          "loc": 595,
+          "loc": 615,
           "name": "_main"
         }
       ],
@@ -458,6 +458,7 @@
         "aion_core.security",
         "aion_core.seed",
         "aion_core.sessions",
+        "aion_core.sevaa",
         "aion_core.skills",
         "aion_core.tasks",
         "aion_core.util",
@@ -465,7 +466,7 @@
         "bridges.drive_bridge",
         "bridges.openclaw_check"
       ],
-      "loc": 632,
+      "loc": 652,
       "path": "aion_core/cli.py"
     },
     "aion_core.config": {
@@ -509,6 +510,7 @@
         "aion_core.resume",
         "aion_core.semantic_recall",
         "aion_core.sessions",
+        "aion_core.sevaa",
         "aion_core.taskcheck",
         "aion_core.tasks",
         "aion_core.worker",
@@ -524,9 +526,34 @@
       "classes": 0,
       "functions": [
         {
-          "line": 12,
-          "loc": 50,
+          "line": 19,
+          "loc": 60,
           "name": "build"
+        },
+        {
+          "line": 81,
+          "loc": 3,
+          "name": "_output"
+        },
+        {
+          "line": 86,
+          "loc": 10,
+          "name": "_git"
+        },
+        {
+          "line": 98,
+          "loc": 96,
+          "name": "_repo_sections"
+        },
+        {
+          "line": 110,
+          "loc": 5,
+          "name": "_repo_sections.allowed"
+        },
+        {
+          "line": 116,
+          "loc": 7,
+          "name": "_repo_sections.expand"
         }
       ],
       "functions_over_120": [],
@@ -541,9 +568,10 @@
         "aion_core.memory",
         "aion_core.resume",
         "aion_core.security",
-        "aion_core.tasks"
+        "aion_core.tasks",
+        "aion_core.util"
       ],
-      "loc": 61,
+      "loc": 193,
       "path": "aion_core/context.py"
     },
     "aion_core.db": {
@@ -621,6 +649,7 @@
         "aion_core.seed",
         "aion_core.semantic_recall",
         "aion_core.sessions",
+        "aion_core.sevaa",
         "aion_core.skills",
         "aion_core.sync_outbox",
         "aion_core.taskcheck",
@@ -1320,6 +1349,16 @@
           "line": 16,
           "loc": 12,
           "name": "current"
+        },
+        {
+          "line": 30,
+          "loc": 10,
+          "name": "for_name"
+        },
+        {
+          "line": 42,
+          "loc": 14,
+          "name": "deployment_plan"
         }
       ],
       "functions_over_120": [],
@@ -1333,7 +1372,7 @@
         "aion_core.host.linux",
         "aion_core.host.macos"
       ],
-      "loc": 27,
+      "loc": 55,
       "path": "aion_core/host/__init__.py"
     },
     "aion_core.host.base": {
@@ -1856,6 +1895,7 @@
         "aion_core.reports",
         "aion_core.resume",
         "aion_core.router",
+        "aion_core.sevaa",
         "aion_core.worker",
         "bridges.http_server"
       ],
@@ -1929,43 +1969,43 @@
       "classes": 0,
       "functions": [
         {
-          "line": 41,
+          "line": 47,
           "loc": 11,
           "name": "_secret"
         },
         {
-          "line": 54,
+          "line": 60,
           "loc": 3,
           "name": "_model"
         },
         {
-          "line": 59,
+          "line": 65,
           "loc": 17,
           "name": "provider_status"
         },
         {
-          "line": 78,
-          "loc": 5,
+          "line": 84,
+          "loc": 6,
           "name": "eligible"
         },
         {
-          "line": 85,
+          "line": 92,
           "loc": 3,
           "name": "_mark_success"
         },
         {
-          "line": 90,
+          "line": 97,
           "loc": 6,
           "name": "_mark_failure"
         },
         {
-          "line": 98,
+          "line": 105,
           "loc": 3,
           "name": "_http_json"
         },
         {
-          "line": 103,
-          "loc": 46,
+          "line": 110,
+          "loc": 48,
           "name": "complete"
         }
       ],
@@ -1979,7 +2019,7 @@
         "aion_core.db",
         "aion_core.security"
       ],
-      "loc": 148,
+      "loc": 157,
       "path": "aion_core/model_gateway.py"
     },
     "aion_core.money_path": {
@@ -2362,8 +2402,18 @@
           "name": "_platform_fit"
         },
         {
-          "line": 47,
-          "loc": 40,
+          "line": 48,
+          "loc": 2,
+          "name": "_scheduler_plan"
+        },
+        {
+          "line": 52,
+          "loc": 7,
+          "name": "_approval_state"
+        },
+        {
+          "line": 61,
+          "loc": 47,
           "name": "resolve"
         }
       ],
@@ -2376,7 +2426,7 @@
         "aion_core.host",
         "aion_core.skills"
       ],
-      "loc": 86,
+      "loc": 107,
       "path": "aion_core/platform_resolver.py"
     },
     "aion_core.portability": {
@@ -2485,76 +2535,76 @@
         },
         {
           "line": 22,
-          "loc": 37,
+          "loc": 41,
           "name": "status"
         },
         {
-          "line": 62,
+          "line": 66,
           "loc": 48,
           "name": "execution_status"
         },
         {
-          "line": 111,
+          "line": 115,
           "loc": 11,
           "name": "_nothing_runnable"
         },
         {
-          "line": 124,
+          "line": 128,
           "loc": 16,
           "name": "today"
         },
         {
-          "line": 142,
+          "line": 146,
           "loc": 30,
           "name": "money"
         },
         {
-          "line": 174,
+          "line": 178,
           "loc": 9,
           "name": "task_list"
         },
         {
-          "line": 185,
+          "line": 189,
           "loc": 16,
           "name": "blockers"
         },
         {
-          "line": 203,
+          "line": 207,
           "loc": 8,
           "name": "error_list"
         },
         {
-          "line": 213,
+          "line": 217,
           "loc": 7,
           "name": "agent_list"
         },
         {
-          "line": 222,
+          "line": 226,
           "loc": 11,
           "name": "full_report"
         },
         {
-          "line": 235,
+          "line": 239,
           "loc": 53,
           "name": "render_markdown_surfaces"
         },
         {
-          "line": 290,
+          "line": 294,
           "loc": 3,
           "name": "_audit_record_hash"
         },
         {
-          "line": 295,
+          "line": 299,
           "loc": 19,
           "name": "audit_export"
         },
         {
-          "line": 316,
+          "line": 320,
           "loc": 28,
           "name": "audit_verify"
         },
         {
-          "line": 346,
+          "line": 350,
           "loc": 57,
           "name": "routing_report"
         }
@@ -2577,10 +2627,11 @@
         "aion_core.packets",
         "aion_core.resume",
         "aion_core.security",
+        "aion_core.sevaa",
         "aion_core.tasks",
         "aion_core.util"
       ],
-      "loc": 402,
+      "loc": 406,
       "path": "aion_core/reports.py"
     },
     "aion_core.resume": {
@@ -2949,6 +3000,103 @@
       "loc": 160,
       "path": "aion_core/sessions.py"
     },
+    "aion_core.sevaa": {
+      "classes": 1,
+      "functions": [
+        {
+          "line": 22,
+          "loc": 15,
+          "name": "_read_secret"
+        },
+        {
+          "line": 55,
+          "loc": 3,
+          "name": "secret"
+        },
+        {
+          "line": 60,
+          "loc": 3,
+          "name": "sign"
+        },
+        {
+          "line": 65,
+          "loc": 6,
+          "name": "verify"
+        },
+        {
+          "line": 73,
+          "loc": 20,
+          "name": "validate_event"
+        },
+        {
+          "line": 120,
+          "loc": 3,
+          "name": "base_url"
+        },
+        {
+          "line": 128,
+          "loc": 15,
+          "name": "_require_safe_transport"
+        },
+        {
+          "line": 145,
+          "loc": 2,
+          "name": "automation_token"
+        },
+        {
+          "line": 149,
+          "loc": 2,
+          "name": "founder_token"
+        },
+        {
+          "line": 153,
+          "loc": 11,
+          "name": "_get"
+        },
+        {
+          "line": 166,
+          "loc": 27,
+          "name": "daily_brief"
+        },
+        {
+          "line": 195,
+          "loc": 9,
+          "name": "status_line"
+        },
+        {
+          "line": 225,
+          "loc": 5,
+          "name": "list_payment_links"
+        },
+        {
+          "line": 232,
+          "loc": 30,
+          "name": "reconcile_payments"
+        },
+        {
+          "line": 278,
+          "loc": 5,
+          "name": "list_pending_approvals"
+        },
+        {
+          "line": 285,
+          "loc": 19,
+          "name": "decide_approval"
+        }
+      ],
+      "functions_over_120": [],
+      "importers_in": [
+        "aion_core.cli",
+        "aion_core.reports"
+      ],
+      "imports_out": [
+        "aion_core.config",
+        "aion_core.db",
+        "aion_core.metrics"
+      ],
+      "loc": 303,
+      "path": "aion_core/sevaa.py"
+    },
     "aion_core.skills": {
       "classes": 1,
       "functions": [
@@ -3187,56 +3335,56 @@
         },
         {
           "line": 162,
-          "loc": 14,
+          "loc": 15,
           "name": "answer_check"
         },
         {
-          "line": 178,
+          "line": 179,
           "loc": 10,
           "name": "add_evidence"
         },
         {
-          "line": 190,
+          "line": 191,
           "loc": 8,
           "name": "_summary"
         },
         {
-          "line": 200,
+          "line": 201,
           "loc": 13,
           "name": "complete"
         },
         {
-          "line": 215,
+          "line": 216,
           "loc": 5,
           "name": "report"
         },
         {
-          "line": 222,
+          "line": 223,
           "loc": 7,
           "name": "review"
         },
         {
-          "line": 231,
+          "line": 232,
           "loc": 10,
           "name": "rotate_token"
         },
         {
-          "line": 243,
+          "line": 244,
           "loc": 3,
           "name": "revoke"
         },
         {
-          "line": 247,
+          "line": 248,
           "loc": 8,
           "name": "load_builtin_templates"
         },
         {
-          "line": 257,
+          "line": 258,
           "loc": 10,
           "name": "whatsapp_assignment"
         },
         {
-          "line": 269,
+          "line": 270,
           "loc": 11,
           "name": "text_report"
         }
@@ -3253,7 +3401,7 @@
         "aion_core.tasks",
         "aion_core.util"
       ],
-      "loc": 279,
+      "loc": 280,
       "path": "aion_core/taskcheck.py"
     },
     "aion_core.tasks": {
@@ -3604,6 +3752,7 @@
         "aion_core.backup",
         "aion_core.bootstrap",
         "aion_core.cli",
+        "aion_core.context",
         "aion_core.db",
         "aion_core.deliveries",
         "aion_core.errors",
@@ -4307,6 +4456,51 @@
       "loc": 80,
       "path": "scripts/authorize_drive.py"
     },
+    "scripts.check_boundaries": {
+      "classes": 0,
+      "functions": [
+        {
+          "line": 18,
+          "loc": 2,
+          "name": "_manifests"
+        },
+        {
+          "line": 22,
+          "loc": 8,
+          "name": "_owner_map"
+        },
+        {
+          "line": 32,
+          "loc": 12,
+          "name": "_module_for_import"
+        },
+        {
+          "line": 46,
+          "loc": 3,
+          "name": "_files"
+        },
+        {
+          "line": 51,
+          "loc": 35,
+          "name": "findings"
+        },
+        {
+          "line": 88,
+          "loc": 2,
+          "name": "_exception_key"
+        },
+        {
+          "line": 92,
+          "loc": 28,
+          "name": "main"
+        }
+      ],
+      "functions_over_120": [],
+      "importers_in": [],
+      "imports_out": [],
+      "loc": 123,
+      "path": "scripts/check_boundaries.py"
+    },
     "scripts.check_portability": {
       "classes": 0,
       "functions": [
@@ -4440,6 +4634,166 @@
       "loc": 161,
       "path": "scripts/complexity_map.py"
     },
+    "scripts.duplication_scan": {
+      "classes": 0,
+      "functions": [
+        {
+          "line": 99,
+          "loc": 2,
+          "name": "relpath"
+        },
+        {
+          "line": 110,
+          "loc": 11,
+          "name": "scan_files"
+        },
+        {
+          "line": 123,
+          "loc": 3,
+          "name": "python_files"
+        },
+        {
+          "line": 128,
+          "loc": 2,
+          "name": "module_candidates"
+        },
+        {
+          "line": 132,
+          "loc": 2,
+          "name": "markdown_files"
+        },
+        {
+          "line": 136,
+          "loc": 2,
+          "name": "_read"
+        },
+        {
+          "line": 140,
+          "loc": 2,
+          "name": "_concat_texts"
+        },
+        {
+          "line": 146,
+          "loc": 22,
+          "name": "iter_function_defs"
+        },
+        {
+          "line": 152,
+          "loc": 13,
+          "name": "iter_function_defs.walk"
+        },
+        {
+          "line": 170,
+          "loc": 5,
+          "name": "_strip_docstring"
+        },
+        {
+          "line": 177,
+          "loc": 6,
+          "name": "body_signature"
+        },
+        {
+          "line": 185,
+          "loc": 7,
+          "name": "body_line_count"
+        },
+        {
+          "line": 194,
+          "loc": 30,
+          "name": "find_duplicate_functions"
+        },
+        {
+          "line": 226,
+          "loc": 22,
+          "name": "find_name_pattern_shapes"
+        },
+        {
+          "line": 252,
+          "loc": 19,
+          "name": "imported_module_stems"
+        },
+        {
+          "line": 273,
+          "loc": 7,
+          "name": "build_import_index"
+        },
+        {
+          "line": 282,
+          "loc": 12,
+          "name": "_cli_corpus"
+        },
+        {
+          "line": 296,
+          "loc": 5,
+          "name": "_tests_corpus"
+        },
+        {
+          "line": 303,
+          "loc": 2,
+          "name": "_manifest_corpus"
+        },
+        {
+          "line": 307,
+          "loc": 5,
+          "name": "_lucy_corpus"
+        },
+        {
+          "line": 314,
+          "loc": 5,
+          "name": "_docs_corpus"
+        },
+        {
+          "line": 321,
+          "loc": 39,
+          "name": "dead_weight_modules"
+        },
+        {
+          "line": 364,
+          "loc": 18,
+          "name": "find_dead_links"
+        },
+        {
+          "line": 384,
+          "loc": 21,
+          "name": "find_superseded_docs"
+        },
+        {
+          "line": 388,
+          "loc": 4,
+          "name": "find_superseded_docs.add"
+        },
+        {
+          "line": 409,
+          "loc": 11,
+          "name": "run_scan"
+        },
+        {
+          "line": 424,
+          "loc": 54,
+          "name": "render_text"
+        },
+        {
+          "line": 480,
+          "loc": 37,
+          "name": "render_duplication_markdown"
+        },
+        {
+          "line": 519,
+          "loc": 45,
+          "name": "render_dead_weight_markdown"
+        },
+        {
+          "line": 566,
+          "loc": 31,
+          "name": "main"
+        }
+      ],
+      "functions_over_120": [],
+      "importers_in": [],
+      "imports_out": [],
+      "loc": 600,
+      "path": "scripts/duplication_scan.py"
+    },
     "scripts.render_protected_paths": {
       "classes": 0,
       "functions": [
@@ -4543,6 +4897,46 @@
       ],
       "loc": 118,
       "path": "scripts/scan_history.py"
+    },
+    "scripts.task_context_profiler": {
+      "classes": 0,
+      "functions": [
+        {
+          "line": 24,
+          "loc": 8,
+          "name": "local_path"
+        },
+        {
+          "line": 34,
+          "loc": 11,
+          "name": "python_files"
+        },
+        {
+          "line": 47,
+          "loc": 23,
+          "name": "import_graph"
+        },
+        {
+          "line": 72,
+          "loc": 25,
+          "name": "routed_docs"
+        },
+        {
+          "line": 99,
+          "loc": 21,
+          "name": "profile"
+        },
+        {
+          "line": 122,
+          "loc": 11,
+          "name": "main"
+        }
+      ],
+      "functions_over_120": [],
+      "importers_in": [],
+      "imports_out": [],
+      "loc": 136,
+      "path": "scripts/task_context_profiler.py"
     },
     "scripts.touch_marker": {
       "classes": 0,

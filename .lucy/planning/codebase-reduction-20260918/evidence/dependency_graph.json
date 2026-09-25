@@ -421,6 +421,10 @@
     ],
     [
       "aion_core.cli",
+      "aion_core.sevaa"
+    ],
+    [
+      "aion_core.cli",
       "aion_core.skills"
     ],
     [
@@ -470,6 +474,10 @@
     [
       "aion_core.context",
       "aion_core.tasks"
+    ],
+    [
+      "aion_core.context",
+      "aion_core.util"
     ],
     [
       "aion_core.db",
@@ -1065,6 +1073,10 @@
     ],
     [
       "aion_core.reports",
+      "aion_core.sevaa"
+    ],
+    [
+      "aion_core.reports",
       "aion_core.tasks"
     ],
     [
@@ -1214,6 +1226,18 @@
     [
       "aion_core.sessions",
       "aion_core.util"
+    ],
+    [
+      "aion_core.sevaa",
+      "aion_core.config"
+    ],
+    [
+      "aion_core.sevaa",
+      "aion_core.db"
+    ],
+    [
+      "aion_core.sevaa",
+      "aion_core.metrics"
     ],
     [
       "aion_core.skills",
