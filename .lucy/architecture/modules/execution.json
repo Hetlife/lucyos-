@@ -1,0 +1,15 @@
+{
+  "module": "execution",
+  "purpose": "Agent routing, plans, worker execution and host adaptation.",
+  "public_api": ["aion_core.agents.route", "aion_core.agents.escalate", "aion_core.plan.apply", "aion_core.worker.work", "aion_core.worker.run_command"],
+  "owned_files": ["aion_core/worker.py", "aion_core/agents.py", "aion_core/plan.py", "aion_core/governor.py", "aion_core/tempworker.py", "aion_core/handoff.py", "aion_core/model_gateway.py", "aion_core/platform_resolver.py", "aion_core/host/**/*.py"],
+  "allowed_dependencies": ["governance", "interfaces", "kernel.state", "kernel.tasks", "memory", "skills"],
+  "forbidden_dependencies": [],
+  "state_touched": ["Agents, plans, runs and handoffs in canonical SQLite", "Worker artifacts and temporary workspaces"],
+  "side_effects": ["Command execution, model requests and host resource inspection"],
+  "tests": ["tests/test_plan_worker.py", "tests/test_routing_and_state.py", "tests/test_tempworker.py", "tests/test_model_gateway.py", "tests/test_platform_resolver.py", "tests/test_host_adapter.py"],
+  "invariants": ["Execution remains governed by existing approval and budget checks."],
+  "adrs": [],
+  "risk_level": "high",
+  "protected_paths": ["aion_core/governor.py", "aion_core/agents.py", "aion_core/worker.py"]
+}

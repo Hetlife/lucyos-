@@ -1,0 +1,15 @@
+{
+  "module": "skills",
+  "purpose": "Skill registration, repository learning and architecture review.",
+  "public_api": ["aion_core.skills.register_manifest", "aion_core.skills.validate_registry", "aion_core.architecture.audit"],
+  "owned_files": ["aion_core/skills.py", "aion_core/learnrepo.py", "aion_core/architecture.py", "skills/catalog/**/*", ".claude/skills/**/*"],
+  "allowed_dependencies": ["execution", "kernel.state", "kernel.tasks"],
+  "forbidden_dependencies": [],
+  "state_touched": ["Skill registry and architecture records in canonical SQLite", "Learning artifacts"],
+  "side_effects": ["Registry writes, repository inspection and learning commands"],
+  "tests": ["tests/test_skills.py", "tests/test_learnrepo.py", "tests/test_architecture.py", "tests/test_smallest_fix_skill.py"],
+  "invariants": ["Skill manifests remain the extension seam."],
+  "adrs": [],
+  "risk_level": "high",
+  "protected_paths": ["aion_core/architecture.py"]
+}
