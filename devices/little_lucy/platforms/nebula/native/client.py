@@ -72,26 +72,77 @@ class Connection:
         with urllib.request.urlopen(request,context=self.ctx,timeout=4) as response:
             return json.loads(response.read(200000))
 
+class TouchDecoder:
+    """Decode single-touch evdev events without assuming SYN ordering.
+
+    The NS2009 reports BTN_TOUCH, but its coordinate/SYN ordering can vary
+    after boot. Keeping this logic pure makes the hardware path testable and
+    lets the client accept both legacy ABS_X/Y and MT position codes.
+    """
+    EV_SYN = 0
+    EV_KEY = 1
+    EV_ABS = 3
+    SYN_REPORT = 0
+    BTN_TOUCH = 330
+    ABS_X = 0
+    ABS_Y = 1
+    ABS_MT_POSITION_X = 53
+    ABS_MT_POSITION_Y = 54
+
+    def __init__(self):
+        self.x = None
+        self.y = None
+        self.down = False
+        self.start = None
+        self.last_emit = 0.0
+
+    def _point(self):
+        if self.x is None or self.y is None:
+            return None
+        return (self.x, self.y)
+
+    def feed(self, kind, code, value, now=None):
+        now = time.monotonic() if now is None else now
+        if kind == self.EV_ABS:
+            if code in (self.ABS_X, self.ABS_MT_POSITION_X):
+                self.x = value
+            elif code in (self.ABS_Y, self.ABS_MT_POSITION_Y):
+                self.y = value
+            if self.down and self.start is None:
+                self.start = self._point()
+        elif kind == self.EV_KEY and code == self.BTN_TOUCH:
+            if value:
+                self.down = True
+                self.start = self._point()
+            elif self.down:
+                self.down = False
+                point = self.start or self._point()
+                self.start = None
+                self.x = self.y = None
+                if point is not None and now - self.last_emit >= 0.35:
+                    self.last_emit = now
+                    return (point, point)
+        elif kind == self.EV_SYN and code == self.SYN_REPORT and self.down and self.start is None:
+            self.start = self._point()
+        return None
+
+
 def touch(events):
     try:
-        fmt='llHHi'; size=struct.calcsize(fmt); x=y=None; down=False; start=None; last=0
-        with open('/dev/input/event0','rb',buffering=0) as stream:
+        fmt = 'llHHi'
+        size = struct.calcsize(fmt)
+        decoder = TouchDecoder()
+        with open('/dev/input/event0', 'rb', buffering=0) as stream:
             while True:
-                data=stream.read(size)
-                if len(data)!=size: raise RuntimeError('Touch input closed')
-                _,_,kind,code,value=struct.unpack(fmt,data)
-                if kind==3:
-                    if code==0: x=value
-                    elif code==1: y=value
-                elif kind==1 and code==330:
-                    if value==1: down=True; start=None
-                    elif value==0 and down:
-                        down=False; now=time.monotonic()
-                        if start is not None and x is not None and y is not None and now-last>.35:
-                            events.put(('touch',(start,(x,y)))); last=now
-                elif kind==0 and code==0 and down and start is None and x is not None and y is not None: start=(x,y)
+                data = stream.read(size)
+                if len(data) != size:
+                    raise RuntimeError('Touch input closed')
+                _, _, kind, code, value = struct.unpack(fmt, data)
+                point = decoder.feed(kind, code, value)
+                if point is not None:
+                    events.put(('touch', point))
     except Exception as error:
-        events.put(('touch_error',type(error).__name__))
+        events.put(('touch_error', type(error).__name__))
 
 def network(events,commands):
     conn=Connection()

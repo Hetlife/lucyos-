@@ -77,6 +77,25 @@ Until that decision, no repo source is wired into the live systemd unit.
 - the legacy port-18790 prototype, which must not run beside the native client;
 - the authority choice above.
 
+## Touch follow-up
+
+A read-only 20-second capture on the running Nebula produced no input events.
+The source parser has therefore been hardened to accept both common evdev
+orderings and both legacy `ABS_X/ABS_Y` and `ABS_MT_POSITION_X/Y` codes. This
+is source-only until the owner approves copying the updated client to the
+device and restarting the native client.
+
+The next physical check should be:
+
+1. copy only the reviewed `client.py` source;
+2. restart the existing native client without changing display ownership;
+3. tap Home, then Status, then Het inbox;
+4. inspect the client log and calibration result;
+5. roll back the client copy if the touch path regresses.
+
+No display takeover, firmware write, boot-hook change, or approval submission
+is part of this check.
+
 ## Verification
 
 Run from this worktree:

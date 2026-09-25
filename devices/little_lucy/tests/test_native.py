@@ -2,6 +2,7 @@ import copy
 import unittest
 
 from devices.little_lucy.platforms.nebula.native.client import (
+    TouchDecoder,
     apply_action,
     map_touch,
     solve_calibration,
@@ -19,6 +20,31 @@ class NativeSourceTests(unittest.TestCase):
                 self.assertAlmostEqual(got, expected)
         with self.assertRaises(ValueError):
             solve_calibration([(1, 1)] * 3)
+
+    def test_touch_decoder_accepts_standard_and_mt_event_order(self):
+        decoder = TouchDecoder()
+        # BTN_TOUCH arrives before coordinates and SYN.
+        self.assertIsNone(decoder.feed(1, 330, 1, now=1.0))
+        decoder.feed(3, 53, 100, now=1.01)
+        decoder.feed(3, 54, 200, now=1.02)
+        self.assertIsNone(decoder.feed(0, 0, 0, now=1.03))
+        self.assertEqual(decoder.feed(1, 330, 0, now=1.04), ((100, 200), (100, 200)))
+
+        # Some drivers report SYN before the final coordinates.
+        decoder = TouchDecoder()
+        decoder.feed(1, 330, 1, now=2.0)
+        decoder.feed(0, 0, 0, now=2.01)
+        decoder.feed(3, 0, 120, now=2.02)
+        decoder.feed(3, 1, 220, now=2.03)
+        self.assertEqual(decoder.feed(1, 330, 0, now=2.04), ((120, 220), (120, 220)))
+
+    def test_touch_decoder_requires_a_button_release(self):
+        decoder = TouchDecoder()
+        decoder.feed(3, 0, 10, now=3.0)
+        decoder.feed(3, 1, 20, now=3.01)
+        self.assertIsNone(decoder.feed(0, 0, 0, now=3.02))
+        self.assertIsNone(decoder.feed(1, 330, 1, now=3.03))
+        self.assertEqual(decoder.feed(1, 330, 0, now=3.04), ((10, 20), (10, 20)))
 
     def test_approval_requires_review_confirmation_and_freshness(self):
         card = {"approval_id": "A-1", "action": "Test", "revision": "one"}
