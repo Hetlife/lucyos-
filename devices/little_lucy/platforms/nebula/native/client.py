@@ -10,6 +10,7 @@ import threading
 import time
 import urllib.error
 import urllib.request
+from urllib.parse import urlparse
 try:  # package import in the LucyOS repo
     from .ui import render, detail_pages
 except ImportError:  # flat deployment on the Nebula
@@ -62,14 +63,57 @@ def apply_action(model, action):
         return {'approval_id':chosen['approval_id'],'revision':chosen['revision'],'decision':model['decision']}
     return None
 
+def validate_connection_config(config):
+    if not isinstance(config, dict):
+        raise ValueError('Connection config must be an object')
+    url = config.get('url')
+    token = config.get('token')
+    parsed = urlparse(str(url or ''))
+    if parsed.scheme != 'https' or not parsed.hostname or parsed.username or parsed.password or parsed.fragment:
+        raise ValueError('Lucy-Nest connection must use a credential-free HTTPS URL')
+    try:
+        port = parsed.port
+    except ValueError as exc:
+        raise ValueError('Lucy-Nest connection has an invalid port') from exc
+    if port is not None and not 1 <= port <= 65535:
+        raise ValueError('Lucy-Nest connection has an invalid port')
+    if not isinstance(token, str) or not token.strip():
+        raise ValueError('Lucy-Nest connection auth value is empty')
+    return str(url), token.strip()
+
+
+def validate_status(payload):
+    required = {'as_of', 'source', 'counts', 'active', 'approvals', 'paused', 'safe_mode'}
+    if not isinstance(payload, dict) or not required.issubset(payload):
+        raise ValueError('Invalid Lucy-Nest status shape')
+    if payload['source'] != 'LucyOS / this laptop':
+        raise ValueError('Unexpected Lucy-Nest status source')
+    if isinstance(payload['as_of'], bool) or not isinstance(payload['as_of'], (int, float)):
+        raise ValueError('Invalid Lucy-Nest status timestamp')
+    if not isinstance(payload['counts'], dict) or not isinstance(payload['active'], list) or not isinstance(payload['approvals'], list):
+        raise ValueError('Invalid Lucy-Nest status collections')
+    return payload
+
+
+def require_device_runtime():
+    if os.environ.get('LUCY_NEST_RUNTIME') != 'nebula' or os.environ.get('LUCY_NEST_DISPLAY_OWNER') != 'confirmed':
+        raise SystemExit('Lucy-Nest native execution is disabled until device runtime and display ownership are explicit')
+
+
+class NoRedirect(urllib.request.HTTPRedirectHandler):
+    def redirect_request(self, req, fp, code, msg, headers, newurl):
+        return None
+
+
 class Connection:
     def __init__(self):
         cfg=json.loads((ROOT/'connection.json').read_text())
-        self.url=cfg['url']; self.token=cfg['token']
+        self.url, self.token = validate_connection_config(cfg)
         self.ctx=ssl.create_default_context(cafile=str(ROOT/'server.crt'))
+        self.opener=urllib.request.build_opener(NoRedirect(), urllib.request.HTTPSHandler(context=self.ctx))
     def request(self,path,body=None):
         request=urllib.request.Request(self.url+path,data=None if body is None else json.dumps(body).encode(),headers={'Authorization':'Bearer '+self.token,'Content-Type':'application/json'})
-        with urllib.request.urlopen(request,context=self.ctx,timeout=4) as response:
+        with self.opener.open(request,timeout=4) as response:
             return json.loads(response.read(200000))
 
 class TouchDecoder:
@@ -116,12 +160,13 @@ class TouchDecoder:
                 self.start = self._point()
             elif self.down:
                 self.down = False
-                point = self.start or self._point()
+                start = self.start
+                end = self._point() or start
                 self.start = None
                 self.x = self.y = None
-                if point is not None and now - self.last_emit >= 0.35:
+                if start is not None and end is not None and now - self.last_emit >= 0.35:
                     self.last_emit = now
-                    return (point, point)
+                    return (start, end)
         elif kind == self.EV_SYN and code == self.SYN_REPORT and self.down and self.start is None:
             self.start = self._point()
         return None
@@ -154,7 +199,10 @@ def network(events,commands):
             try:
                 result=conn.request('/decision',command)
                 message='LucyOS confirmed: '+str(result['status'])+'.'
-                if result['status']=='APPROVED': message+=' The linked task is released; completion is tracked separately.'
+                if result['status']=='APPROVED':
+                    message += (' The linked task is released; completion is tracked separately.'
+                                if result.get('task_id') else
+                                ' No linked task was reported; completion is not implied.')
                 events.put(('result',message))
             except urllib.error.HTTPError as error:
                 try: message=json.loads(error.read(4096)).get('error','Decision not confirmed.')
@@ -162,11 +210,14 @@ def network(events,commands):
                 events.put(('result',message))
             except Exception:
                 events.put(('result','Connection interrupted. Decision outcome unknown. Refresh the inbox; do not assume it failed.'))
-        try: events.put(('status',conn.request('/status')))
-        except Exception: events.put(('offline',None))
+        try:
+            events.put(('status', validate_status(conn.request('/status'))))
+        except Exception:
+            events.put(('offline',None))
         time.sleep(1)
 
 def main():
+    require_device_runtime()
     events=queue.Queue(); commands=queue.Queue()
     model={'page':'home','online':False,'data':{},'index':0}; matrix=None; raw=[]; tick=0; updated=0
     try: matrix=json.loads((ROOT/'calibration.json').read_text())

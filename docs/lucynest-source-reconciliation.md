@@ -88,10 +88,13 @@ device and restarting the native client.
 The next physical check should be:
 
 1. copy only the reviewed `client.py` source;
-2. restart the existing native client without changing display ownership;
-3. tap Home, then Status, then Het inbox;
-4. inspect the client log and calibration result;
-5. roll back the client copy if the touch path regresses.
+2. set `LUCY_NEST_RUNTIME=nebula` and
+   `LUCY_NEST_DISPLAY_OWNER=confirmed` only in the native-client launch
+   environment;
+3. restart the existing native client without changing display ownership;
+4. tap Home, then Status, then Het inbox;
+5. inspect the client log and calibration result;
+6. roll back the client copy if the touch path regresses.
 
 No display takeover, firmware write, boot-hook change, or approval submission
 is part of this check.

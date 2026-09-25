@@ -1,11 +1,15 @@
 import copy
+import os
 import unittest
 
 from devices.little_lucy.platforms.nebula.native.client import (
     TouchDecoder,
     apply_action,
     map_touch,
+    require_device_runtime,
     solve_calibration,
+    validate_connection_config,
+    validate_status,
 )
 from devices.little_lucy.platforms.nebula.native.ui import detail_pages, render
 
@@ -38,6 +42,15 @@ class NativeSourceTests(unittest.TestCase):
         decoder.feed(3, 1, 220, now=2.03)
         self.assertEqual(decoder.feed(1, 330, 0, now=2.04), ((120, 220), (120, 220)))
 
+    def test_touch_decoder_preserves_the_release_endpoint(self):
+        decoder = TouchDecoder()
+        decoder.feed(1, 330, 1, now=4.0)
+        decoder.feed(3, 0, 10, now=4.01)
+        decoder.feed(3, 1, 10, now=4.02)
+        decoder.feed(3, 0, 100, now=4.03)
+        decoder.feed(3, 1, 100, now=4.04)
+        self.assertEqual(decoder.feed(1, 330, 0, now=4.05), ((10, 10), (100, 100)))
+
     def test_touch_decoder_requires_a_button_release(self):
         decoder = TouchDecoder()
         decoder.feed(3, 0, 10, now=3.0)
@@ -45,6 +58,37 @@ class NativeSourceTests(unittest.TestCase):
         self.assertIsNone(decoder.feed(0, 0, 0, now=3.02))
         self.assertIsNone(decoder.feed(1, 330, 1, now=3.03))
         self.assertEqual(decoder.feed(1, 330, 0, now=3.04), ((10, 20), (10, 20)))
+
+    def test_connection_config_requires_https_and_rejects_empty_auth(self):
+        url, token = validate_connection_config({"url": "https://192.168.31.125:18792", "token": "pairing-value"})
+        self.assertEqual(url, "https://192.168.31.125:18792")
+        self.assertEqual(token, "pairing-value")
+        with self.assertRaises(ValueError):
+            validate_connection_config({"url": "http://192.168.31.125:18792", "token": "pairing-value"})
+        with self.assertRaises(ValueError):
+            validate_connection_config({"url": "https://192.168.31.125:18792", "token": ""})
+
+    def test_status_validation_rejects_unknown_shape(self):
+        value = {
+            "as_of": 1.0, "source": "LucyOS / this laptop", "counts": {},
+            "active": [], "approvals": [], "paused": False, "safe_mode": False,
+        }
+        self.assertEqual(validate_status(value), value)
+        with self.assertRaises(ValueError):
+            validate_status({**value, "source": "other"})
+        with self.assertRaises(ValueError):
+            validate_status({**value, "approvals": {}})
+
+    def test_device_runtime_requires_explicit_opt_in(self):
+        old = dict(os.environ)
+        try:
+            os.environ.pop("LUCY_NEST_RUNTIME", None)
+            os.environ.pop("LUCY_NEST_DISPLAY_OWNER", None)
+            with self.assertRaises(SystemExit):
+                require_device_runtime()
+        finally:
+            os.environ.clear()
+            os.environ.update(old)
 
     def test_approval_requires_review_confirmation_and_freshness(self):
         card = {"approval_id": "A-1", "action": "Test", "revision": "one"}

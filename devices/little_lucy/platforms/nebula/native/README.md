@@ -14,7 +14,7 @@ configuration.
 ## Contents
 
 - `client.py` — Nebula touch reader with order-tolerant evdev decoding,
-  calibration, TLS polling, and explicit approval submission;
+  calibration, HTTPS-only TLS polling, and explicit approval submission;
 - `ui.py` — local 480×272 Pillow renderer;
 - `font.ttf` — DejaVu Sans rendering asset;
 - `FONT-LICENSE.txt` — Debian font license/provenance;
