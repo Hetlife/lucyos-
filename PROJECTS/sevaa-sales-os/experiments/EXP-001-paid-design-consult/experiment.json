@@ -1,0 +1,33 @@
+{
+  "experiment_id": "EXP-001",
+  "project": "sevaa-sales-os",
+  "title": "Paid design consultation to warm contacts",
+  "offer": "Design Clarity Call: 90-minute consultation + one-page written brief, fee credited against a project signed within 90 days",
+  "offer_price_inr": 2499,
+  "buyer": "home or small-commercial owner in Gujarat planning interiors, renovation or a small build within 6 months",
+  "channel": "owner's warm WhatsApp network, one personal message per contact",
+  "hypothesis": "Of the first 30 warm contacts personally messaged, at least 3 pay INR 2,499 through the payment link within 14 days of the first message.",
+  "funnel_log": "contacts.csv",
+  "revenue_description_prefix": "EXP-001",
+  "min_contacts": 30,
+  "min_contacts_deadline_days": 7,
+  "window_days": 14,
+  "success": {"paid_min": 3},
+  "failure": {"paid_max": 1},
+  "ambiguous": {"extend_days": 7, "extend_contacts_to": 60, "then_paid_min": 4},
+  "cost_ceiling_inr": {"advertising": 0, "model_spend": 500},
+  "decisions": {
+    "SUCCESS": "M0 recorded automatically. Open EXP-002 (consult -> first project stage, measures M1). Only now authorise T100 and apply incoming/plan-t100-go-public.json. No paid traffic until EXP-002 shows one conversion.",
+    "FAILURE_price": ">=5 replies and top reason is price: run EXP-001b at INR 999, 30 new contacts, 14 days, once. T100 stays closed.",
+    "FAILURE_offer": "<5 replies or top reason is no_need/timing: do not rerun. Open EXP-003 with a different buyer (small builders/developers, fixed-price 3D visualisation). T100 stays closed.",
+    "AMBIGUOUS": "Extend once by 7 days to 60 contacts; then >=4 paid is SUCCESS, else FAILURE. Change nothing else.",
+    "BLOCKED": "Fewer than 30 sent by day 7: not a market result. Record a hands-off gap (M3 wall). Next experiment must need under 3 owner-hours or delivery must be delegated first."
+  },
+  "unknowns": [
+    "contacts_available: how many warm contacts fit the buyer definition (owner counts, 10 min)",
+    "razorpay_live_mode: whether the Razorpay account is live and KYC-complete (owner checks dashboard, 2 min)",
+    "prior_consult_price: whether a paid consultation has been sold before and at what price (owner answers, 1 min)",
+    "delivered_by: owner or a staff architect (owner answers, 1 min)",
+    "public_presence: whether contacts can look the company up before paying (owner answers, 1 min)"
+  ]
+}

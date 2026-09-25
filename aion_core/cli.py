@@ -56,6 +56,7 @@ def _main(argv=None) -> int:
     bk = sub.add_parser("backup", help="create a backup and restore-test it")
     bk.add_argument("--verify-only", action="store_true")
     sub.add_parser("openclaw-check", help="loopback reachability probe for an optional OpenClaw gateway")
+    sub.add_parser("sevaa-reconcile", help="record newly verified-paid SEVAA payment links as revenue")
     sub.add_parser("export", help="write a portable archive of canonical state (no secrets)")
     im = sub.add_parser("import", help="verify and restore a portable archive into this AION_HOME")
     im.add_argument("archive", help="path to a lucyos-export-*.tar.gz")
@@ -350,6 +351,17 @@ def _main(argv=None) -> int:
             _print(f"created {backup.create()}")
         result = backup.verify()
         _print(result["detail"])
+        return 0 if result["ok"] else 1
+    elif cmd == "sevaa-reconcile":
+        from . import sevaa
+        if not sevaa.automation_token():
+            _print(f"not configured: {sevaa.AUTOMATION_TOKEN_NAME} has no secret store value")
+            return 0
+        result = sevaa.reconcile_payments()
+        if result["ok"]:
+            _print(f"{len(result['recorded'])} payment(s) recorded")
+        else:
+            _print(f"skipped: {result['error']}")
         return 0 if result["ok"] else 1
     elif cmd == "openclaw-check":
         from bridges import openclaw_check
