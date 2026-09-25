@@ -166,6 +166,7 @@ def answer_check(token: str, check_id: str, response: str, note: str = "") -> di
     template, cmap=_template_map(row)
     if check_id not in cmap: raise ValueError("unknown check")
     if len(note)>MAX_NOTE: raise ValueError("note too long")
+    if cmap[check_id].get("note_required",False) and not note.strip(): raise ValueError("note required for this check")
     if note and not cmap[check_id].get("note_allowed",True): raise ValueError("notes not allowed for this check")
     now=util.now(); conn=db.connect(); first=not row["started_at"]
     conn.execute("UPDATE taskcheck_checks SET response=?,note=?,answered_at=? WHERE taskcheck_id=? AND check_id=?", (response,security.redact(note),now,row["taskcheck_id"],check_id))
