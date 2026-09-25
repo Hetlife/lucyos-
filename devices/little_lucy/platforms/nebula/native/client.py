@@ -3,7 +3,10 @@ import json
 import os
 from pathlib import Path
 import queue
+import signal
+import socket
 import ssl
+import stat
 import struct
 import subprocess
 import threading
@@ -62,6 +65,181 @@ def apply_action(model, action):
         model['page']='sending'
         return {'approval_id':chosen['approval_id'],'revision':chosen['revision'],'decision':model['decision']}
     return None
+
+# --- Root-only local remote control (AF_UNIX socket; no network listener) ---
+# The socket lives under /run/lucy-nest (root, 0700) and only accepts peer uid 0.
+# Decision verbs stay disabled until the root-owned 0600 gate file exists.
+CONTROL_SOCK_DIR='/run/lucy-nest'
+CONTROL_SOCK=CONTROL_SOCK_DIR+'/control.sock'
+REMOTE_DECISIONS_GATE='/root/lucy-nest/native/remote-decisions.enabled'
+GATE_MAGIC='ALLOW_REMOTE_DECISIONS'
+CONTROL_LINE_LIMIT=256
+# Verified against apply_action()/ui.py: none of these submit a decision or put
+# anything on the commands queue. 'status' is intercepted by handle_control as a
+# snapshot request; the on-screen 'status' page action stays touch-only.
+NAV_VERBS=frozenset(('home','status','inbox','next','review','detail_next','review_back'))
+# Real existing action names in apply_action(): approve/deny stage on the review
+# page, send is the canonical submission that returns the decision command.
+DECISION_VERBS=frozenset(('approve','deny','send'))
+
+def parse_control_request(line):
+    """Parse one UTF-8 control line (max 256 bytes) -> (verb, arg).
+
+    Raises ValueError on anything that is not a single clean line.
+    """
+    if isinstance(line,bytes):
+        if len(line)>CONTROL_LINE_LIMIT: raise ValueError('request too long')
+        try: line=line.decode('utf-8')
+        except UnicodeDecodeError: raise ValueError('request must be UTF-8')
+    if not isinstance(line,str) or not line or len(line)>CONTROL_LINE_LIMIT:
+        raise ValueError('request must be a non-empty line of at most 256 bytes')
+    if line.endswith('\n'): line=line[:-1]
+    if line.endswith('\r'): line=line[:-1]
+    if not line or len(line)>CONTROL_LINE_LIMIT:
+        raise ValueError('request must be a non-empty line of at most 256 bytes')
+    if any(ch in line for ch in ('\n','\r','\x00')) or line!=line.strip():
+        raise ValueError('request must be a single clean line')
+    parts=line.split(' ',1)
+    verb=parts[0].strip().lower()
+    if not verb or not verb.replace('_','').isalnum(): raise ValueError('invalid verb')
+    arg=parts[1].strip() if len(parts)>1 else None
+    return verb,(arg or None)
+
+def remote_decisions_enabled(path=None):
+    """True only when the gate file is a regular non-symlink root-owned 0600
+    file whose first line is exactly ALLOW_REMOTE_DECISIONS. Never created here."""
+    path=REMOTE_DECISIONS_GATE if path is None else path
+    try: st=os.lstat(path)
+    except OSError: return False
+    if stat.S_ISLNK(st.st_mode) or not stat.S_ISREG(st.st_mode): return False
+    if st.st_uid!=0 or stat.S_IMODE(st.st_mode)!=0o600: return False
+    try:
+        with open(path,'rb') as gate: first=gate.readline(CONTROL_LINE_LIMIT+1)
+    except OSError: return False
+    return first.rstrip(b'\r\n')==GATE_MAGIC.encode('utf-8')
+
+def _control_peer_uid(conn):
+    raw=conn.getsockopt(socket.SOL_SOCKET,socket.SO_PEERCRED,struct.calcsize('3i'))
+    _pid,uid,_gid=struct.unpack('3i',raw)
+    return uid
+
+def control_server_thread(events,stop,sock_path=CONTROL_SOCK,allowed_uid=0):
+    """Serve one-shot root-only control requests over a local AF_UNIX socket.
+
+    Refuses symlinked or non-directory socket dirs, non-socket stale paths and
+    peers whose SO_PEERCRED uid differs from allowed_uid. Puts one-shot
+    ('control', ev) events with a reply Queue onto the shared events queue and
+    never touches the model directly; every error is caught so the display
+    thread keeps running.
+    """
+    srv=None
+    try:
+        sock_dir=os.path.dirname(sock_path) or '.'
+        created=False
+        try:
+            dir_st=os.lstat(sock_dir)
+            if stat.S_ISLNK(dir_st.st_mode) or not stat.S_ISDIR(dir_st.st_mode):
+                raise ValueError('control socket dir is not a real directory')
+        except FileNotFoundError:
+            os.makedirs(sock_dir,0o700); created=True
+        if created: os.chmod(sock_dir,0o700)
+        try:
+            stale=os.lstat(sock_path)
+            if stat.S_ISLNK(stale.st_mode): raise ValueError('control socket path is a symlink')
+            if stat.S_ISSOCK(stale.st_mode): os.unlink(sock_path)
+            else: raise ValueError('control socket path exists and is not a socket')
+        except FileNotFoundError: pass
+        old_umask=os.umask(0o077)
+        try:
+            srv=socket.socket(socket.AF_UNIX,socket.SOCK_STREAM)
+            srv.bind(sock_path)
+        finally:
+            os.umask(old_umask)
+        os.chmod(sock_path,0o600)
+        srv.listen(4)
+        srv.settimeout(0.2)
+        while not stop.is_set():
+            try: conn,_addr=srv.accept()
+            except socket.timeout: continue
+            try:
+                conn.settimeout(2.0)
+                if _control_peer_uid(conn)!=allowed_uid:
+                    reply={'ok':False,'error':'refused: peer uid not allowed'}
+                else:
+                    data=conn.recv(CONTROL_LINE_LIMIT)
+                    try: verb,arg=parse_control_request(data)
+                    except ValueError as error: reply={'ok':False,'error':'bad request: '+str(error)}
+                    else:
+                        ev={'verb':verb,'arg':arg,'reply':queue.Queue()}
+                        events.put(('control',ev))
+                        try: reply=ev['reply'].get(timeout=2.0)
+                        except queue.Empty: reply={'ok':False,'error':'control handler timed out'}
+                conn.sendall((json.dumps(reply)+'\n').encode('utf-8'))
+            except Exception:
+                try: conn.sendall(b'{"ok":false,"error":"control error"}\n')
+                except OSError: pass
+            finally: conn.close()
+    except Exception as error:
+        events.put(('control_error',type(error).__name__+': '+str(error)))
+    finally:
+        if srv is not None:
+            try: srv.close()
+            except OSError: pass
+        try:
+            if stat.S_ISSOCK(os.lstat(sock_path).st_mode): os.unlink(sock_path)
+        except OSError: pass
+
+def _control_snapshot(model):
+    cards=(model.get('data') or {}).get('approvals',[])
+    index=model.get('index',0)
+    focused=cards[index%len(cards)] if cards else None
+    def short(value):
+        value=str(value or '')
+        return value[:80]
+    return {
+        'ok':True,
+        'page':model.get('page'),
+        'index':index,
+        'approvals':len(cards),
+        'focused_id':short(focused.get('approval_id')) if focused else None,
+        'focused_title':short(focused.get('action')) if focused else None,
+        'online':bool(model.get('online')),
+        'last_update':model.get('updated'),
+        'touch':model.get('touch_status','unknown'),
+        'remote_decisions':remote_decisions_enabled(),
+    }
+
+def _shown_matches_pending(model):
+    """True when the shown selection still matches a pending approval (id+revision)."""
+    shown=model.get('selected')
+    if not isinstance(shown,dict): return False
+    for pending in (model.get('data') or {}).get('approvals',[]):
+        if pending.get('approval_id')==shown.get('approval_id') and pending.get('revision')==shown.get('revision'):
+            return True
+    return False
+
+def handle_control(model,ev):
+    """Run one parsed control request against the model (main loop only).
+
+    Returns a decision command for the existing commands queue, or None. Nav
+    verbs never submit; decision verbs re-check the gate and require the shown
+    item to match the currently pending approval before using apply_action().
+    """
+    verb=ev.get('verb'); command=None
+    if verb=='status': reply=_control_snapshot(model)
+    elif verb in NAV_VERBS:
+        if apply_action(model,verb) is not None:
+            reply={'ok':False,'error':'refused: navigation never submits'}
+        else: reply={'ok':True,'page':model.get('page')}
+    elif verb in DECISION_VERBS:
+        if not remote_decisions_enabled(): reply={'ok':False,'error':'refused: remote decisions disabled'}
+        elif not _shown_matches_pending(model): reply={'ok':False,'error':'refused: no matching pending approval'}
+        else:
+            command=apply_action(model,verb)
+            reply={'ok':True,'page':model.get('page')}
+    else: reply={'ok':False,'error':'unknown verb'}
+    ev['reply'].put(reply)
+    return command
 
 def validate_connection_config(config):
     if not isinstance(config, dict):
@@ -218,43 +396,59 @@ def network(events,commands):
 
 def main():
     require_device_runtime()
-    events=queue.Queue(); commands=queue.Queue()
+    events=queue.Queue(); commands=queue.Queue(); control_stop=threading.Event()
     model={'page':'home','online':False,'data':{},'index':0}; matrix=None; raw=[]; tick=0; updated=0
     try: matrix=json.loads((ROOT/'calibration.json').read_text())
     except (OSError,ValueError): model.update(page='calibrate',cal_step=0)
     threading.Thread(target=touch,args=(events,),daemon=True).start()
     threading.Thread(target=network,args=(events,commands),daemon=True).start()
-    hits=[]
-    while True:
-        began=time.monotonic()
+    threading.Thread(target=control_server_thread,args=(events,control_stop),daemon=True).start()
+    def _request_stop(*_args):
+        control_stop.set(); raise SystemExit
+    for sig in (signal.SIGINT,signal.SIGTERM):
+        try: signal.signal(sig,_request_stop)
+        except (ValueError,OSError): pass
+    try:
+        hits=[]
         while True:
-            try: kind,value=events.get_nowait()
-            except queue.Empty: break
-            if kind=='status':
-                model.update(data=value,online=True); updated=time.monotonic()
-            elif kind=='offline': model['online']=False
-            elif kind=='result': model.update(page='result',message=value)
-            elif kind=='touch_error':
-                model.update(page='result',message='Touch input unavailable: '+value)
-            elif kind=='touch':
-                start,end=value
-                if model['page']=='calibrate':
-                    raw.append(end)
-                    if len(raw)==3:
-                        try:
-                            matrix=solve_calibration(raw)
-                            (ROOT/'calibration.json').write_text(json.dumps(matrix)); model['page']='home'
-                            print('Touch calibration saved',flush=True)
-                        except ValueError: raw=[]; model['cal_step']=0
-                    else: model['cal_step']=len(raw)
-                elif matrix is not None:
-                    p1=map_touch(matrix,*start); p2=map_touch(matrix,*end)
-                    for (left,top,right,bottom),action in hits:
-                        if all(left<=p[0]<=right and top<=p[1]<=bottom for p in (p1,p2)):
-                            command=apply_action(model,action)
-                            if command: commands.put(command)
-                            print('Touch: '+action+' -> '+model['page'],flush=True)
-                            break
+            began=time.monotonic()
+            while True:
+                try: kind,value=events.get_nowait()
+                except queue.Empty: break
+                if kind=='status':
+                    model.update(data=value,online=True); updated=time.monotonic(); model['updated']=time.time()
+                elif kind=='offline': model['online']=False
+                elif kind=='result': model.update(page='result',message=value)
+                elif kind=='touch_error':
+                    model.update(page='result',message='Touch input unavailable: '+value); model['touch_status']='error: '+value
+                elif kind=='control_error':
+                    print('Remote control unavailable: '+str(value),flush=True)
+                elif kind=='control':
+                    try:
+                        command=handle_control(model,value)
+                    except Exception:
+                        value['reply'].put({'ok':False,'error':'control error'}); command=None
+                    if command: commands.put(command)
+                elif kind=='touch':
+                    model['touch_status']='ok'
+                    start,end=value
+                    if model['page']=='calibrate':
+                        raw.append(end)
+                        if len(raw)==3:
+                            try:
+                                matrix=solve_calibration(raw)
+                                (ROOT/'calibration.json').write_text(json.dumps(matrix)); model['page']='home'
+                                print('Touch calibration saved',flush=True)
+                            except ValueError: raw=[]; model['cal_step']=0
+                        else: model['cal_step']=len(raw)
+                    elif matrix is not None:
+                        p1=map_touch(matrix,*start); p2=map_touch(matrix,*end)
+                        for (left,top,right,bottom),action in hits:
+                            if all(left<=p[0]<=right and top<=p[1]<=bottom for p in (p1,p2)):
+                                command=apply_action(model,action)
+                                if command: commands.put(command)
+                                print('Touch: '+action+' -> '+model['page'],flush=True)
+                                break
         if time.monotonic()-updated>6: model['online']=False
         image,hits=render(model,tick)
         image.save('/tmp/lucy-native.jpg','JPEG',quality=87)
@@ -262,5 +456,7 @@ def main():
         tick+=1
         interval=.08 if model['page']=='home' else .20
         time.sleep(max(.01,interval-(time.monotonic()-began)))
+    finally:
+        control_stop.set()
 
 if __name__=='__main__': main()
