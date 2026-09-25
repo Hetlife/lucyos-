@@ -1,0 +1,114 @@
+ref	sha	committer_date	subject
+refs/heads/candidate/deployment-preflight-rendered-units-20260918	c542bd9fba9e1cce49f1a4da0e35213a1e98636b	2026-09-18T03:50:53+05:30	deploy: verify rendered systemd units before Mark-2 restart
+refs/heads/candidate/dev-msos-20260917	a99beeb4c10d498b3dbec05d793721a4b9058ed6	2026-09-17T09:09:51+00:00	test: skip public-key enrollment when ssh-keygen is unavailable
+refs/heads/candidate/dev-msos-governed-20260918	66e3a4ef1b8242123555af5a7c9d80115ab23d82	2026-09-18T03:18:18+05:30	owner: freeze governed MSOS candidate
+refs/heads/candidate/scs-admin01-handoff-20260918	61f86a35cb98f597f8aa0591ca2bc3cb7387c7a6	2026-09-18T09:11:25+05:30	fix: harden SCS result ingestion after review
+refs/heads/candidate/security-redaction-s08-20260918	bf69f067bd6a80de20942666d5ff3b2247501277	2026-09-18T09:45:22+05:30	security: make secret scanning bounded and overlap-safe
+refs/heads/feature/little-lucy-nebula-prep-20260920	518b9970a7b5a9b1d5083cf61549684eab5d9b07	2026-09-21T10:28:18+05:30	chore: untrack generated TypeScript build cache
+refs/heads/feature/lucyos-aion-handoff	0afe7d76fa051aa1721464e9dfda7da2c79613a3	2026-09-04T00:50:14+05:30	Add AION model handoff and resumable OS structure
+refs/heads/feature/resource-governor	2cd3cc5391a8b240baf018d8495b803356f78984	2026-09-17T16:09:22+00:00	Add `aion verify`: one-command machine acceptance test
+refs/heads/main	12e6414afc1f12315f0de1d3b46ffec3c4d979fe	2026-09-04T00:17:37+05:30	Initial commit
+refs/heads/owner/dev-msos-governance-20260918	d59a76ee55007dc9ab18a87970b99d080f85afc6	2026-09-18T03:15:15+05:30	owner: freeze reconciled governance baseline
+refs/heads/owner/security-redaction-hardening-20260918	194db393c23eef5086f245a24fcdf3757016ff46	2026-09-18T09:55:27+05:30	security: harden secret scanning and redaction
+refs/heads/owner/security-redaction-hardening-v10-20260918	124e7171fd41d3652f64f34ead9ed23d24dd8c9f	2026-09-18T10:05:35+05:30	security: harden secret scanning and fail closed
+refs/heads/repair/resource-governor-hermetic-openclaw-20260917	6daa15cfdbbe0a159568eeec521b05bb3d40d1d3	2026-09-17T23:18:09+05:30	test: isolate OpenClaw PATH evidence in verify fixture
+refs/heads/repair/scg-device-key-cli-20260920	3dae4c1658c83968d404f69e9dfc5f43fe8cf39b	2026-09-20T04:59:36+05:30	scg: add safe local device key creation command
+refs/heads/repair/security-private-key-redaction-20260918	83a7f87a651d5a8312c6da4a3752b05906d3a4d9	2026-09-18T10:05:31+05:30	security: bound redaction to a fail-closed fixed point
+refs/heads/research/codebase-reduction-20260918	1dbda69d8c9940a15d56f5507b2b309341db3d74	2026-09-18T16:40:56+05:30	checkpoint: verify S-45 on integrated baseline
+refs/heads/task/S-41-complexity-map	88f9e4f4122b1de30ae59daa5dd2b69dd5a55f58	2026-09-18T15:43:34+05:30	Add deterministic production complexity and dependency reports
+refs/heads/task/S-42-duplication-scan	90a8eae6bcf17ca5c9fdb4ded7bfb28ff1bf84d2	2026-09-18T15:43:16+05:30	Add advisory duplication and dead-weight reports
+refs/heads/task/S-43-context-profiler	1166a03e03f3f8f5d2996b6920015f651256a58c	2026-09-18T15:44:54+05:30	Add deterministic task context profiler and six-reference baseline
+refs/heads/task/S-44-module-manifests	4a2d28175498430cf5270d6e61b5c31ee7f51fde	2026-09-18T15:57:58+05:30	Add eight evidence-backed logical module manifests
+refs/heads/task/S-45-context-module	c6235174c0857a472ca621ec7089fa7a3bc56b92	2026-09-18T16:05:43+05:30	S-45: extend task context with bounded module indexes
+refs/heads/task/S-47-aion-verify	d99ac49b0fbb2f14c0e8ed9f9168775a75df05de	2026-09-19T12:19:23+05:30	fix: keep AION verify within existing health module
+refs/heads/task/S-47-verify	907c08380105123fe60fa4f07f3f276c7d757624	2026-09-19T16:30:45+05:30	S-47: add machine acceptance verification
+refs/heads/task/S-49-hermetic	b1b011dc48638263253161bcb344fa7ccafe936c	2026-09-19T16:33:41+05:30	S-49: make test suite hermetic
+refs/heads/task/S-49-hermetic-tests	ed6541620bb1c4a8a1584b5664978dc5b234499d	2026-09-19T11:57:58+05:30	S-49: isolate test environment and restore it reliably
+refs/heads/task/lucy-progress-supervisor	106c71e0a28d2d4390cd15fd7a0c6cb188dcc888	2026-09-18T18:06:37+05:30	Refine Lucy progress message hierarchy
+refs/remotes/origin/HEAD	05c4f0ddff7e01f1aaccf7a1c927730e6977766a	2026-09-20T05:09:46+05:30	Merge PR #46: resolve canonical bridge paths and task IDs
+refs/remotes/origin/arch/lucyos-interface-m-a	fab15064d6de10660c0ac4c1ca00ff94d3e5db8e	2026-09-13T16:04:35+00:00	M-B.4: Add a projects grid — first real use of /api/v1/projects
+refs/remotes/origin/audit/health-20260917	85b330c57c2b0cc5bdc54ac491396c139726c42b	2026-09-17T08:35:48+00:00	audit: LucyOS repo health audit + Sonnet repair queue (planning only)
+refs/remotes/origin/backup/pre-mark2-loop-v1.2-20260908	e126529f7086b8bab5a3af42ddd3a5731f3d62bf	2026-09-04T18:03:37+00:00	Add master AI continuation handoff
+refs/remotes/origin/candidate/deployment-preflight-rendered-units-20260918	c542bd9fba9e1cce49f1a4da0e35213a1e98636b	2026-09-18T03:50:53+05:30	deploy: verify rendered systemd units before Mark-2 restart
+refs/remotes/origin/candidate/dev-msos-20260917	a99beeb4c10d498b3dbec05d793721a4b9058ed6	2026-09-17T09:09:51+00:00	test: skip public-key enrollment when ssh-keygen is unavailable
+refs/remotes/origin/candidate/dev-msos-governed-20260918	66e3a4ef1b8242123555af5a7c9d80115ab23d82	2026-09-18T03:18:18+05:30	owner: freeze governed MSOS candidate
+refs/remotes/origin/candidate/learnrepo-sse-study-20260918	13d31a2988b20d3f54cdff0e2c9b1a5c51528cfa	2026-09-18T03:30:02+00:00	docs: preserve SSE Mission Control LearnRepo study
+refs/remotes/origin/candidate/mark2-loop-v1.2-20260908	2c125569796a41d0e73d91f8b15b0c80be60a707	2026-09-08T20:12:01+05:30	Stage Mark-2 loop v1.2 candidate manifest without activation
+refs/remotes/origin/candidate/scs-admin01-handoff-20260918	32eeeb490c35612b72d40dadccaa80e0ad63d63c	2026-09-18T04:04:22+05:30	bridge: add guarded SCS task result handoff
+refs/remotes/origin/claude/aion-whatsapp-control-1seild	a9686060340bd803a145a0af6c5c22c7c4b1a149	2026-09-05T15:15:33+00:00	Add START_HERE.md: the whole Fable session in one readable file
+refs/remotes/origin/claude/fable-deploy-setup-mc5nr6	cc778c9707765b24c0450e3cff1fba634073f5a7	2026-09-10T02:48:08+00:00	EXP-001: cheap-model drafts (outreach message, brief template, call checklist)
+refs/remotes/origin/claude/lucyos-architecture-audit-4o4q83	a0d5a89cee499027382d512fe9c9be5946acf28b	2026-09-16T09:22:18+00:00	aion_core/recall: Phase 1 foundation -- deterministic query construction + lexical candidate search
+refs/remotes/origin/claude/lucyos-health-audit-sonnet-repair-gfzowc	332d3a77c9d74ed60681654ce3c7dd56ca440857	2026-09-18T08:45:04+00:00	planning: rename M9-GATE to FABLE-10 so every graph id satisfies the verifier regex
+refs/remotes/origin/design/remote-privileged-action-broker-20260920	a43d09d05dc79ab4d9f638a2e16b69df95c0e2c9	2026-09-20T05:33:41+05:30	docs: design remote privileged action broker
+refs/remotes/origin/diagnostic/ci-full-suite-20260920	e8ae894086f7451c370766cfe24b1560278e559a	2026-09-20T05:24:06+05:30	ci: expose failing unittest names for diagnosis
+refs/remotes/origin/fable/S-47-ratification-verified	735f3dd3a332e9823546856489f03b3ec5472f8b	2026-09-19T16:48:22+05:30	FABLE: ratify S-47 verify governance module
+refs/remotes/origin/feature/context-pack	73d7f51af5e59beca918e91d5dd5cce6df63f814	2026-09-17T15:04:19+00:00	Add deterministic AI context pack for delta reviews
+refs/remotes/origin/feature/learnrepo-queue-health	75459ad250724e05cfd554279a5f6d2da4bbf727	2026-09-16T11:15:10+00:00	Add native LearnRepo queue and deterministic health pilot
+refs/remotes/origin/feature/little-lucy-nebula-prep-20260920	518b9970a7b5a9b1d5083cf61549684eab5d9b07	2026-09-21T10:28:18+05:30	chore: untrack generated TypeScript build cache
+refs/remotes/origin/feature/lucyos-aion-handoff	0afe7d76fa051aa1721464e9dfda7da2c79613a3	2026-09-04T00:50:14+05:30	Add AION model handoff and resumable OS structure
+refs/remotes/origin/feature/openclaw-lucyos-bridge	dd08043079f6d4e3a77d87ae8b46ec662d9d3b20	2026-09-17T07:35:42+00:00	Prepare restricted LucyOS SSH client enrollment
+refs/remotes/origin/feature/resource-governor	6daa15cfdbbe0a159568eeec521b05bb3d40d1d3	2026-09-17T23:18:09+05:30	test: isolate OpenClaw PATH evidence in verify fixture
+refs/remotes/origin/feature/skill-system-q000-architecture-audit	67e5ebb02c3b3d7fed4746ef3fe56a4c464a868d	2026-09-16T18:12:39+05:30	Add Q000 LucyOS Skill System architecture audit
+refs/remotes/origin/feature/skill-system-q001-capability-registry	8ed208af8f400d483afc3c04105acd6b7cd59b58	2026-09-16T12:53:04+00:00	Add native LucyOS skill capability registry
+refs/remotes/origin/feature/skill-system-q002-manifest-schema	88452a137c4ffa2c0ea703ab358235e6189d4023	2026-09-16T12:57:36+00:00	Add LucyOS skill manifest schema
+refs/remotes/origin/feature/skill-system-q003-catalog-lifecycle	e7eb6155447964f25aebca3436e071f59fa169b0	2026-09-16T13:31:37+00:00	Catalog LucyOS skills with gated lifecycle
+refs/remotes/origin/feature/skill-system-q004-learnrepo-contract	47f123680eaf9fe581e04aae482b7aef61969611	2026-09-16T13:38:41+00:00	Gate skill lifecycle with LearnRepo evidence
+refs/remotes/origin/feature/skill-system-q005-policy-classes	ba42b2f869ede48ca70f83459e68ec352eb2ca2a	2026-09-16T13:42:20+00:00	Standardize skill cost risk data and priority classes
+refs/remotes/origin/feature/skill-system-q006-architecture-guard	2b59aea7d785bbc42139dcb361834bb48ae158a3	2026-09-16T13:45:22+00:00	Add architecture anti-duplication guard
+refs/remotes/origin/integration/consolidation-20260916	a3cf46b1f482bc3fab42648a1430126bf62a6bdf	2026-09-17T22:36:51+05:30	docs: constrain Sonnet repairs to repo-only access
+refs/remotes/origin/integration/lucyos-autonomous-wave-20260919	55546fe82ddfba25e527df237766ae7c09346389	2026-09-20T15:21:00+05:30	docs: checkpoint SCG local validation
+refs/remotes/origin/main	05c4f0ddff7e01f1aaccf7a1c927730e6977766a	2026-09-20T05:09:46+05:30	Merge PR #46: resolve canonical bridge paths and task IDs
+refs/remotes/origin/merge/reconcile-waves-20260917-chatgpt	a99beeb4c10d498b3dbec05d793721a4b9058ed6	2026-09-17T09:09:51+00:00	test: skip public-key enrollment when ssh-keygen is unavailable
+refs/remotes/origin/owner/dev-msos-governance-20260918	d59a76ee55007dc9ab18a87970b99d080f85afc6	2026-09-18T03:15:15+05:30	owner: freeze reconciled governance baseline
+refs/remotes/origin/owner/start-here-model-router-20260917	effd0e62a88042959dc9177db9d5606f20949b53	2026-09-17T03:02:56+00:00	docs: add thin LucyOS multi-model start router
+refs/remotes/origin/owner/wave0-authority-reconcile-20260917	1430af2b8a322ff938d1e38e798ba5e257411b1d	2026-09-17T03:26:10+00:00	owner: reconcile Wave 0 authority baseline
+refs/remotes/origin/owner/wave0-portability-refinement-20260917	b3f129c02b9d8c3df15de585e6a2545ed8650fd9	2026-09-17T02:58:17+00:00	owner: refine portability guard for defensive policy literals
+refs/remotes/origin/plan/lucyos-openclaw-e2e	5ab467c3d41d17f23766f8f0cea47b96ce3952e4	2026-09-17T14:37:02+00:00	Add LucyOS OpenClaw integration execution plan
+refs/remotes/origin/planning/integration-roadmap-20260917	13f3510dbf3adf32c4d842c923651481f0e4156f	2026-09-17T08:39:19+00:00	TASK-001: mark roadmap V2 superseded -- branch roles inverted
+refs/remotes/origin/planning/opus-fable-20260916	c11fcb68438aeabc88426089491294490d7d396f	2026-09-16T18:45:55+00:00	Fable: re-freeze FABLE_FREEZE_SHA=9c151b038a40feaf474b2d03b98fea5feb15c35e
+refs/remotes/origin/post-integration/S-30-result-contract	f6487d1303673d26bc2abd39fd32cb80b508657d	2026-09-17T07:00:26+00:00	S-30: normalize bounded worker result contract
+refs/remotes/origin/repair/bridge-canonical-path-20260919	1ca0c46aeef7399196a1985addb01d5cd301abc6	2026-09-19T18:18:35+05:30	bridge: accept canonical S-series task IDs
+refs/remotes/origin/repair/ci-context-origin-main-20260920	bbf99dcf634f612fd7a3d32eea19f40b70e9f3f4	2026-09-20T05:27:34+05:30	ci: fetch canonical main for context tests
+refs/remotes/origin/repair/orchestration-reliability-20260919	00567ee60262b01f29a934dc9b41598a7bf5d07b	2026-09-19T12:32:38+05:30	Keep reliability mocks compatible with Python 3.9
+refs/remotes/origin/repair/reconcile-20260917	0ed33e73b51ee55c6a0fd2f6f6396ca5d08844fb	2026-09-17T08:50:12+00:00	docs: repository cleanup and merge plan, verified by execution
+refs/remotes/origin/repair/resource-governor-hermetic-openclaw-20260917	6daa15cfdbbe0a159568eeec521b05bb3d40d1d3	2026-09-17T23:18:09+05:30	test: isolate OpenClaw PATH evidence in verify fixture
+refs/remotes/origin/repair/scg-device-key-cli-20260920	3dae4c1658c83968d404f69e9dfc5f43fe8cf39b	2026-09-20T04:59:36+05:30	scg: add safe local device key creation command
+refs/remotes/origin/repair/scs-handoff-reconcile-20260919	d1a6ec2f6165456b148c2980bcadcbf4c5c4770b	2026-09-19T15:35:18+05:30	bridge: honor caller transaction for handoff results
+refs/remotes/origin/repair/worker-empty-session-churn-20260920	71c832495217c6c4bbc0132699bf91314dfe2c8a	2026-09-20T01:51:10+00:00	worker: skip empty-session churn
+refs/remotes/origin/research/codebase-reduction-20260918	1dbda69d8c9940a15d56f5507b2b309341db3d74	2026-09-18T16:40:56+05:30	checkpoint: verify S-45 on integrated baseline
+refs/remotes/origin/setup/ci-integration-sync-20260916	6a5f7d81cd8697e1fef5ab95095bf1fd20202ce0	2026-09-16T15:44:15+00:00	tests/test_drive_bridge.py: use os.link() instead of Path.hardlink_to() for 3.9 compat
+refs/remotes/origin/supervised/integration-20260917	0720a9209923bde9652833c4c7a9271041daa855	2026-09-17T06:48:53+00:00	owner: freeze supervised integration candidate
+refs/remotes/origin/task/S-01-skill-registry-normalize	9b4e947f878f92c89a6fc151a20d51cbb46bcb00	2026-09-16T18:59:32+00:00	S-01: skill-registry policy-class normalization + upgrade regression test
+refs/remotes/origin/task/S-02-salvage-audit-branch	da780bdee0b025791bb5e6261e986bd0c7c340d3	2026-09-17T00:32:12+00:00	S-02: add the archive README
+refs/remotes/origin/task/S-05-launchd-units	4c37a27e93b1c53ba06ae8f1cbe9d79a2468642a	2026-09-16T19:27:58+00:00	S-05: macOS launchd units mirroring systemd
+refs/remotes/origin/task/S-07-drive-check	6f02f08cb0192e2fa44b2f0a29b66ad48af7c467	2026-09-16T19:11:16+00:00	S-07: aion drive-check read/write capability probe
+refs/remotes/origin/task/S-08-secret-scanner-kwarg	3131c9dafca0882b909d7355cf5d7f218fa9ed10	2026-09-16T19:06:06+00:00	S-08: secret-scanner same-name kwarg exemption
+refs/remotes/origin/task/S-09-openclaw-check	24cd78afb1dd495fc45bf29f7d8992a9ce2a4a30	2026-09-16T19:30:32+00:00	S-09: aion openclaw-check - loopback reachability probe
+refs/remotes/origin/task/S-10-host-adapter	612f5effea25bb0db3c40a7930a5b1c2d3b9595e	2026-09-16T18:57:49+00:00	S-10: aion_core/host/ platform adapter layer
+refs/remotes/origin/task/S-13-sync-outbox	1f28fd4738157e4703480af2c8874673dfa9dc77	2026-09-16T19:02:10+00:00	S-13: sync_outbox local-first PENDING_SYNC ledger
+refs/remotes/origin/task/S-14-intake	c1831eb1237b11789b5817fafff411d71c806b47	2026-09-16T19:04:21+00:00	S-14: data intake provenance contract
+refs/remotes/origin/task/S-15-openclaw-independence	57e148884ce30936091503f680d42a18a3e8f0c6	2026-09-16T19:19:19+00:00	S-15: prove LucyOS runs with no OpenClaw present
+refs/remotes/origin/task/S-16-tempworker-guardrails	dc0d88baf06f1c5d345d07d2f9ff8c39f40f20f1	2026-09-17T01:44:46+00:00	S-16: temporary-worker scope narrowing and TTL (guard rails only)
+refs/remotes/origin/task/S-17-guardian-skeleton	a939d349ded89b0f030b0565169906f2fb1a0c27	2026-09-16T19:24:41+00:00	S-17: deployment-guardian skeleton (disabled)
+refs/remotes/origin/task/S-18-recovery-injection	13fb8cfd46986175737229356431eaa312f257f3	2026-09-16T19:17:34+00:00	S-18: recovery evidence - corrupted-state and failure injection
+refs/remotes/origin/task/S-19-macos-read-safe	d06b199f85fb2f6c7a21c3e159d14754a588ed4c	2026-09-16T18:55:05+00:00	S-19: fix macOS symlinked-tmp rejection in read_safe
+refs/remotes/origin/task/S-20-protected-paths-render	4b2fc567cc640472007ba8375104b25324260afe	2026-09-16T19:40:39+00:00	S-20: render PROTECTED_PATHS.md table from the baseline (finds real drift)
+refs/remotes/origin/task/S-21-history-scan	81153b745e72091dbfb2f27c1302dca940461e5e	2026-09-16T18:50:48+00:00	S-21: read-only git-history secret scan
+refs/remotes/origin/task/S-22-remove-desktop-commander	ab7f8e40eebec2db74d05aeb90fcc7e3e2426e46	2026-09-16T19:07:45+00:00	S-22: remove Desktop Commander from the repo
+refs/remotes/origin/task/S-23-portability-export	08406e30bba1f7a6da8d0cfeb5e2d6e49b812869	2026-09-16T19:22:43+00:00	S-23: add aion export / aion import for cross-host portability
+refs/remotes/origin/task/S-24-encrypted-backup	1f651210bd19c195bea42df15e61456450509bdc	2026-09-16T19:33:38+00:00	S-24: encrypted backup artifact + documented off-host drill
+refs/remotes/origin/task/S-26-audit-chain	c34b56f8d59db7a9d0f4a43cc870dd135a9a8967	2026-09-16T19:36:08+00:00	S-26: hash-chained audit export
+refs/remotes/origin/task/S-27-routing-report	4226001721ecc3d4ecb33bbb38f2d3bd6617c53c	2026-09-16T19:38:06+00:00	S-27: routing telemetry report over model_usage
+refs/remotes/origin/task/S-28-runtime-inventory	b34a482a874b3210487ffa60980296156fd50752	2026-09-16T19:44:57+00:00	S-28: drop FTS5 probe to avoid a second sqlite3.connect() outside db.py
+refs/remotes/origin/task/S-29-salvage-experiments	6510ec964ce9fbbbd07db353a2663c7a7bd0e1f4	2026-09-17T00:28:18+00:00	S-29: salvage experiments.py / money_path.py from fable-deploy-setup-mc5nr6
+refs/remotes/origin/task/S-41-complexity-map	88f9e4f4122b1de30ae59daa5dd2b69dd5a55f58	2026-09-18T15:43:34+05:30	Add deterministic production complexity and dependency reports
+refs/remotes/origin/task/S-42-duplication-scan	90a8eae6bcf17ca5c9fdb4ded7bfb28ff1bf84d2	2026-09-18T15:43:16+05:30	Add advisory duplication and dead-weight reports
+refs/remotes/origin/task/S-43-context-profiler	1166a03e03f3f8f5d2996b6920015f651256a58c	2026-09-18T15:44:54+05:30	Add deterministic task context profiler and six-reference baseline
+refs/remotes/origin/task/S-44-module-manifests	4a2d28175498430cf5270d6e61b5c31ee7f51fde	2026-09-18T15:57:58+05:30	Add eight evidence-backed logical module manifests
+refs/remotes/origin/task/S-45-context-module	c6235174c0857a472ca621ec7089fa7a3bc56b92	2026-09-18T16:05:43+05:30	S-45: extend task context with bounded module indexes
+refs/remotes/origin/task/S-47-aion-verify	d99ac49b0fbb2f14c0e8ed9f9168775a75df05de	2026-09-19T12:19:23+05:30	fix: keep AION verify within existing health module
+refs/remotes/origin/task/S-47-verify-verified	907c08380105123fe60fa4f07f3f276c7d757624	2026-09-19T16:30:45+05:30	S-47: add machine acceptance verification
+refs/remotes/origin/task/S-48-boundary-ratchet-verified	6ee5a1262852924090f441d8ad48a6ee56aa8643	2026-09-19T17:01:43+05:30	S-48: add warning-mode boundary ratchet
+refs/remotes/origin/task/S-49-hermetic-tests	ed6541620bb1c4a8a1584b5664978dc5b234499d	2026-09-19T11:57:58+05:30	S-49: isolate test environment and restore it reliably
+refs/remotes/origin/task/S-49-hermetic-verified	b1b011dc48638263253161bcb344fa7ccafe936c	2026-09-19T16:33:41+05:30	S-49: make test suite hermetic
+refs/remotes/origin/test/authority-gate-positive-20260916	34ffcea8d51f0092f232a31840b70368183bf262	2026-09-16T21:29:22+05:30	test: add positive authority-gate PR probe

@@ -51,3 +51,34 @@
 ## Next action
 
 Obtain owner direction for the clearly identified cleanup candidates, then separately complete a full-suite run on exact integration `55546fe` with a bounded environment and reconcile the named stale integration worktree.
+
+## Live readiness refresh — 2026-09-21 20:49 IST
+
+- `MAIN_SHA`: `05c4f0ddff7e01f1aaccf7a1c927730e6977766a` (`origin/main`).
+- `INTEGRATION_SHA`: `55546fe82ddfba25e527df237766ae7c09346389`; named integration worktree exists, is clean, and matches the remote integration ref.
+- `LUCY_NEST_SHA`: `518b9970a7b5a9b1d5083cf61549684eab5d9b07`; local and remote match with zero divergence.
+- `GITHUB_STATUS`: PASS. `github-account-1` resolves to `ssh.github.com:443`, uses the existing key directly with `IdentityAgent none`; SSH auth, fetch, and ls-remote pass.
+- `WHATSAPP_STATUS`: PASS. Channel probe is connected/healthy, routing remains `whatsapp:* -> main`, current inbound was received, and a bounded outbound self-test returned a WhatsApp message ID.
+- `OPENCLAW_STATUS`: PASS. Gateway 2026.9.4 is reachable on loopback, config validates, node is connected, one Gateway listener exists, agent-hub health/reconciliation and watchdog timers complete successfully.
+- `OLLAMA_STATUS`: PASS. Service/API are healthy and 11 local models are visible.
+- `CODEX_STATUS`: PASS (`codex-cli 0.151.0`).
+- `CLAUDE_STATUS`: PASS (`Claude Code 2.1.278`).
+- `GOOGLE_DRIVE_STATUS`: PASS. Connected profile resolves and the historical repo-intelligence archive exists in the approved Drive archive folder.
+- `WORKTREE_STATUS`: named integration clean/current; Lucy-Nest intact; one already-missing `/tmp/lucyos-reconcile.LUxbPe` metadata entry is again marked prunable after recreation cleanup and was not pruned during this audit.
+- `SCG_STATUS`: code present on integration; local runtime reports `enabled=true`, device `lucy-den` ACTIVE at key version/epoch 1; no activation action, enrollment, revocation, or key change occurred. Canonical-main compatibility remains NOT ESTABLISHED because `origin/main` lacks `aion_core/gateway.py`.
+- `AION_STATUS`: PASS locally: health healthy, `aion verify` READY, 0 ready/running/blocked tasks, 0 pending approvals, 0 unresolved errors. No live Mark-2 task feed was available, so cross-machine agreement is UNVERIFIED rather than assumed.
+- `BRANCH_RESCUE_STATUS`: ANALYZING. A verified all-refs recovery bundle, SHA-256, ref manifest, branch census, patch-equivalence table, integration gap, and first assessment now exist under `.lucy/planning/branch-rescue-20260921/`. PR reconciliation is unavailable because `gh` is not authenticated.
+- `RUNTIME_STATE_STATUS`: SAFE. Lucy-Nest build passes; generated build/dependency/runtime paths and `tsconfig.tsbuildinfo` remain untracked/ignored; runtime scripts and theme assets remain visible; public key and `nebula-client.sh` are preserved.
+- `KNOWN_BLOCKERS`: historical automation errors from Gateway restarts/local-model network failures; branch rescue still needs task/PR/session mapping; Mark-2 task agreement is not directly observable.
+- `OWNER_GATES`: SCG deployment/activation; canonical/main merge or promotion; branch retirement/deletion; credential or public-exposure changes.
+- `NEXT_SAFE_ACTION`: map the 13 local branch tips with unique patches relative to integration to tasks, sessions, worktrees, and remote evidence before proposing any merge or retirement wave.
+
+### Final verification notes
+
+- Lucy-Nest `npm ci --ignore-scripts` and `npm run build` completed successfully. Generated `dist/`, `node_modules/`, runtime state, and `tsconfig.tsbuildinfo` remain untracked/ignored. Runtime scripts and theme token/motion sources remain visible; `lucy-nest-rsa.pub` remains referenced by bootstrap and preserved.
+- Reliability regression: 97 targeted task, LearnRepo lease/recovery, routing/state, and plan-worker tests passed in 31.461 seconds.
+- Ollama API generated the bounded expected response `OK` with `lucy-fast:phi3`.
+- Agent-hub health and reconciliation timers completed with exit status 0; queue counts were zero and no duplicate worker was started.
+- The already-missing temporary reconciliation worktree metadata was safely pruned after the named integration worktree was reverified clean at `55546fe`; no worktree directory, branch, ref, or commit was deleted.
+- WhatsApp end-to-end proof completed: current owner inbound reached `main`; a bounded outbound self-test returned message ID `3EB008B5D8F16C7D71962B`; the live channel probe subsequently reported connected/healthy with recent inbound and outbound timestamps.
+- The enabled main heartbeat had historical restart-interruption errors. One bounded manual recovery run was enqueued at 20:50:35 IST and was still running three minutes later; it is not counted as repaired or failed yet. The disabled stale LucyOS progress notifier remained disabled.
