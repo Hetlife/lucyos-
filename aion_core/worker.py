@@ -31,6 +31,7 @@ from pathlib import Path
 
 from . import (agents, approvals, config, context, db, errors, governor, metrics,
                router, security, sessions, tasks, util)
+from .recall import context_compiler
 
 # argv[0] names a plan may execute without asking.  Everything here is
 # reversible, local and inspectable.  Extend deliberately with
@@ -65,6 +66,7 @@ TIMEOUT_S = 300
 CLASS_B_TIMEOUT_S = 900
 MAX_OUTPUT_CHARS = 2000
 WORK_LOCK_NAME = "worker.lock"
+CONTEXT_COMPILER_FLAG = "context_compiler_enabled"
 
 
 class Refused(Exception):
@@ -448,12 +450,34 @@ def _execute(task, cls: str, *, dry_run: bool, session_id: str | None) -> dict:
 
     if not tasks.claim(task_id, agent_id):
         return {"task_id": task_id, "status": "SKIPPED", "detail": "claimed by another worker"}
+
+    # Context is a required execution input, not an optional model convenience.
+    # Compile it after the atomic claim (so the task cannot race another worker)
+    # but before RUNNING or any executor/model call.  Failure therefore leaves a
+    # visible, recoverable BLOCKED task and never starts uncontextualized work.
+    try:
+        prepared_context = prepare_task_context(task)
+    except Exception as exc:
+        # This is an execution trust boundary: an unexpected compiler/cache/
+        # filesystem defect must hold the task too, never fall through to an
+        # uncontextualized worker.  BaseException signals still propagate.
+        detail = security.redact(f"context preparation failed: {exc}")[:400]
+        error_id = errors.record("context_compiler", detail, task_id=task_id)
+        tasks.update(task_id, status="BLOCKED", owner_agent=None, claimed_at=None,
+                     blockers="CONTEXT_COMPILATION_FAILED: worker was not started",
+                     last_error=detail)
+        if session_id:
+            sessions.log(session_id, "failure", f"{task_id} blocked before execution: {detail}")
+        return {"task_id": task_id, "status": "BLOCKED", "error": error_id,
+                "detail": detail, "worker_started": False}
     tasks.update(task_id, status="RUNNING", started_at=util.now())
     if session_id:
-        sessions.log(session_id, "action", f"{task_id} [{cls}] {task['title']}")
+        sessions.log(session_id, "action", f"{task_id} [{cls}] {task['title']}; "
+                     f"context={prepared_context['status']} "
+                     f"revision={prepared_context['source_revision'][:12]}")
 
     try:
-        produced = _do_work(task, cls)
+        produced = _do_work(task, cls, prepared_context=prepared_context)
     except Refused as exc:
         # Not a failure: a boundary. Ask instead of forcing.
         approval_id = approvals.create(
@@ -509,19 +533,79 @@ def _execute(task, cls: str, *, dry_run: bool, session_id: str | None) -> dict:
     return {"task_id": task_id, "status": "DONE", "class": cls, "evidence": evidence[:200]}
 
 
-def _do_work(task, cls: str) -> dict:
+def prepare_task_context(task) -> dict:
+    """Build or reuse, validate and load the canonical task-specific context.
+
+    The compiler is deterministic and local.  Its markdown is the worker-facing
+    projection; JSON remains a machine-checkable provenance record.  Both are
+    verified again at this trust boundary before any executor receives them.
+    """
+    task_id = task["task_id"]
+    if db.get_meta(CONTEXT_COMPILER_FLAG, "1") != "1":
+        raise context_compiler.ContextCompilerError(
+            "task context compiler is disabled; fail-closed execution hold")
+    result = context_compiler.compile_context(repo=repo_root(), task_id=task_id)
+    markdown_path = Path(result["output"]["markdown"]).resolve()
+    json_path = Path(result["output"]["json"]).resolve()
+    context_root = (config.home() / "context").resolve()
+    for path in (markdown_path, json_path):
+        try:
+            path.relative_to(context_root)
+        except ValueError as exc:
+            raise context_compiler.ContextCompilerError(
+                f"context output escaped configured root: {path}") from exc
+        if not path.is_file():
+            raise context_compiler.ContextCompilerError(f"context output missing: {path}")
+    markdown = markdown_path.read_text(encoding="utf-8")
+    raw_json = json_path.read_text(encoding="utf-8")
+    security.assert_clean(markdown, str(markdown_path))
+    security.assert_clean(raw_json, str(json_path))
+    packet = json.loads(raw_json)
+    if packet.get("task_id") != task_id:
+        raise context_compiler.ContextCompilerError("compiled context task identity mismatch")
+    if packet.get("source_revision") != result.get("source_revision"):
+        raise context_compiler.ContextCompilerError("compiled context provenance mismatch")
+    return {
+        "status": result["status"], "source_revision": result["source_revision"],
+        "markdown": markdown, "packet": packet,
+        "markdown_path": str(markdown_path), "json_path": str(json_path),
+        "cache": result["cache"], "bytes": result["bytes"],
+    }
+
+
+def _worker_prompt(task, prepared_context: dict) -> str:
+    """Combine the owner/task work order with the bounded derived projection."""
+    owner_prompt = context.build(task["task_id"])
+    if task["description"] and "PROMPT FOR THE EXECUTING MODEL:" in task["description"]:
+        owner_prompt = task["description"].split(
+            "PROMPT FOR THE EXECUTING MODEL:", 1)[1].strip() + "\n\n---\n" + owner_prompt
+    prompt = "\n".join((
+        owner_prompt,
+        "",
+        "---",
+        "# VERIFIED TASK-SPECIFIC CONTEXT",
+        f"SOURCE_REVISION: {prepared_context['source_revision']}",
+        f"CACHE_STATUS: {prepared_context['status']}",
+        f"PROVENANCE_JSON: {prepared_context['json_path']}",
+        "",
+        prepared_context["markdown"],
+    ))
+    security.assert_clean(prompt, f"worker prompt for {task['task_id']}")
+    return prompt
+
+
+def _do_work(task, cls: str, *, prepared_context: dict | None = None) -> dict:
     """Deterministic steps run their command; model steps run their prompt."""
+    prepared_context = prepared_context or prepare_task_context(task)
     if task["exec_command"]:
         result = run_command(task["exec_command"])
         return {"ok": result["ok"], "output": result["output"],
-                "how": f"ran `{result['cmd']}`", "model": "shell"}
+                "how": f"ran `{result['cmd']}` with context "
+                       f"{prepared_context['source_revision'][:12]}", "model": "shell"}
     if cls == "DET":
         return {"ok": False, "output": "a DET step has no exec_command — the plan is incomplete"}
 
-    prompt = context.build(task["task_id"])
-    if task["description"] and "PROMPT FOR THE EXECUTING MODEL:" in task["description"]:
-        prompt = task["description"].split("PROMPT FOR THE EXECUTING MODEL:", 1)[1].strip() \
-                 + "\n\n---\n" + prompt
+    prompt = _worker_prompt(task, prepared_context)
 
     if cls == "A" and ollama_available():
         out = run_ollama(prompt)
