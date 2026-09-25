@@ -75,9 +75,11 @@ REMOTE_DECISIONS_GATE='/root/lucy-nest/native/remote-decisions.enabled'
 GATE_MAGIC='ALLOW_REMOTE_DECISIONS'
 CONTROL_LINE_LIMIT=256
 # Verified against apply_action()/ui.py: none of these submit a decision or put
-# anything on the commands queue. 'status' is intercepted by handle_control as a
-# snapshot request; the on-screen 'status' page action stays touch-only.
+# anything on the commands queue. 'status' is the existing safe navigation action
+# that opens the on-screen Status page, then the snapshot is returned.
 NAV_VERBS=frozenset(('home','status','inbox','next','review','detail_next','review_back'))
+# JSON-snapshot-only verbs: never change the page, for callers that only want state.
+SNAPSHOT_VERBS=frozenset(('info',))
 # Real existing action names in apply_action(): approve/deny stage on the review
 # page, send is the canonical submission that returns the decision command.
 DECISION_VERBS=frozenset(('approve','deny','send'))
@@ -226,7 +228,14 @@ def handle_control(model,ev):
     item to match the currently pending approval before using apply_action().
     """
     verb=ev.get('verb'); command=None
-    if verb=='status': reply=_control_snapshot(model)
+    if verb=='status':
+        # Existing safe navigation action: open the on-screen Status page, then
+        # return the snapshot so remote users can see the result.
+        if apply_action(model,'status') is not None:
+            reply={'ok':False,'error':'refused: navigation never submits'}
+        else: reply=_control_snapshot(model)
+    elif verb in SNAPSHOT_VERBS:
+        reply=_control_snapshot(model)
     elif verb in NAV_VERBS:
         if apply_action(model,verb) is not None:
             reply={'ok':False,'error':'refused: navigation never submits'}

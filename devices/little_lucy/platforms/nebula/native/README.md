@@ -59,7 +59,8 @@ SSH session. It never opens a network listener: the socket is `AF_UNIX`
 
 | Verb | Class | Effect |
 |---|---|---|
-| `status` | read-only | JSON snapshot of the current screen (see above) |
+| `status` | nav | open the on-screen Status page, then return the JSON snapshot |
+| `info` | read-only | JSON snapshot of the current screen without changing the page |
 | `home` | nav | back to the eyes/home page |
 | `inbox` | nav | open the pending-approvals inbox |
 | `next` | nav | highlight the next pending approval |

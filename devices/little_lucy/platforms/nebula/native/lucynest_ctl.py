@@ -21,8 +21,9 @@ CONNECT_TIMEOUT=5.0
 # Mirrors client.py NAV_VERBS + DECISION_VERBS; duplicated so this file never
 # imports client.py on the flat device layout.
 NAV_VERBS=frozenset(('home','status','inbox','next','review','detail_next','review_back'))
+SNAPSHOT_VERBS=frozenset(('info',))
 DECISION_VERBS=frozenset(('approve','deny','send'))
-KNOWN_VERBS=NAV_VERBS|DECISION_VERBS
+KNOWN_VERBS=NAV_VERBS|SNAPSHOT_VERBS|DECISION_VERBS
 
 def build_request(verb,arg=None):
     """Build the one-line request payload bytes; raises ValueError when invalid."""

@@ -333,7 +333,7 @@ class HandleControlTests(GateTestMixin):
         return ev["reply"].get(timeout=1), command
 
     def test_status_returns_snapshot_without_secrets(self):
-        reply, command = self.reply(pending_model(), "status")
+        reply, command = self.reply(pending_model(), "info")
         self.assertIsNone(command)
         self.assertTrue(reply["ok"])
         self.assertEqual(reply["page"], "inbox")
@@ -354,7 +354,7 @@ class HandleControlTests(GateTestMixin):
     def test_navigation_changes_view_but_never_submits(self):
         for verb, expected_page in [
             ("home", "home"),
-            ("status", "inbox"),  # remote 'status' is the snapshot verb; the page is unchanged
+            ("status", "status"),  # 'status' opens the on-screen Status page
             ("inbox", "inbox"),
             ("next", "inbox"),
             ("review", "review"),
@@ -372,12 +372,30 @@ class HandleControlTests(GateTestMixin):
             self.assertEqual(model["data"]["approvals"][0]["revision"], "r1", verb)
 
     def test_navigation_commands_are_a_subset_that_never_returns_commands(self):
-        for verb in client.NAV_VERBS:
+        for verb in client.NAV_VERBS | client.SNAPSHOT_VERBS:
             for _ in range(6):
                 model = pending_model()
                 if verb in ("detail_next", "review_back"):
                     client.apply_action(model, "review")
                 self.assertIsNone(client.handle_control(model, {"verb": verb, "arg": None, "reply": queue.Queue()}))
+
+    def test_snapshot_verb_returns_json_without_changing_the_page(self):
+        model = pending_model()
+        client.apply_action(model, "review")  # put the UI somewhere distinctive
+        reply, command = self.reply(model, "info")
+        self.assertIsNone(command)
+        self.assertTrue(reply["ok"])
+        self.assertEqual(reply["page"], "review")  # unchanged by the snapshot request
+        self.assertEqual(reply["approvals"], 1)
+        self.assertFalse(reply["remote_decisions"])
+
+    def test_status_verb_opens_status_page_and_returns_snapshot(self):
+        model = pending_model()  # page 'inbox'
+        reply, command = self.reply(model, "status")
+        self.assertIsNone(command)
+        self.assertTrue(reply["ok"])
+        self.assertEqual(model["page"], "status")  # navigation happened...
+        self.assertEqual(reply["page"], "status")  # ...and the snapshot reflects it
 
     def test_decisions_refused_without_gate(self):
         model = pending_model()
