@@ -8,6 +8,20 @@ Run `python3 -m devices.little_lucy.ctl emulator`, then open `http://127.0.0.1:4
 
 `little-lucyctl` provides status, doctor, discover, deploy, restart, logs, screenshot, rollback, hardware, camera, sensors, and emulator commands. Current deploy and rollback operate on a local root only. Remote commands report unavailable until inventory proves the service, graphics, camera, sensors, and screenshot routes.
 
+## Repo-owned native source
+
+The currently active native Nebula client/bridge is reconciled into this
+repository as inactive, reviewed source:
+
+- `bridge.py` — canonical AION-backed laptop bridge;
+- `platforms/nebula/native/` — flat-deployable Nebula client/UI and font.
+
+This import does not replace the live external runtime or systemd unit. The
+paired TLS bridge remains an owner-decision surface, so read-only versus
+secondary-approval authority is an explicit owner decision before deployment.
+See `docs/lucynest-source-reconciliation.md` and the native source README for
+provenance, safety boundaries, and gated hardware work.
+
 ## Release flow
 
 `python3 -m devices.little_lucy.ctl --root <local-root> deploy devices/little_lucy <version>` copies into `releases/<version>`, runs `release/health.py`, atomically switches `current`, and retains `previous`. Activation health failure restores the old current release. `rollback` switches to previous. Versions are constrained and release directories are immutable. Future transport is Wi-Fi/SSH to an endpoint staging directory; that path has not been exercised. Do not repeatedly flash for application updates.
