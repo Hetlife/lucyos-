@@ -163,7 +163,11 @@ def _repo_sections(module: str, budget_bytes: int | None, since: str | None) -> 
         # Match patterns too: deleted owned files no longer appear in glob results.
         changed = sorted(n for n in names if n and any(
             Path(n).match(pattern) for pattern in manifest["owned_files"]))
-    canonical = _git(repo, "rev-parse", "--verify", "origin/main").strip()
+    try:
+        canonical = _git(repo, "rev-parse", "--verify", "origin/main").strip()
+    except ValueError:
+        # Shallow CI checkouts (pull_request events) never fetch origin/main.
+        canonical = "(unavailable: origin/main not fetched)"
     branch = _git(repo, "branch", "--show-current").strip() or "(detached)"
     dirty = _git(repo, "status", "--porcelain", "-z", "--no-renames").split("\0")
     test_names = [p[:-3].replace("/", ".") for p in sorted(tests) if p.endswith(".py")]

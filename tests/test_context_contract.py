@@ -155,6 +155,26 @@ Use these seven field names exactly. Put unresolved failures in BLOCKERS; put th
         self.assertIn("aion_core/tasks.py", delta)
         self.assertNotIn("unrelated.py", delta)
 
+    def test_missing_origin_main_is_reported_not_fatal(self):
+        # GitHub pull_request checkouts are depth-1 and carry no origin/main.
+        repo = self.tmp / "shallow"
+        repo.mkdir()
+        def git(*args):
+            return context._git(repo, *args).strip()
+        git("init", "-q")
+        git("config", "user.name", "Context Test")
+        git("config", "user.email", "context@example.invalid")
+        (repo / "aion_core").mkdir()
+        (repo / "aion_core/tasks.py").write_text("x\n")
+        git("add", ".")
+        git("commit", "-qm", "only")
+        manifest = context.util.read_json(Path(context.__file__).resolve().parents[1] /
+                                         ".lucy/architecture/modules/kernel.tasks.json")
+        with patch.object(context, "__file__", str(repo / "aion_core/context.py")), \
+                patch.object(context.util, "read_json", return_value=manifest):
+            packet = context.build(self.task, module="kernel.tasks")
+        self.assertIn("origin/main: (unavailable: origin/main not fetched)", packet)
+
     def test_json_cli_and_redaction(self):
         from aion_core import cli
         secret = "sk-" + "X" * 40
