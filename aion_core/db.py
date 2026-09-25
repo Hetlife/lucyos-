@@ -573,6 +573,19 @@ _ADDED_COLUMNS = {
         ("parent_agent_id", "TEXT"),
         ("expires_at", "TEXT"),
     ],
+    # Org-wide health generalization (TASK-89B0270A stage M1).  Additive with
+    # the pilot component as default, so every pre-existing row stays exactly
+    # where it was: an older binary keeps reading a newer database and the
+    # LearnRepo pilot semantics are untouched.
+    "learnrepo_tasks": [
+        ("component", "TEXT NOT NULL DEFAULT 'LearnRepo'"),
+    ],
+    "learnrepo_schedules": [
+        ("component", "TEXT NOT NULL DEFAULT 'LearnRepo'"),
+    ],
+    "learnrepo_contracts": [
+        ("component", "TEXT NOT NULL DEFAULT 'LearnRepo'"),
+    ],
 }
 
 
@@ -583,6 +596,10 @@ def _migrate(conn: sqlite3.Connection) -> None:
             if name not in have:
                 conn.execute(f"ALTER TABLE {table} ADD COLUMN {name} {spec}")
     conn.execute("CREATE INDEX IF NOT EXISTS idx_finance_delivery ON finance(delivery_id)")
+    conn.execute(
+        "CREATE INDEX IF NOT EXISTS idx_learnrepo_schedules_component "
+        "ON learnrepo_schedules(component, enabled, next_run_at)"
+    )
     conn.commit()
 
 

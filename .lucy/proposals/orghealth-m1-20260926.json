@@ -1,0 +1,31 @@
+{
+  "skill_id": "core.health",
+  "candidate_id": "orghealth-m1-20260926",
+  "new_canonical_state": false,
+  "new_global_queue": false,
+  "new_scheduler": false,
+  "new_approval_system": false,
+  "new_secret_store": false,
+  "always_on_llm_health": false,
+  "mandatory_cloud_dependency": false,
+  "direct_saas_core_coupling": false,
+  "broad_autonomous_installer": false,
+  "new_daemon": false,
+  "new_recurring_cost": false,
+  "new_privilege": false,
+  "reuse_canonical_sqlite": true,
+  "reuse_task_queue": true,
+  "reuse_approval_engine": true,
+  "reuse_health": true,
+  "reuse_resource_governor": true,
+  "feature_flagged": true,
+  "rollback_defined": true,
+  "evidence_defined": true,
+  "notes": "TASK-89B0270A stage M1. Generalizes the LearnRepo health pilot to org-wide components by adding an additive 'component' column (default 'LearnRepo') to the existing learnrepo_tasks/schedules/contracts tables and wrapping the existing deterministic checks in aion_core/health.py. No second state store, queue, scheduler, approval system or secret store; escalations flow through the existing deduplicated evidence path into tasks/errors/governor. Feature flag ORGHEALTH_ENABLED (meta table, default off); rollback is 'aion orghealth off' which disables only the LucyOS org schedules. Routine path is deterministic with zero model/API calls; optional components (openclaw gateway, ollama) degrade instead of escalating. Stage M2 (enabling on the canonical brain) is gated on owner review of this branch.",
+  "evidence": {
+    "tests": "python3 -m unittest discover -s tests -t . -q -> Ran 753 tests, OK (skipped=1)",
+    "new_tests": "tests/test_orghealth.py: 8 tests (flag-off default, seeding, zero-AI org run, deduplicated escalation, rollback, component breakdown)",
+    "boundary_scan": "2 violations, identical to origin/main (pre-existing, mode=warning)",
+    "portability": "0 violations across 59 files"
+  }
+}

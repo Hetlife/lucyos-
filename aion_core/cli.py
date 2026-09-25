@@ -135,6 +135,8 @@ def _main(argv=None) -> int:
     lr = sub.add_parser("learnrepo-run", help="run due deterministic LearnRepo health jobs")
     lr.add_argument("--mode", choices=["nightly", "daily", "weekly", "monthly", "quarterly"], default="nightly")
     sub.add_parser("learnrepo-status", help="show LearnRepo queue/health state")
+    oh = sub.add_parser("orghealth", help="turn the org-wide LucyOS health schedules on or off (rollback: off)")
+    oh.add_argument("action", choices=["on", "off", "status"], help="enable, disable (rollback), or inspect")
 
     vf = sub.add_parser("verify", help="is LucyOS sound on THIS machine, and what can it do")
     vf.add_argument("--deep", action="store_true", help="also run the full test suite here")
@@ -451,6 +453,11 @@ def _main(argv=None) -> int:
         _print(learnrepo.run_due(mode=args.mode))
     elif cmd == "learnrepo-status":
         _print(learnrepo.status())
+    elif cmd == "orghealth":
+        if args.action == "status":
+            _print(learnrepo.status())
+        else:
+            _print(learnrepo.set_org_enabled(args.action == "on"))
     elif cmd == "verify":
         result = health.verify(deep=args.deep, deploy_readiness_check=args.deploy_readiness)
         _print(result if args.json else health.render_verify(result))

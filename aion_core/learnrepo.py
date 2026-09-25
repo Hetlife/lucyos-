@@ -26,7 +26,7 @@ from . import config, db, errors, governor, security, tasks, util
 
 SCHEDULE_CLASSES = {"ON_CHANGE", "HOURLY", "NIGHTLY", "DAILY", "WEEKLY", "MONTHLY", "QUARTERLY", "MANUAL"}
 RUN_STATES = {"SCHEDULED", "STARTED", "SUCCESS", "FAIL", "LATE", "MISSED", "DEGRADED", "QUARANTINED"}
-SAFE_REPAIRS = {"release_stale_lease", "rebuild_derived_summary"}
+SAFE_REPAIRS = {"release_stale_lease", "rebuild_derived_summary", "rebuild_org_summary"}
 REFERENCE_REPOS = {
     "apscheduler": "https://github.com/agronholm/apscheduler",
     "healthchecks": "https://github.com/healthchecks/healthchecks",
@@ -37,6 +37,16 @@ REFERENCE_DOCS = {
 }
 DEFAULT_GRACE_SECONDS = 20 * 60
 DEFAULT_LEASE_SECONDS = 45 * 60
+
+# Org-wide health generalization (TASK-89B0270A, stage M1).
+# The LearnRepo pilot stays the default component; org checks reuse the
+# existing deterministic checks in aion_core/health.py — no second control
+# plane, no new daemon, zero model calls on the routine path.  Org seeding
+# is gated behind a meta feature flag so nothing changes until enabled, and
+# rollback is "aion orghealth off" (flag + org schedules disabled).
+DEFAULT_COMPONENT = "LearnRepo"
+ORG_COMPONENT = "LucyOS"
+ORGHEALTH_FLAG = "ORGHEALTH_ENABLED"
 
 
 def _utc(value: datetime | None = None) -> datetime:
@@ -62,6 +72,31 @@ def repo_root() -> Path:
 
 def learnrepo_root() -> Path:
     return repo_root() / "learnrepo"
+
+
+def org_enabled() -> bool:
+    """Org-wide health runs only when the owner-visible flag is on."""
+    return (db.get_meta(ORGHEALTH_FLAG) or "").strip().lower() in {"1", "true", "yes", "on"}
+
+
+def set_org_enabled(enabled: bool, now: datetime | None = None) -> dict:
+    """Turn the org-wide health schedules on or off (rollback path)."""
+    now = _utc(now)
+    db.set_meta(ORGHEALTH_FLAG, "1" if enabled else "0")
+    conn = db.connect()
+    if enabled:
+        ensure_defaults(now)
+        conn.execute(
+            "UPDATE learnrepo_schedules SET enabled=1 WHERE component=?", (ORG_COMPONENT,))
+        detail = "org-wide health schedules enabled"
+    else:
+        cur = conn.execute(
+            "UPDATE learnrepo_schedules SET enabled=0, lease_owner=NULL, lease_until=NULL "
+            "WHERE component=?", (ORG_COMPONENT,))
+        detail = f"{cur.rowcount} org-wide health schedule(s) disabled"
+    conn.commit()
+    db.log_event("learnrepo", "orghealth.flag", ORGHEALTH_FLAG, detail)
+    return {"ok": True, "enabled": bool(enabled), "detail": detail}
 
 
 def ensure_defaults(now: datetime | None = None) -> None:
@@ -106,6 +141,61 @@ def ensure_defaults(now: datetime | None = None) -> None:
             "INSERT OR IGNORE INTO learnrepo_contracts(contract_id, producer, input_name, schema_version, consumer, expected_output, validation_command, severity_if_broken) "
             "VALUES(?,?,?,?,?,?,?,?)", row,
         )
+    if org_enabled():
+        _ensure_org_defaults(now, conn)
+    conn.commit()
+
+
+def _ensure_org_defaults(now: datetime, conn) -> None:
+    """Seed org-wide health task/schedule/contract rows (idempotent).
+
+    Only called when the ORGHEALTH_ENABLED flag is on.  Wraps the existing
+    deterministic checks from aion_core/health.py as a LucyOS component;
+    everything reuses the canonical SQLite tables the pilot already owns.
+    """
+    task_defs = [
+        ("lucyos.health.nightly", "Deterministic LucyOS org-wide health", 3, 0, 0,
+         "release_stale_lease", ORG_COMPONENT),
+        ("lucyos.health.on_change", "Deterministic org revalidation after committed changes",
+         3, 0, 0, "", ORG_COMPONENT),
+    ]
+    for task_def in task_defs:
+        conn.execute(
+            "INSERT OR IGNORE INTO learnrepo_tasks(task_type, description, health_level, requires_network, requires_ai, safe_repair, component) "
+            "VALUES(?,?,?,?,?,?,?)", task_def)
+    schedule_defs = [
+        ("LH-SCHED-NIGHTLY", "lucyos.health.nightly", "NIGHTLY", _iso(now), DEFAULT_GRACE_SECONDS, 1, 1, ORG_COMPONENT),
+        ("LH-SCHED-ONCHANGE", "lucyos.health.on_change", "ON_CHANGE", None, DEFAULT_GRACE_SECONDS, 1, 1, ORG_COMPONENT),
+    ]
+    for sched in schedule_defs:
+        conn.execute(
+            "INSERT OR IGNORE INTO learnrepo_schedules(schedule_id, task_type, schedule_class, next_run_at, grace_seconds, enabled, change_sensitive, component) "
+            "VALUES(?,?,?,?,?,?,?,?)", sched)
+    # Deterministic contract checks for the org component.  Each one is a
+    # single-statement validator the pilot harness already knows how to run
+    # (no shell metacharacters); no scheduler, no daemon, no network beyond
+    # loopback probes.
+    home_expr = "__import__('os').environ.get('AION_HOME', __import__('os').path.expanduser('~/openclaw/shared_brain'))"
+    contracts = [
+        ("LH-CONTRACT-DB", ORG_COMPONENT, "canonical sqlite", "1", "AION CLI",
+         "integrity=ok",
+         f"python3 -c \"assert __import__('sqlite3').connect({home_expr} + '/state/aion.sqlite3').execute('PRAGMA integrity_check').fetchone()[0] == 'ok'\"",
+         "HIGH", ORG_COMPONENT),
+        ("LH-CONTRACT-BACKUP", ORG_COMPONENT, "shared brain backups", "1", "AION CLI",
+         "at least one aion-backup archive present",
+         f"python3 -c \"assert any(__import__('pathlib').Path({home_expr}, 'BACKUPS').glob('aion-backup-*.tar.gz'))\"",
+         "MEDIUM", ORG_COMPONENT),
+        ("LH-CONTRACT-SECRETS", ORG_COMPONENT, "secret store", "1", "AION CLI",
+         "secrets file present with mode 0600",
+         f"python3 -c \"assert __import__('stat').S_IMODE(__import__('os').stat(__import__('os').environ.get('AION_SECRETS', __import__('os').path.join({home_expr}, 'private_state', 'secrets.env'))).st_mode) == 0o600\"",
+         "HIGH", ORG_COMPONENT),
+        ("LH-CONTRACT-MODULE", ORG_COMPONENT, "aion_core/health.py", "1", "AION CLI",
+         "importable module", "python3 -m py_compile aion_core/health.py", "HIGH", ORG_COMPONENT),
+    ]
+    for row in contracts:
+        conn.execute(
+            "INSERT OR IGNORE INTO learnrepo_contracts(contract_id, producer, input_name, schema_version, consumer, expected_output, validation_command, severity_if_broken, component) "
+            "VALUES(?,?,?,?,?,?,?,?,?)", row)
     conn.commit()
 
 
@@ -328,14 +418,66 @@ def _level2() -> list[dict]:
              "detail": "only APScheduler and Healthchecks.io approved"}]
 
 
-def _level3() -> list[dict]:
-    rows = db.connect().execute("SELECT * FROM learnrepo_contracts ORDER BY contract_id").fetchall()
+def _level3(component: str = DEFAULT_COMPONENT) -> list[dict]:
+    rows = db.connect().execute(
+        "SELECT * FROM learnrepo_contracts WHERE component=? ORDER BY contract_id", (component,)
+    ).fetchall()
     out = []
     for row in rows:
         ok, detail = _run_command(row["validation_command"])
         out.append({"level": 3, "name": row["contract_id"], "ok": ok,
                     "detail": detail or row["expected_output"], "severity": row["severity_if_broken"]})
     return out
+
+
+def _org_checks() -> list[dict]:
+    """Org-wide checks wrap the existing deterministic checks in health.py.
+
+    Optional components (openclaw gateway, ollama) degrade instead of failing,
+    exactly as health.py classifies them — a missing optional service must not
+    create API work.  Required components (database, disk, backup, secret
+    store) escalate through the pilot's deduplicated evidence path.
+    """
+    from . import health
+    out = []
+    for level, fn, optional in (
+        (1, health.check_disk, False),
+        (2, health.check_db, False),
+        (1, health.check_openclaw, True),
+        (1, health.check_ollama, True),
+        (2, health.check_backup, False),
+        (2, health.check_secrets, False),
+    ):
+        try:
+            result = fn()
+        except Exception as exc:  # defensive: a broken probe is a failed check
+            result = {"name": getattr(fn, "__name__", "unknown"), "ok": False,
+                      "detail": security.redact(str(exc))[:300]}
+        name = f"org:{result.get('name', fn.__name__)}"
+        ok = bool(result.get("ok"))
+        detail = str(result.get("detail", ""))[:300]
+        if ok:
+            out.append({"level": level, "name": name, "ok": True, "detail": detail})
+        elif optional:
+            out.append({"level": level, "name": name, "ok": False, "degraded": True,
+                        "detail": detail})
+        else:
+            out.append({"level": level, "name": name, "ok": False, "detail": detail,
+                        "severity": "HIGH" if level >= 2 else "MEDIUM"})
+    return out
+
+
+def _component_checks(component: str, max_level: int) -> list[dict]:
+    if component == ORG_COMPONENT:
+        return _org_checks() + (_level3(component) if max_level >= 3 else [])
+    checks = _level0()
+    if max_level >= 1:
+        checks += _level1()
+    if max_level >= 2:
+        checks += _level2()
+    if max_level >= 3:
+        checks += _level3(component)
+    return checks
 
 
 def _default_fetch(url: str, timeout: int = 6) -> dict:
@@ -370,14 +512,19 @@ def _needs_reasoning(check: dict) -> bool:
     return not check.get("ok", False)
 
 
-def _fingerprint(check: dict) -> str:
-    raw = f"learnrepo|{check.get('level')}|{check.get('name')}|{check.get('detail','')}"
+def _fingerprint(check: dict, component: str = DEFAULT_COMPONENT) -> str:
+    # Keep the historical "learnrepo" prefix for the pilot component so old
+    # escalations deduplicate exactly as before; new components namespace
+    # their own fingerprints.
+    prefix = "learnrepo" if component == DEFAULT_COMPONENT else component.lower()
+    raw = f"{prefix}|{check.get('level')}|{check.get('name')}|{check.get('detail','')}"
     return hashlib.sha256(raw.encode()).hexdigest()
 
 
-def escalate(run_id: str, check: dict, *, owner_required: bool = False) -> str:
+def escalate(run_id: str, check: dict, *, component: str = DEFAULT_COMPONENT,
+             owner_required: bool = False) -> str:
     """Create or update one deduplicated evidence packet + existing AION task."""
-    fingerprint = _fingerprint(check)
+    fingerprint = _fingerprint(check, component)
     conn = db.connect()
     existing = conn.execute("SELECT * FROM learnrepo_escalations WHERE fingerprint=?", (fingerprint,)).fetchone()
     now = util.now()
@@ -388,39 +535,41 @@ def escalate(run_id: str, check: dict, *, owner_required: bool = False) -> str:
         return existing["escalation_id"]
     escalation_id = util.new_id("LRESC")
     evidence = {
-        "escalation_id": escalation_id, "source": "LearnRepo", "run_id": run_id,
+        "escalation_id": escalation_id, "source": component, "run_id": run_id,
         "severity": check.get("severity", "MEDIUM"), "health_level": check.get("level"),
         "trigger": check.get("name"), "failed_check": check.get("name"),
         "expected": "deterministic check passes", "actual": check.get("detail", ""),
         "repro_command": next((r["validation_command"] for r in conn.execute(
-            "SELECT * FROM learnrepo_contracts WHERE contract_id=?", (check.get("name"),)).fetchall()), "aion learnrepo-run --mode nightly"),
-        "affected_files": ["learnrepo/", "aion_core/learnrepo.py"],
-        "inputs": "canonical SQLite + LearnRepo source", "outputs": "health run + evidence packet",
+            "SELECT * FROM learnrepo_contracts WHERE contract_id=?", (check.get("name"),)).fetchall()),
+            f"aion learnrepo-run --mode nightly  # component {component}"),
+        "affected_files": (["learnrepo/", "aion_core/learnrepo.py"] if component == DEFAULT_COMPONENT
+                           else ["aion_core/learnrepo.py", "aion_core/health.py"]),
+        "inputs": "canonical SQLite + component checks", "outputs": "health run + evidence packet",
         "first_seen": now, "last_seen": now, "occurrence_count": 1,
         "local_diagnosis": check.get("detail", ""), "safe_repairs_attempted": [],
         "evidence": check, "security_impact": "unknown; no automatic weakening permitted",
-        "recommended_model_class": "C", "estimated_scope": "bounded LearnRepo repair",
+        "recommended_model_class": "C", "estimated_scope": f"bounded {component} repair",
         "owner_approval_required": owner_required, "resume_point": "reproduce check, patch narrowly, rerun deterministic validation",
     }
     task_id = tasks.create(
-        f"API_WORK_REQUIRED LearnRepo: {check.get('name')}", project="LucyOS",
+        f"API_WORK_REQUIRED {component}: {check.get('name')}", project="LucyOS",
         description=json.dumps(evidence, sort_keys=True), status="READY", priority=1,
         impact=4, probability=1, unlocks=2, info_gain=2, cost=1, risk=2, time_est=2,
         human_dependence=1 if owner_required else 0.2, model_class="C",
         kind="learnrepo_api_work_required",
         success_criteria="deterministic failing check passes and no security/governance regression",
-        validation_method="rerun the evidence repro command and LearnRepo tests",
+        validation_method="rerun the evidence repro command and component tests",
         output_location="learnrepo/evidence", next_action="read compact evidence packet; do not reread whole LucyOS",
         evidence=fingerprint,
     )
     conn.execute(
         "INSERT INTO learnrepo_escalations(fingerprint, escalation_id, source, run_id, severity, health_level, trigger, evidence_json, first_seen, last_seen, occurrence_count, owner_approval_required, task_id) "
         "VALUES(?,?,?,?,?,?,?,?,?,?,?,?,?)",
-        (fingerprint, escalation_id, "LearnRepo", run_id, evidence["severity"], evidence["health_level"],
+        (fingerprint, escalation_id, component, run_id, evidence["severity"], evidence["health_level"],
          evidence["trigger"], json.dumps(evidence, sort_keys=True), now, now, 1, int(owner_required), task_id),
     )
     conn.commit()
-    errors.record("learnrepo", f"{check.get('name')} failed", check.get("detail", ""), task_id)
+    errors.record(component, f"{check.get('name')} failed", check.get("detail", ""), task_id)
     governor.enforce(announce=False)
     db.log_event("learnrepo", "API_WORK_REQUIRED", escalation_id, task_id)
     return escalation_id
@@ -432,6 +581,15 @@ def safe_repair(action: str, now: datetime | None = None) -> dict:
     if action == "release_stale_lease":
         released = recover_stale_leases(now)
         return {"ok": True, "action": action, "detail": f"released {len(released)} stale run(s)"}
+    if action == "rebuild_org_summary":
+        conn = db.connect()
+        row = conn.execute(
+            "SELECT result_json FROM learnrepo_runs WHERE task_type IN "
+            "(SELECT task_type FROM learnrepo_tasks WHERE component=?) "
+            "ORDER BY completed_at DESC LIMIT 1", (ORG_COMPONENT,)).fetchone()
+        summary = json.loads(row["result_json"]) if row and row["result_json"] else {}
+        util.write_json(config.home() / "state" / "LUCYOS_HEALTH.json", summary)
+        return {"ok": True, "action": action, "detail": "rebuilt org summary"}
     summary = latest_summary()
     util.write_json(config.home() / "state" / "LEARNREPO_HEALTH.json", summary)
     return {"ok": True, "action": action, "detail": "rebuilt derived summary"}
@@ -454,13 +612,10 @@ def execute_run(run_id: str, *, include_external: bool = False, now: datetime | 
     before_ai = _usage_count()
     task_def = conn.execute("SELECT * FROM learnrepo_tasks WHERE task_type=?", (row["task_type"],)).fetchone()
     max_level = int(task_def["health_level"]) if task_def else 3
-    checks = _level0()
-    if max_level >= 1:
-        checks += _level1()
-    if max_level >= 2:
-        checks += _level2()
-    if max_level >= 3:
-        checks += _level3()
+    component = DEFAULT_COMPONENT
+    if task_def is not None and "component" in task_def.keys() and (task_def["component"] or "").strip():
+        component = task_def["component"].strip()
+    checks = _component_checks(component, max_level)
     if max_level >= 4 and (include_external or (task_def and task_def["requires_network"])):
         checks += level4_external(external_fetcher)
     escalations = []
@@ -472,14 +627,14 @@ def execute_run(run_id: str, *, include_external: bool = False, now: datetime | 
             degraded = True
             continue
         if _needs_reasoning(check):
-            escalations.append(escalate(run_id, check))
+            escalations.append(escalate(run_id, check, component=component))
     finish = _utc()
     after_ai = _usage_count()
     ai_calls = after_ai - before_ai
     status = "FAIL" if escalations else ("DEGRADED" if degraded else "SUCCESS")
     duration_ms = max(0, int((finish - start).total_seconds() * 1000))
     summary = {
-        "run_id": run_id, "status": status, "checks": checks,
+        "run_id": run_id, "status": status, "component": component, "checks": checks,
         "success": sum(1 for c in checks if c.get("ok")),
         "failed": sum(1 for c in checks if not c.get("ok") and not c.get("degraded")),
         "degraded": sum(1 for c in checks if c.get("degraded")),
@@ -501,8 +656,10 @@ def execute_run(run_id: str, *, include_external: bool = False, now: datetime | 
     )
     conn.commit()
     util.write_json(config.home() / "state" / "LEARNREPO_HEALTH.json", summary)
+    if component == ORG_COMPONENT:
+        util.write_json(config.home() / "state" / "LUCYOS_HEALTH.json", summary)
     db.log_event("learnrepo", f"learnrepo.run.{status.lower()}", run_id,
-                 f"ai_calls={ai_calls}; escalations={len(escalations)}")
+                 f"component={component}; ai_calls={ai_calls}; escalations={len(escalations)}")
     return summary
 
 
@@ -546,7 +703,26 @@ def status() -> dict:
     conn = db.connect()
     schedules = [dict(r) for r in conn.execute("SELECT * FROM learnrepo_schedules ORDER BY schedule_id")]
     escalations = conn.execute("SELECT COUNT(*) FROM learnrepo_escalations").fetchone()[0]
+    # Per-component breakdown: additive keys only, so existing consumers of
+    # this JSON keep working unchanged.  Gated on the additive migration
+    # having added the component columns (older databases simply omit it).
+    by_component: dict[str, dict] = {}
+    have_component = "component" in {r["name"] for r in conn.execute("PRAGMA table_info(learnrepo_schedules)")}
+    if have_component:
+        rows = conn.execute(
+            "SELECT component, COUNT(*) AS n FROM learnrepo_schedules GROUP BY component")
+        for r in rows:
+            by_component.setdefault(r["component"] or DEFAULT_COMPONENT, {})["schedules"] = r["n"]
+        rows = conn.execute(
+            "SELECT component, COUNT(*) AS n FROM learnrepo_tasks GROUP BY component")
+        for r in rows:
+            by_component.setdefault(r["component"] or DEFAULT_COMPONENT, {})["tasks"] = r["n"]
+        rows = conn.execute(
+            "SELECT source, COUNT(*) AS n FROM learnrepo_escalations GROUP BY source")
+        for r in rows:
+            by_component.setdefault(r["source"] or DEFAULT_COMPONENT, {})["escalations"] = r["n"]
     return {"schedules": schedules, "latest": latest_summary(), "escalations": escalations,
+            "org_enabled": org_enabled(), "components": by_component,
             "os_adapter": os_adapter_name()}
 
 
