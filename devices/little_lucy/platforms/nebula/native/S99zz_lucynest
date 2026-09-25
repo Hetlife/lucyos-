@@ -1,0 +1,98 @@
+#!/bin/sh
+# Lucy-Nest native display default.
+#
+# Runs after the stock S99start_app script. It stops only the stock display
+# daemons, starts the repo-owned native client on the Home eye animation, and
+# falls back to the stock display stack if the native client cannot start.
+# It never touches firmware, kernel modules, calibration, or network config.
+
+export TSLIB_CONFFILE=/etc/ts.conf
+export TSLIB_TSDEVICE=/dev/input/event0
+export TSLIB_FBDEVICE=/dev/fb0
+export TSLIB_PLUGINDIR=/usr/lib/ts
+
+NATIVE_DIR=/root/lucy-nest/native
+CLIENT="$NATIVE_DIR/client.py"
+CONTROL="$NATIVE_DIR/lucynest_ctl.py"
+PIDFILE="$NATIVE_DIR/client.pid"
+LOGFILE="$NATIVE_DIR/client.log"
+
+start_stock_display() {
+    pidof display-server >/dev/null 2>&1 || \
+        setsid /usr/bin/display-server >/dev/null 2>&1 </dev/null &
+    pidof Monitor >/dev/null 2>&1 || \
+        setsid /usr/bin/Monitor >/dev/null 2>&1 </dev/null &
+}
+
+stop_stock_display() {
+    killall Monitor 2>/dev/null
+    killall display-server 2>/dev/null
+    i=0
+    while [ "$i" -lt 12 ]; do
+        if ! pidof Monitor >/dev/null 2>&1 && \
+           ! pidof display-server >/dev/null 2>&1; then
+            return 0
+        fi
+        sleep 0.5
+        i=$((i+1))
+    done
+    return 1
+}
+
+force_home() {
+    j=0
+    while [ "$j" -lt 10 ]; do
+        if /usr/bin/python3 "$CONTROL" home >/dev/null 2>&1; then
+            return 0
+        fi
+        sleep 0.5
+        j=$((j+1))
+    done
+    return 1
+}
+
+start_native() {
+    if [ -f "$PIDFILE" ] && kill -0 "$(cat "$PIDFILE")" 2>/dev/null; then
+        force_home || true
+        return 0
+    fi
+    [ -f "$CLIENT" ] || return 1
+    cd "$NATIVE_DIR" || return 1
+    LUCY_NEST_RUNTIME=nebula LUCY_NEST_DISPLAY_OWNER=confirmed \
+        setsid /usr/bin/python3 "$CLIENT" >>"$LOGFILE" 2>&1 </dev/null &
+    echo $! >"$PIDFILE"
+    sleep 3
+    kill -0 "$(cat "$PIDFILE")" 2>/dev/null || return 1
+    force_home || true
+    return 0
+}
+
+case "$1" in
+    start)
+        # Let S99start_app background the stock display stack first.
+        sleep 2
+        if ! stop_stock_display; then
+            # Stock display did not release the framebuffer; keep it.
+            start_stock_display
+            exit 0
+        fi
+        if ! start_native; then
+            start_stock_display
+        fi
+        ;;
+    stop)
+        if [ -f "$PIDFILE" ]; then
+            kill "$(cat "$PIDFILE")" 2>/dev/null
+        fi
+        ;;
+    restart|reload)
+        "$0" stop
+        "$0" start
+        ;;
+    *)
+        echo "Usage: $0 {start|stop|restart}"
+        exit 1
+        ;;
+esac
+
+exit 0
