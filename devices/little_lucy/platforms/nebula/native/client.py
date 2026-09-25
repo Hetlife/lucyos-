@@ -458,13 +458,13 @@ def main():
                                 if command: commands.put(command)
                                 print('Touch: '+action+' -> '+model['page'],flush=True)
                                 break
-        if time.monotonic()-updated>6: model['online']=False
-        image,hits=render(model,tick)
-        image.save('/tmp/lucy-native.jpg','JPEG',quality=87)
-        subprocess.run(['/usr/bin/cmd_jpeg_display','/tmp/lucy-native.jpg'],stdout=subprocess.DEVNULL,stderr=subprocess.DEVNULL,timeout=3,check=True)
-        tick+=1
-        interval=.08 if model['page']=='home' else .20
-        time.sleep(max(.01,interval-(time.monotonic()-began)))
+            if time.monotonic()-updated>6: model['online']=False
+            image,hits=render(model,tick)
+            image.save('/tmp/lucy-native.jpg','JPEG',quality=87)
+            subprocess.run(['/usr/bin/cmd_jpeg_display','/tmp/lucy-native.jpg'],stdout=subprocess.DEVNULL,stderr=subprocess.DEVNULL,timeout=3,check=True)
+            tick+=1
+            interval=.08 if model['page']=='home' else .20
+            time.sleep(max(.01,interval-(time.monotonic()-began)))
     finally:
         control_stop.set()
 

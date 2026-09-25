@@ -1,3 +1,4 @@
+import ast
 import importlib
 import json
 import os
@@ -571,6 +572,37 @@ class SourceHygieneTests(unittest.TestCase):
     def test_native_sources_compile(self):
         for name in ("client.py", "ui.py", "lucynest_ctl.py"):
             py_compile.compile(str(NATIVE / name), doraise=True)
+
+
+class RenderLoopPlacementTests(unittest.TestCase):
+    """Guard against the render block being dedented out of main()'s outer loop."""
+
+    @staticmethod
+    def _outer_while_body():
+        tree = ast.parse((NATIVE / "client.py").read_text(encoding="utf-8"))
+        main = next(node for node in tree.body if isinstance(node, ast.FunctionDef) and node.name == "main")
+        outer = next(node for node in ast.walk(main) if isinstance(node, ast.While) and node.test is not None
+                     and isinstance(node.test, ast.Constant) and node.test.value is True)
+        # The inner event-drain loop is nested inside the outer loop.
+        inner = [node for node in outer.body if isinstance(node, ast.While)]
+        assert inner, "outer while True body lost its inner event-drain loop"
+        return outer, inner[0]
+
+    def test_render_block_is_inside_outer_loop_after_event_drain(self):
+        outer, inner = self._outer_while_body()
+        tail = outer.body[outer.body.index(inner) + 1:]
+        calls = [node for node in tail]
+        render_calls = [n for n in ast.walk(ast.Module(body=tail, type_ignores=[]))
+                        if isinstance(n, ast.Call) and isinstance(n.func, ast.Name) and n.func.id == "render"]
+        save_calls = [n for n in ast.walk(ast.Module(body=tail, type_ignores=[]))
+                      if isinstance(n, ast.Call) and isinstance(n.func, ast.Attribute) and n.func.attr == "save"
+                      and any(isinstance(a, ast.Constant) and a.value == "/tmp/lucy-native.jpg"
+                              for a in n.args + [kw.value for kw in n.keywords])]
+        display_calls = [n for n in ast.walk(ast.Module(body=tail, type_ignores=[]))
+                         if isinstance(n, ast.Call) and "cmd_jpeg_display" in ast.dump(n)]
+        self.assertTrue(render_calls, "render() call missing from outer loop body")
+        self.assertTrue(save_calls, "image.save('/tmp/lucy-native.jpg') missing from outer loop body")
+        self.assertTrue(display_calls, "cmd_jpeg_display invocation missing from outer loop body")
 
 
 if __name__ == "__main__":
