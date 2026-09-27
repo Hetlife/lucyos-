@@ -14,6 +14,8 @@ class TestSecretDetection(unittest.TestCase):
             "rzp_live_ABCDEFGH1234": "razorpay_key",
             "password: correcthorsebattery": "assigned_secret",
             "my otp is 483920": "otp_phrase",
+            "EAAAbCdEfGhIjKlMnOpQrStUvWxYz0123456789": "meta_eaa_token",
+            "waba token EAA0123456789abcdefghijklmnopqrstuv": "meta_eaa_token",
         }
         for text, expected in cases.items():
             kinds = [f["kind"] for f in security.scan_text(text)]
@@ -22,7 +24,8 @@ class TestSecretDetection(unittest.TestCase):
     def test_does_not_flag_ordinary_owner_messages(self):
         for text in ["APPROVE A-142", "status", "money", "deny A-101",
                      "what happened today", "API_KEY=<your-key-here>",
-                     "the invoice is 2024-08-11 for 45000"]:
+                     "the invoice is 2024-08-11 for 45000",
+                     "EAA", "EAA<placeholder>", "EAAGateway-42"]:
             self.assertEqual(security.scan_text(text), [], f"false positive on {text!r}")
 
     def test_redaction_removes_the_value(self):
