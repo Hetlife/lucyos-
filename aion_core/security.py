@@ -21,6 +21,8 @@ _PATTERNS = [
     ("github_token", re.compile(r"\bgh[pousr]_[A-Za-z0-9]{20,}\b")),
     ("slack_token", re.compile(r"\bxox[abprs]-[A-Za-z0-9-]{10,}\b")),
     ("anthropic_key", re.compile(r"\bsk-ant-[A-Za-z0-9_\-]{20,}\b")),
+    # Meta WhatsApp Cloud API permanent (EAA) and temporary tokens.
+    ("meta_eaa_token", re.compile(r"\bEAA[A-Za-z0-9]{20,}\b")),
     ("openai_key", re.compile(r"\bsk-(?:proj-)?[A-Za-z0-9_\-]{20,}\b")),
     ("google_api_key", re.compile(r"\bAIza[0-9A-Za-z_\-]{35}\b")),
     ("razorpay_key", re.compile(r"\brzp_(?:live|test)_[A-Za-z0-9]{10,}\b")),
