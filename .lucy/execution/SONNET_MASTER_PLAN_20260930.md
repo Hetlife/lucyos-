@@ -7,6 +7,22 @@ on 2026-09-30.
 
 ---
 
+## Status update, 2026-09-30 (later)
+
+- **#75 (R-01) and #76 (R-02) are merged.** `main` is now `d7400b3`, no longer `5d1c6e5`.
+  Line numbers in this plan were checked against `5d1c6e5`; re-check any before editing.
+- **Deleting a chained PR's base branch made GitHub close the next PR, unmerged.** It happened
+  to #76 (after #75) and to #77 (after #76). Both were reopened. No work was lost; the
+  original commits were always intact on their branches.
+- **Fixed at the root:** every remaining PR (#77, #78, #79, #80) now points straight at `main`
+  instead of at its predecessor's branch, so deleting a branch can no longer close another PR.
+  All four merge cleanly onto `d7400b3`. Because each contains its predecessors' commits,
+  merging #80 alone would bring in the whole stack; merging in order is still the recommended,
+  reviewable path. The bad "click Delete branch" advice that started this is corrected.
+- #81 (M-01) and #82 (these docs) are independent of the stack.
+
+---
+
 ## 1. Where things stand
 
 **LucyOS runs.** A clean clone installs, boots and answers the whole owner surface offline.
@@ -120,7 +136,8 @@ The owner approves the list.
 ## 5. Owner only (never delegate)
 
 In plain words, these are also in `docs/internal/OWNER_STEPS_SIMPLE_20260930.md`:
-1. Merge #75 → #76 → #77 → #78 → #79 → #80 in order, clicking "Delete branch" after each.
+1. Merge #77 → #78 → #79 → #80 in order (#75 and #76 are done). Every one now points at
+   `main`, so "Delete branch" is safe. #81 and #82 can merge at any time.
 2. On the PC: `cd ~/lucyos && git pull && aion boot && aion status`, then
    **`aion openclaw-check`**. Send both outputs back. Everything about the phone depends on
    this one result; nobody has seen it yet.
