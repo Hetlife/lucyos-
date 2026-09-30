@@ -81,5 +81,49 @@ class ContextProfilerTests(unittest.TestCase):
         self.assertTrue({"pkg/b.py", "pkg/c.py"} <= graph["pkg/nested/client.py"])
 
 
+
+
+class ContextProfilerSymlinkedRootTests(unittest.TestCase):
+    """The same macOS layout (/var -> /private/var) reproduced on any OS: the
+    repo root is reached through a symlinked ANCESTOR. Symlinks inside the repo
+    must still be refused; symlinks above it are not the repo's business."""
+
+    def setUp(self):
+        self.temp = tempfile.TemporaryDirectory()
+        self.addCleanup(self.temp.cleanup)
+        base = Path(self.temp.name).resolve()
+        (base / "real" / "proj" / "pkg").mkdir(parents=True)
+        (base / "alias").symlink_to(base / "real", target_is_directory=True)
+        self.real_root = base / "real" / "proj"
+        self.root = base / "alias" / "proj"
+        (self.real_root / "pkg" / "__init__.py").write_text("", encoding="utf-8")
+        (self.real_root / "pkg" / "a.py").write_text("from . import b\n", encoding="utf-8")
+        (self.real_root / "pkg" / "b.py").write_text("value = 1\n", encoding="utf-8")
+
+    def test_a_symlinked_ancestor_of_the_root_is_accepted(self):
+        via_alias = profiler.profile(self.root, ["pkg/a.py"])
+        via_real = profiler.profile(self.real_root, ["pkg/a.py"])
+        self.assertEqual(via_alias, via_real)
+        self.assertEqual(profiler.python_files(self.root),
+                         ["pkg/__init__.py", "pkg/a.py", "pkg/b.py"])
+
+    def test_a_symlink_inside_the_repo_is_still_refused(self):
+        (self.real_root / "pkg" / "escape.py").symlink_to(self.real_root / "pkg" / "a.py")
+        with self.assertRaises(ValueError):
+            profiler.local_path(self.root, "pkg/escape.py")
+
+    def test_a_symlinked_directory_inside_the_repo_is_still_refused(self):
+        (self.real_root / "linked_pkg").symlink_to(self.real_root / "pkg",
+                                                     target_is_directory=True)
+        with self.assertRaises(ValueError):
+            profiler.local_path(self.root, "linked_pkg/a.py")
+
+    def test_paths_that_escape_the_root_are_still_refused(self):
+        for bad in ("../outside.py", "/etc/passwd", "pkg/../../outside.py"):
+            with self.subTest(bad=bad):
+                with self.assertRaises(ValueError):
+                    profiler.local_path(self.root, bad)
+
+
 if __name__ == "__main__":
     unittest.main()
