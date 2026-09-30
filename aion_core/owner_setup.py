@@ -18,7 +18,7 @@ REQUIREMENTS = [
          security="Token allows sending messages as the bridge account; it is stored 0600 "
                   "in private_state/secrets.env and never enters git, logs or chat.",
          revoke="Rotate/revoke in the bridge provider console, then re-run the same command.",
-         resumes="WhatsApp becomes the live command surface; `aion serve` starts answering.",
+         resumes="WhatsApp becomes the live command surface once the bridge service is installed and running (`scripts/install_services.sh` prints the exact start command for this platform).",
          satisfied=lambda c: c["openclaw_present"] or c["legacy_bridge_credential_present"],
          satisfied_detail=lambda c: (
              "WHATSAPP_BRIDGE_TOKEN already set" if c["legacy_bridge_credential_present"] else
