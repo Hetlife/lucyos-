@@ -14,7 +14,8 @@ their own work.** That safety rule is deliberate, and it is why these steps are 
 The changes are waiting on GitHub as "pull requests" (PRs). Think of a PR as a proposed edit
 that needs your OK before it becomes real.
 
-They **must be approved in this order**, because each one builds on the one before:
+Approve them **in this order** (each one builds on the one before). Every PR from #76 on
+now points at the main branch, so order is a recommendation, not a trap:
 
 | Order | PR | What it fixes, in one line |
 |---|---|---|
@@ -30,8 +31,10 @@ For **each** one, in order:
 2. Look at the list of checks near the bottom. If any show a red ✗, **stop and tell me**.
    Green ✓ (or no checks at all) is fine.
 3. Click the green **Merge pull request** button, then **Confirm merge**.
-4. Click **Delete branch** when it offers. This matters: it makes GitHub automatically point
-   the next PR at the right place.
+4. Clicking **Delete branch** is now fine. Every one of these PRs points straight at the
+   main branch, so deleting a branch cannot close another PR. (Earlier they were chained to
+   each other, and deleting a branch closed the next one. That happened to #76 and #77. Both
+   were reopened and fixed, and nothing was lost.)
 
 If a PR says "conflicts" or the merge button is grey, stop and tell me which number.
 
