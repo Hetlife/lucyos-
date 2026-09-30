@@ -123,11 +123,11 @@ class TestServiceViewCheck(AionTest):
     must see what the service sees, not merely that a NAME=value line exists.
     Values are written with the real set_secret, in its real (unquoted) format."""
 
-    def _store(self, legacy=None, **overrides):
+    def _store(self, legacy=None, overrides=None):
         """Store all six via the real set_secret (quoted). `legacy` maps a name
         to a raw value written unquoted, as older versions wrote the file."""
         values = {name: "v" + name[-4:].lower() + "9Z" for name in bridge.CLOUD_ENV_REQUIRED}
-        values.update(overrides)
+        values.update(overrides or {})
         for name, value in values.items():
             bootstrap.set_secret(name, value)
         if legacy:
@@ -162,7 +162,7 @@ class TestServiceViewCheck(AionTest):
 
     def test_quoted_values_with_hostile_characters_now_load_correctly(self):
         for value in ("qw3 uniqfrag8", "a&b", "pa$word", "x;echo hi", "it's"):
-            self._store(WHATSAPP_VERIFY_TOKEN=value)
+            self._store(overrides={"WHATSAPP_VERIFY_TOKEN": value})
             ok, detail = preflight.check_service_view()
             self.assertTrue(ok, f"{value!r}: {detail}")
 
