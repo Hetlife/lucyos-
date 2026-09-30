@@ -16,10 +16,42 @@ import urllib.request
 from urllib.parse import urlparse
 try:  # package import in the LucyOS repo
     from .ui import render, detail_pages
+    from .hid import HidOutput
 except ImportError:  # flat deployment on the Nebula
     from ui import render, detail_pages
+    from hid import HidOutput
+
+EXECUTOR = None
+AUTHORIZER = None
+TRANSPORT = None
 
 ROOT=Path(__file__).resolve().parent
+
+def _release_all(transport):
+    """Best-effort release of every held key and button. Never raises."""
+    if transport is None: return
+    try:
+        if hasattr(transport,'release_all'): transport.release_all()
+        else: HidOutput(transport).release_all()
+    except Exception: pass
+
+def release_inputs():
+    """Release all held input on the configured transport."""
+    _release_all(TRANSPORT)
+
+def stage_execution(model, request, authorizer=None):
+    """Stage an owner approval for later execution and show the review page.
+
+    Returns the one-use token. Nothing is sent to the PC here.
+    """
+    authorizer = AUTHORIZER if authorizer is None else authorizer
+    if authorizer is None: raise ValueError('no authorizer configured')
+    token = authorizer.stage(request)
+    model['execute_request'] = request
+    model['execute_token'] = token
+    model['execute_status'] = 'idle'
+    model['page'] = 'execute_review'
+    return token
 
 def solve_calibration(raw):
     targets=[(40,65),(440,65),(240,195)]
@@ -42,6 +74,16 @@ def apply_action(model, action):
     page=model['page']
     if action in ('home','status','inbox'):
         model['page']=action; return None
+    if action=='execute_review' and model.get('execute_request'):
+        model['page']='execute_review'; return None
+    if action=='execute_confirm' and page=='execute_review':
+        model['page']='execute_confirm'; return None
+    if action=='execute_stop':
+        model['execute_status']='stopped'; model['page']='execute_result'; model['message']='Stopped. Inputs released.'
+        return {'release_inputs': True}
+    if action=='execute' and page=='execute_confirm':
+        model['execute_status']='running'; model['page']='executing'
+        return {'execute': {'request': model.get('execute_request'), 'token': model.get('execute_token')}}
     if not model.get('online'): return None
     cards=(model.get('data') or {}).get('approvals',[])
     if action=='next' and cards: model['index']=(model.get('index',0)+1)%len(cards)
@@ -65,6 +107,70 @@ def apply_action(model, action):
         model['page']='sending'
         return {'approval_id':chosen['approval_id'],'revision':chosen['revision'],'decision':model['decision']}
     return None
+
+
+def run_execute(request, executor=None, transport=None, token=None, authorizer=None):
+    """Run one authorized action batch on the PC.
+
+    The one-use token is passed separately: it is not part of the request
+    document, because parse_request rejects unknown keys. The approval is
+    consumed before the executor runs, so a crash or retry cannot replay it.
+    """
+    executor = EXECUTOR if executor is None else executor
+    if executor is None:
+        return {'ok': False, 'message': 'No PC executor configured.'}
+    authorizer = AUTHORIZER if authorizer is None else authorizer
+    if authorizer is None:
+        return {'ok': False, 'message': 'No authorizer configured.'}
+    if not isinstance(token, str) or not token:
+        return {'ok': False, 'message': 'Authorization refused.'}
+    try:
+        allowed = authorizer.authorize(token, request)
+    except Exception:
+        allowed = False
+    if not allowed:
+        return {'ok': False, 'message': 'Authorization refused.'}
+    try:
+        authorizer.consume(token)
+        save = getattr(authorizer, 'save', None)
+        if callable(save):
+            save()
+    except Exception:
+        return {'ok': False, 'message': 'Authorization could not be recorded.'}
+    try:
+        result = executor(request)
+    except Exception as error:
+        _release_all(transport)
+        return {'ok': False, 'message': str(error)}
+    if result is None:
+        return {'ok': False, 'message': 'Execution completed.'}
+    if isinstance(result, dict):
+        return {'ok': bool(result.get('ok')), 'message': str(result.get('message', ''))}
+    return {'ok': bool(result), 'message': str(result)}
+
+
+def dispatch_command(command, model, commands):
+    """Route an apply_action result to the right destination.
+
+    Execute and release commands are handled locally; anything else is a
+    decision command for the existing bridge queue. Returning early here keeps
+    an execution command from being POSTed to LucyOS as if it were a decision.
+    """
+    if not command:
+        return
+    if 'execute' in command:
+        payload = command.get('execute') or {}
+        result = run_execute(payload.get('request'), transport=TRANSPORT,
+                             token=payload.get('token'))
+        model['execute_result'] = result['message']
+        model['message'] = result['message']
+        model['execute_status'] = 'done' if result.get('ok') else 'error'
+        model['page'] = 'execute_result'
+        return
+    if command.get('release_inputs'):
+        release_inputs()
+        return
+    commands.put(command)
 
 # --- Root-only local remote control (AF_UNIX socket; no network listener) ---
 # The socket lives under /run/lucy-nest (root, 0700) and only accepts peer uid 0.
@@ -406,7 +512,7 @@ def network(events,commands):
 def main():
     require_device_runtime()
     events=queue.Queue(); commands=queue.Queue(); control_stop=threading.Event()
-    model={'page':'home','online':False,'data':{},'index':0}; matrix=None; raw=[]; tick=0; updated=0
+    model={'page':'home','online':False,'data':{},'index':0,'execute_request':None,'execute_token':None,'execute_result':'','execute_status':'idle'}; matrix=None; raw=[]; tick=0; updated=0
     try: matrix=json.loads((ROOT/'calibration.json').read_text())
     except (OSError,ValueError): model.update(page='calibrate',cal_step=0)
     threading.Thread(target=touch,args=(events,),daemon=True).start()
@@ -437,7 +543,7 @@ def main():
                         command=handle_control(model,value)
                     except Exception:
                         value['reply'].put({'ok':False,'error':'control error'}); command=None
-                    if command: commands.put(command)
+                    dispatch_command(command, model, commands)
                 elif kind=='touch':
                     model['touch_status']='ok'
                     start,end=value
@@ -455,7 +561,7 @@ def main():
                         for (left,top,right,bottom),action in hits:
                             if all(left<=p[0]<=right and top<=p[1]<=bottom for p in (p1,p2)):
                                 command=apply_action(model,action)
-                                if command: commands.put(command)
+                                dispatch_command(command, model, commands)
                                 print('Touch: '+action+' -> '+model['page'],flush=True)
                                 break
             if time.monotonic()-updated>6: model['online']=False

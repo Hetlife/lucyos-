@@ -114,6 +114,45 @@ def render(model, tick=0):
         for i,t in enumerate(wrap(c['action'])[:3]): line(92+22*i,t,15)
         line(171,'Sends your decision to LucyOS.',15,DIM)
         button(10,215,'Go back','review'); button(240,230,'Yes, send','send',GREEN if decision=='APPROVED' else RED)
+    elif page=='execute_review':
+        request=model.get('execute_request') or {}
+        actions=((request.get('batch') or {}).get('actions') or [])
+        line(48,'Execute review',22)
+        line(78,'%s action(s) staged for the connected PC.' % len(actions),16)
+        for i,action in enumerate(actions[:6]):
+            kind=action.get('kind','?')
+            if kind=='key':
+                summary='KEY '+', '.join(action.get('keys',[])[:3])
+            elif kind=='text':
+                summary='TEXT "'+str(action.get('text',''))[:18]+'"'
+            elif kind=='move':
+                summary='MOVE %s,%s' % (action.get('dx'), action.get('dy'))
+            elif kind=='button':
+                summary='BUTTON %s %s' % (action.get('button'), action.get('action'))
+            elif kind=='scroll':
+                summary='SCROLL %s' % action.get('amount')
+            elif kind=='wait':
+                summary='WAIT %sms' % action.get('ms')
+            else:
+                summary='RELEASE ALL'
+            line(108+i*22,summary,15)
+        button(10,140,'Cancel','status'); button(240,150,'Confirm','execute_confirm')
+    elif page=='execute_confirm':
+        request=model.get('execute_request') or {}
+        actions=((request.get('batch') or {}).get('actions') or [])
+        digest=str(request.get('digest',''))[:12]
+        line(56,'Send %s action(s) to the connected PC?' % len(actions),18)
+        line(90,'Batch digest: '+digest,16,DIM)
+        line(125,'This will run the staged input batch exactly as approved.',15)
+        button(10,165,'Go back','execute_review'); button(240,175,'Yes, send','execute',GREEN)
+    elif page=='executing':
+        line(84,'Sending to PC...',24)
+        line(127,'Do not touch the mouse or keyboard.',15,DIM)
+        button(185,110,'STOP','execute_stop',RED)
+    elif page=='execute_result':
+        message=model.get('execute_result') or model.get('message','')
+        for i,t in enumerate(wrap(message,440,18)[:6]): line(55+i*25,t,18)
+        button(10,460,'Return to status','status')
     elif page=='sending':
         line(83,'Sending decision...',22); line(124,'Waiting for LucyOS acknowledgement.',15,DIM)
     elif page=='result':

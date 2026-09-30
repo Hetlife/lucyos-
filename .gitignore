@@ -33,3 +33,6 @@ packages/lucy-nest-design-system/*.tsbuildinfo
 runtime/little-lucy/state.json
 runtime/little-lucy/current.jpg
 runtime/little-lucy/frames/
+
+# Unlazy pipeline state is machine-local coordination, not source.
+.unlazy/
