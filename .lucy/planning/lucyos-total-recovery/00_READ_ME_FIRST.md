@@ -1,0 +1,49 @@
+# LucyOS Total Recovery — read me first
+
+**Author:** Fable (architecture/verification authority), 2026-09-30.
+**Baseline:** `origin/main` @ `36c954c` (merge of PR #87). 795 tests OK (2 skipped), CI run #376 green on all 8 jobs including macOS.
+**Status of this package:** CURRENT. It supersedes every earlier plan under `.lucy/planning/`, `.lucy/execution/` and `docs/internal/` as the routing document. Those files stay as history and evidence; none of them is the task list any more.
+
+## Mission (unchanged)
+LucyOS is the control layer for Het's companies, projects, agents, machines, approvals, knowledge and automation. Owner steers from WhatsApp / LucyNest; the machine holds canonical state; work routes to the cheapest reliable executor; every result carries evidence; state survives restarts; new projects and companies plug in without editing the core.
+
+## Truth hierarchy used here
+1. Live runtime + canonical SQLite (not reachable from this session: Lucy-den, Mark-2, Nebula are **UNKNOWN until TR-0-04 runs**).
+2. Current code and Git objects at `36c954c` (verified directly).
+3. Tests and CI (run locally: 795 OK; GitHub run #376 green).
+4. PR/branch/commit history (all 88 PRs and 127 remote branches classified, see `03_`).
+5. Checkpoints/ADRs/evidence in-repo (`.lucy/**`, `docs/internal/**`).
+6. Drive (`MARK2_SHARED`, `LUCYOS_BACKUP`, planning folders): read for history only.
+7. Old prompts/chats: not used as truth.
+
+## How to use this package
+| You are | Read | Then |
+|---|---|---|
+| Owner | `12_OWNER_SUMMARY.md` | make the listed decisions, run owner-only commands |
+| Codex (Lane A) | `09_AGENT_ROUTING.md` §A, then the work orders tagged `CODEX` | one work order per session |
+| Claude Code (Lane B) | `09_AGENT_ROUTING.md` §B, `10_ACCEPTANCE_GATES.md`, then one `CLAUDE_CODE` work order | one branch `task/<ID>-<slug>`, one PR, stop |
+| OpenClaw (Lane C) | `09_AGENT_ROUTING.md` §C, work orders tagged `OPENCLAW` | operate, report, never redesign |
+| Any agent, first 2 minutes | `evidence/EVIDENCE_INDEX.md` | do not re-derive what is indexed |
+| Fable (next session) | `08_MASTER_EXECUTION_PLAN.md` §"Fable resume point" | verify milestones, do not implement |
+
+## Files
+```
+00_READ_ME_FIRST.md            this file
+01_SYSTEM_MAP.md               verified edges: interface -> authority -> AION -> executors -> evidence
+02_CAPABILITY_MATRIX.md        status per capability, with proof and blockers
+03_BRANCH_PR_LEDGER.md         every branch and PR classified; integration strategy
+04_ERROR_REGISTER.md           ISSUE-* with root cause, real fix, executor
+05_TARGET_ARCHITECTURE.md      what stays, what changes, what is rejected
+06_PROJECT_COMPANY_APP_MODEL.md  workspace/project/integration contract
+07_DEPLOYMENT_MAC_MIGRATION.md canonical roles now; Mac mini migration
+08_MASTER_EXECUTION_PLAN.md    phases 0-8, dependency order, exit gates
+09_AGENT_ROUTING.md            who does what; token rules
+10_ACCEPTANCE_GATES.md         L1-L7 "running" levels, measurable
+11_RISKS_AND_DECISIONS.md      decisions taken, decisions owed by the owner
+12_OWNER_SUMMARY.md            plain-language state and next steps
+evidence/                      indexed evidence, generated ledgers
+work_orders/                   TR-<phase>-<nn>.md, one executable task each
+```
+
+## Rules that bind every executor (unchanged from `.lucy/authority/`)
+Never weaken/skip a test; never edit constitutional paths (`.lucy/authority/**`, `scripts/verify_authority.py`, `.github/workflows/lucyos-ci.yml`) except through a Fable-authored PR the owner merges; never invent a task ID; never push to `main`; no third-party dependency in core; no new `aion_core` module without a baseline entry; never print or store a secret; report what actually ran.

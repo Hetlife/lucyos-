@@ -1,0 +1,52 @@
+Mission: INR 1,00,000/month net - currently at 0.1% of it
+Real revenue: ₹100.0
+Real cost: ₹0.0 (incl. ₹0 model spend this month)
+Real net: ₹100.0
+M0 first real rupee: reached — 1 evidenced revenue row(s)
+Reserve: ₹0.0
+
+Model budget: ₹0/200.0 today, ₹0/2000.0 this month
+Strong-model build spend: ₹0.0 of ₹2000.0 (0.0%) · governor NORMAL
+not configured: SEVAA_AUTOMATION_TOKEN has no secret store value
+1 payment(s) recorded
+----------------------------------------------------------------------
+Ran 795 tests in 137.965s
+
+OK (skipped=2)
+rc=0
+== portability ==
+note aion_core/learnrepo.py:555 [init_system] known, owned by task S-11
+note bridges/drive_bridge.py:494 [init_system] known, owned by task S-12
+
+0 violation(s), 3 known exception(s), 0 stale, across 59 files
+portable
+rc=0
+== scan ==
+clean: no credential-shaped content found
+rc=0
+== authority self ==
+{
+  "mode": "self",
+  "fable_freeze_sha": "2a7002043ceca4ffff2da09bf59860708954370e",
+  "violations": [
+    ".github/workflows/lucyos-ci.yml: hash drift",
+    "aion_core/config.py: hash drift",
+    "aion_core/db.py: hash drift",
+    "aion_core/router.py: hash drift",
+    "aion_core/security.py: hash drift"
+  ],
+  "ok": false
+}
+rc=0
+== anti-dup ==
+  "base": "origin/main",
+  "merge_base": "36c954c97244",
+  "violations": [],
+  "ok": true
+}
+rc=0
+== boundaries ==
+aion_core/tasks.py:6 [sqlite_import] sqlite3 import outside the ratified allowlist
+scripts/runtime_inventory.py:19 [sqlite_import] sqlite3 import outside the ratified allowlist
+boundary scan: 2 violation(s), 0 known, 0 stale; mode=warning
+rc=0
