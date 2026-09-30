@@ -184,3 +184,36 @@ class TestOwnerSetupProbePolicy(AionTest):
         read_probe.assert_not_called()
         write_probe.assert_not_called()
         self.assertFalse(caps["github_probe_performed"])
+
+
+class TestOwnerSetupNamesOnlyRealCommands(AionTest):
+    """Every `aion <command>` the generated file tells the owner to run must
+    exist in the CLI parser. The command set is read from the parser itself
+    (its --help output), never duplicated here, so the check keeps working as
+    commands are added or removed."""
+
+    @staticmethod
+    def _cli_commands():
+        import contextlib
+        import io
+        import re
+        from aion_core import cli
+        buf = io.StringIO()
+        with contextlib.redirect_stdout(buf):
+            try:
+                cli.main(["--help"])
+            except SystemExit:
+                pass
+        flat = re.sub(r"\s+", "", buf.getvalue())
+        match = re.search(r"\{([a-z][a-z0-9,-]*)\}", flat)
+        return set(match.group(1).split(",")) if match else set()
+
+    def test_generated_file_references_no_missing_command(self):
+        import re
+        commands = self._cli_commands()
+        self.assertIn("owner-setup", commands)  # guards a silent parse failure
+        with mock.patch.object(owner_setup, "_capabilities", return_value=_caps()):
+            text = owner_setup.render()
+        referenced = set(re.findall(r"`aion ([a-z][a-z0-9-]*)", text))
+        self.assertTrue(referenced)
+        self.assertEqual(sorted(referenced - commands), [])
