@@ -17,17 +17,22 @@ LucyOS is the control plane. OpenClaw is the conversation/channel and execution 
 5. For coding/integration work, create a bounded LucyOS architecture proposal and run `scripts/lucyosctl architecture-check <proposal.json>` before editing.
 
 ## Owner messages, approvals and control (WhatsApp)
-Every owner message that arrives on the WhatsApp channel goes to LucyOS through exactly one door:
+Only messages the owner explicitly addresses to LucyOS go through the door. The owner marks them with a `lucy:` prefix. Everything else is conversation with you (instructions, questions, "pulled", thanks) and is never forwarded, because LucyOS files any text it does not recognise as a new INBOX task in the owner's database.
 
 ```
-LUCYOS_PRINCIPAL=<sender id> scripts/lucyosctl whatsapp "<message text>"
+owner writes:  lucy: APPROVE A-12
+you run:       AION_HOME=<brain> LUCYOS_PRINCIPAL=<sender id> scripts/lucyosctl whatsapp "APPROVE A-12"
 ```
 
+- Strip exactly the leading `lucy:` (any case) and one following space. Forward the rest unchanged: no rewording, trimming, summarising or additions.
+- No prefix means do not forward, even if the text looks like a command. Reply as OpenClaw and remind the owner to write `lucy: <command>`.
+- Always set `AION_HOME` to the owner's brain on every call. On a non-root host the script's built-in default (`/root/...`) is wrong.
 - Pass the sender id OpenClaw authenticated (digits, or `+digits`) as `LUCYOS_PRINCIPAL`. Without it the call is refused (exit 2): unattributed input never reaches LucyOS.
-- The text is routed by LucyOS's deterministic router, so `status`, `tasks`, `blockers`, `approve <ID>`, `deny <ID>`, `pause`, `resume` and `safe mode` behave exactly as on the owner's phone. Send the owner's words unchanged; never build an approval yourself.
-- Limits: one line, at most 512 bytes, printable characters only. Longer or multi-line text is refused (exit 2) before anything is stored.
+- LucyOS's deterministic router handles the text, so `status`, `tasks`, `blockers`, `pause`, `resume` and `safe mode` behave as on the owner's phone. Only the exact form `APPROVE <ID>` or `DENY <ID>` decides an approval; anything else that mentions one changes nothing. Never build an approval yourself.
+- Limits: one line, at most 512 bytes, printable characters only. Longer or multi-line text is refused (exit 2). Tell the owner to resend one short line; never flatten or summarise it to get through.
+- The scheduled morning routine is exempt from the prefix. It sends fixed text (`status`, `blockers`) with `LUCYOS_PRINCIPAL=openclaw-routine` and reports only.
 - LucyOS logs one event per message with the principal, channel, key id and the first word only if it is a plain lowercase verb. It never logs the message body in that event.
-- The principal identifies the sender for the audit trail; it is not authority. Authority is the strict `APPROVE <ID>` / `DENY <ID>` grammar plus the enrolled host or SSH key.
+- The principal identifies the sender for the audit trail; it is not authority. Authority is the exact `APPROVE`/`DENY` form plus the enrolled host or SSH key.
 - Over SSH (`LUCYOS_REMOTE_SSH_TARGET` set) the sender id is not transmitted. The server-side dispatcher derives the principal from the enrolled key (sshd `ExposeAuthInfo yes`, or `--key-id <label>` in the forced command) and refuses the call if neither exists.
 - Do not send secrets. Credential-shaped text is refused by LucyOS and never stored.
 

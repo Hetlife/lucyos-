@@ -22,6 +22,7 @@ Read CURRENT documents only. HISTORICAL and UNMARKED files are evidence, not ins
 | CURRENT | `.lucy/planning/lucyos-total-recovery/15_AI_OS_HARNESS_AUDIT.md` |
 | CURRENT | `.lucy/planning/lucyos-total-recovery/16_INTERFACE_ARCHITECTURE.md` |
 | CURRENT | `.lucy/planning/lucyos-total-recovery/17_CRITICAL_PATH.md` |
+| CURRENT | `.lucy/planning/lucyos-total-recovery/CHECKPOINT.md` |
 | CURRENT | `.lucy/planning/lucyos-total-recovery/START_PROMPTS.md` |
 | CURRENT | `.lucy/planning/lucyos-total-recovery/evidence/EVIDENCE_INDEX.md` |
 | CURRENT | `.lucy/planning/lucyos-total-recovery/work_orders/INDEX.md` |
@@ -37,6 +38,7 @@ Read CURRENT documents only. HISTORICAL and UNMARKED files are evidence, not ins
 | CURRENT | `.lucy/planning/lucyos-total-recovery/work_orders/TR-1-04.md` |
 | CURRENT | `.lucy/planning/lucyos-total-recovery/work_orders/TR-1-05.md` |
 | CURRENT | `.lucy/planning/lucyos-total-recovery/work_orders/TR-1-06.md` |
+| CURRENT | `.lucy/planning/lucyos-total-recovery/work_orders/TR-1-07.md` |
 | CURRENT | `.lucy/planning/lucyos-total-recovery/work_orders/TR-2-01.md` |
 | CURRENT | `.lucy/planning/lucyos-total-recovery/work_orders/TR-2-02.md` |
 | CURRENT | `.lucy/planning/lucyos-total-recovery/work_orders/TR-2-03.md` |
@@ -109,4 +111,4 @@ Read CURRENT documents only. HISTORICAL and UNMARKED files are evidence, not ins
 | HISTORICAL | `docs/internal/health-audit/ISSUE_REGISTER.md` |
 | HISTORICAL | `docs/internal/health-audit/SONNET_EXECUTION_QUEUE.md` |
 
-Counts: CURRENT=72, HISTORICAL=32
+Counts: CURRENT=74, HISTORICAL=32
