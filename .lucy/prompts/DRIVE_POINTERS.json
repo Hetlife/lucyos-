@@ -1,0 +1,12 @@
+{
+  "schema_version": 1,
+  "authority": "coordination_only",
+  "root": {"id": "1I3x2CWvanxGfVXDN017ft02dKdxfzn5_", "name": "07_PROMPTS"},
+  "folders": {
+    "pending": {"id": "1L3wjX677kOhgHL_mxVLp-mPG_y_uecWe", "name": "00_PENDING"},
+    "processing": {"id": "1ahRkQodCzewAjWMwntvsJtb2Eg0TRlws", "name": "01_PROCESSING"},
+    "completed": {"id": "1ItqnjS81XHMWCgrIpNb43Vh8W-XoRS76", "name": "02_COMPLETED"},
+    "archive": {"id": "1dDNhY0WzVd7VcQtisK-zQlzgh8-9wZ-X", "name": "99_ARCHIVE"}
+  },
+  "note": "Duplicate historical 02_COMPLETED/99_ARCHIVE folders exist in Drive. Do not create more or delete them automatically; use these pinned IDs until an owner-approved cleanup."
+}
