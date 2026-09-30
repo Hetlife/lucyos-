@@ -73,24 +73,37 @@ owner wants a single front door.
 exec /usr/bin/python3 @REPO@/bridges/whatsapp_bridge.py cloud --host 127.0.0.1 --port 8765
 ```
 
-`bridges/whatsapp_bridge.py:274` hard-requires four variables and exits if any is missing:
+`bridges/whatsapp_bridge.py:273-281` requires **six** variables and returns exit 2 if any is
+empty:
 
 ```
-WHATSAPP_ACCESS_TOKEN  WHATSAPP_PHONE_NUMBER_ID
-WHATSAPP_VERIFY_TOKEN  WHATSAPP_APP_SECRET
+WHATSAPP_ACCESS_TOKEN      WHATSAPP_PHONE_NUMBER_ID
+WHATSAPP_VERIFY_TOKEN      WHATSAPP_APP_SECRET
+WHATSAPP_GRAPH_API_VERSION WHATSAPP_ALLOWED_SENDER
 ```
 
 `OWNER_SETUP_REQUIRED.md` asks for exactly one secret: `WHATSAPP_BRIDGE_TOKEN` — which the
-`cloud` adapter does not read at all (it belongs to the plain `webhook` adapter).
+`cloud` adapter never reads. It belongs to the plain `webhook` adapter, and
+`owner_setup.py:128` itself calls it `legacy_bridge_credential_present`, so the entry is
+describing a superseded path.
 
 ```
 $ grep -rn "WHATSAPP_ACCESS_TOKEN" aion_core/
 (no matches)
 ```
 
-**Consequence:** follow `TOMORROW.md` exactly and `aion-bridge.service` fails on start with
-"Missing required environment variables". The owner is not told what to provide, because the
-setup generator does not know these variables exist.
+**Consequence:** follow `TOMORROW.md` exactly and `aion-bridge.service` exits 2 with
+"Missing required environment variables". The owner is never told these exist.
+
+Two of the six are not secrets and should not be treated as such:
+
+- `WHATSAPP_GRAPH_API_VERSION` is a version string (e.g. `v21.0`). It has **no default**, so
+  an owner who has supplied every real credential still cannot start the bridge, and nothing
+  tells them what value is valid. Giving it a sane default is the smaller, better fix than
+  asking the owner for it.
+- `WHATSAPP_ALLOWED_SENDER` is the owner's own phone number — a sender allowlist, and a good
+  security control. It is configuration, not a credential, and asking for it through
+  `aion secrets set` misclassifies it.
 
 This is the single defect most responsible for "LucyOS is not usable from my phone".
 

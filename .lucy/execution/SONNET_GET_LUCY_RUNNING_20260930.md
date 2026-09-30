@@ -56,71 +56,98 @@ as commands change.
 
 ---
 
-## R-02 (P0) — make owner-setup request the credentials the bridge actually needs
+## R-02 (P0) — make owner-setup request what the bridge actually needs
 
-**Files:** `aion_core/owner_setup.py` (+ its test)
+**Files:** `aion_core/owner_setup.py` (+ its test), possibly `bridges/whatsapp_bridge.py`
 
-`systemd/aion-bridge.service` runs the `cloud` adapter. `bridges/whatsapp_bridge.py:274`
-requires all four of:
+`systemd/aion-bridge.service` runs the `cloud` adapter. `bridges/whatsapp_bridge.py:273-281`
+requires **six** variables and returns exit 2 if any is empty:
 
 ```
-WHATSAPP_ACCESS_TOKEN  WHATSAPP_PHONE_NUMBER_ID  WHATSAPP_VERIFY_TOKEN  WHATSAPP_APP_SECRET
+WHATSAPP_ACCESS_TOKEN      WHATSAPP_PHONE_NUMBER_ID
+WHATSAPP_VERIFY_TOKEN      WHATSAPP_APP_SECRET
+WHATSAPP_GRAPH_API_VERSION WHATSAPP_ALLOWED_SENDER
 ```
 
-and exits if any is missing. Owner-setup currently asks only for `WHATSAPP_BRIDGE_TOKEN`,
-which the `cloud` adapter never reads.
+Owner-setup asks for one: `WHATSAPP_BRIDGE_TOKEN`, which `run_cloud` never reads.
+`owner_setup.py:128` already calls it `legacy_bridge_credential_present`.
 
-**Do:** replace the single WhatsApp entry in the REQUIRED NOW section with one that requests
-all four, each keeping the existing entry shape (purpose / minimum permission / exact owner
-action / security impact / revocation / what resumes afterwards). Keep the
-"never send a secret through WhatsApp" rule and the `aion secrets set <NAME>` form. State
-plainly in the entry that the four come from the Meta WhatsApp Cloud API app console.
+**Classify the six before writing anything — they are not all secrets:**
 
-Keep `WHATSAPP_BRIDGE_TOKEN` as a separate entry only if the plain `webhook` adapter is still
-a supported path; if you cannot establish that from the code, ask rather than guess.
+| Variable | Kind | Handling |
+|---|---|---|
+| `WHATSAPP_ACCESS_TOKEN` | secret | `aion secrets set` |
+| `WHATSAPP_APP_SECRET` | secret | `aion secrets set` |
+| `WHATSAPP_VERIFY_TOKEN` | secret (owner-chosen) | `aion secrets set`; say it is a value the owner invents and pastes into the Meta console |
+| `WHATSAPP_PHONE_NUMBER_ID` | identifier | from the Meta console |
+| `WHATSAPP_ALLOWED_SENDER` | config — owner's own number | a sender allowlist, not a credential |
+| `WHATSAPP_GRAPH_API_VERSION` | config — e.g. `v21.0` | **give it a default in `run_cloud`** |
 
-**Do not** read, print, or log any secret value. **Do not** hard-code a token anywhere,
-including in tests — build test fixtures from obviously fake values assembled at runtime so
-`./aion scan .` cannot trip.
+`WHATSAPP_GRAPH_API_VERSION` having no default is its own defect: an owner can supply every
+real credential and still be blocked by a version string nobody told them. **Prefer adding a
+sane default in `run_cloud` over asking the owner for it** — that removes a required field
+instead of documenting one. If you add a default, add a test pinning it.
 
-**Test:** assert the generated file requests exactly the variable names the `cloud` adapter
-requires. Derive that set from `bridges/whatsapp_bridge.py` rather than duplicating the list,
-so the two can never drift apart again. **That coupling is the real deliverable of this task**
-— the literal list is the smaller half.
+**Do:** replace the stale WhatsApp entry in REQUIRED NOW with entries covering what genuinely
+still needs the owner, using the existing `dict(...)` shape in `REQUIREMENTS` (tier / service /
+secret / purpose / permission / action / security / revoke / resumes / satisfied /
+satisfied_detail). Update the `satisfied` lambda so it measures the variables the cloud
+adapter actually reads, not `legacy_bridge_credential_present`. Keep the
+"never send a secret through WhatsApp" rule.
 
-**Done when:** a fresh `aion owner-setup` asks for every variable the service needs; the drift
-test passes; `./aion scan .` clean; 745+ tests OK.
+Keep `WHATSAPP_BRIDGE_TOKEN` only if the plain `webhook` adapter is still supported. If you
+cannot establish that from the code, ask — do not delete it on a guess.
 
----
+**Never** read, print or log a secret value. Build test fixtures from obviously fake values
+assembled at runtime so `./aion scan .` cannot trip.
+
+**Test — this is the real deliverable.** Derive the required-variable set *from*
+`bridges/whatsapp_bridge.py` (the `names` tuple in `run_cloud`) and assert owner-setup covers
+every entry that still needs the owner. Do not duplicate the list into the test. A hard-coded
+list lets this exact bug come back the next time the adapter changes; the coupling is what
+makes the fix permanent.
+
+**Done when:** a fresh `aion owner-setup` accounts for every variable `run_cloud` requires;
+the drift test passes; `./aion scan .` clean; 745+ tests OK.
 
 ## R-03 (P1) — document and script the inbound tunnel
 
-**Files:** `docs/OPERATIONS.md` (+ a script under `scripts/` if it earns its place)
+**Files:** `docs/OPERATIONS.md` (+ a preflight script under `scripts/` if it earns its place)
 
 Meta delivers webhooks to a public HTTPS URL. The bridge binds `127.0.0.1:8765`. Nothing in
 the run path bridges that, so even with R-02 done, no message arrives.
 
-**Do:** add a short, concrete section to `docs/OPERATIONS.md` covering: terminating TLS at a
-named tunnel and forwarding to `127.0.0.1:8765`; the exact callback URL and verify-token
-values to paste into the Meta console; how to confirm the `GET` verification handshake
-succeeded; and how to confirm the first inbound `POST` was signature-checked by the existing
-`app_secret` path at `whatsapp_bridge.py:229`.
+**The security design is already correct — do not touch it.** `CloudHandler` at
+`bridges/whatsapp_bridge.py:190-235` already implements both halves properly:
 
-State explicitly that the bridge stays on loopback and that binding `0.0.0.0` is never the fix.
-Match the existing loopback-plus-private-tunnel guidance already in this file for the web
-interface — do not invent a second, different posture.
+- `do_GET` — Meta's verification handshake: requires `hub.mode=subscribe`, compares
+  `hub.verify_token` with `hmac.compare_digest`, echoes `hub.challenge`, else 403.
+- `do_POST` — verifies `X-Hub-Signature-256` as `sha256=HMAC-SHA256(app_secret, raw_body)`
+  with `hmac.compare_digest`, rejects with 401 and logs `whatsapp.signature_failed` via
+  `db.log_event`. Also caps body size at `MAX_MESSAGE_BYTES * 16` → 413.
 
-**Only add a script if it does something a reader cannot trivially do by hand.** A wrapper that
-just calls a tunnel binary is not worth a file. A preflight that checks the four variables are
-present, the port is listening, and the signature path is reachable **is** worth it.
+So the only thing missing is TLS termination and forwarding. Write that down; do not rebuild
+authentication that already exists.
 
-**Do not** sign up for any tunnel provider, create any account, or spend anything. Document the
-choice; the owner makes it.
+**Do:** add a concrete section to `docs/OPERATIONS.md` covering: terminating TLS at a named
+tunnel and forwarding to `127.0.0.1:8765`; the exact callback URL and verify-token to paste
+into the Meta console; how to confirm the `GET` handshake returned the challenge; and how to
+confirm the first `POST` passed the signature check (the `whatsapp.signature_failed` event
+*not* appearing, plus a successful reply).
 
-**Done when:** a reader following only this section gets a verified webhook; no new dependency;
-gates clean.
+State explicitly that the bridge stays on loopback and that binding `0.0.0.0` is never the
+fix. Match the loopback-plus-private-tunnel posture already in this file at lines 41-44 for
+the web interface — do not invent a second, different posture.
 
----
+**Only add a script if it does something a reader cannot trivially do by hand.** A wrapper
+around a tunnel binary is not worth a file. A preflight that checks the six variables are
+present, the port is listening, and the handshake path answers **is** worth it.
+
+**Do not** sign up for any tunnel provider, create any account, or spend anything. Document
+the options; the owner chooses.
+
+**Done when:** a reader following only this section reaches a verified webhook; no new
+dependency; gates clean.
 
 ## R-04 (P1) — end-to-end proof on a clean clone
 
@@ -143,6 +170,25 @@ not change that. Say so in the evidence rather than implying end-to-end success.
 unproven-remainder is written down.
 
 ---
+
+## R-05 (P2, OWNER-GATED — do not start without an assigned task ID)
+
+**File:** `.gitignore`
+
+`scripts/check_boundaries.py` writes `evidence/boundary_report.md` whenever the test suite
+runs (`tests/test_check_boundaries.py:21` reads it back). That path is untracked and absent
+from `origin/main`, so **every contributor who runs the tests gets a dirty working tree** and
+may commit the artifact by accident.
+
+The fix is one line in `.gitignore`. **But `.gitignore` is a protected path** in
+`HIGH_MODEL_BASELINE.json` — protected, not constitutional, so an override *is* possible, but
+it does not exist yet and `verify_authority.py strict` will refuse the change without one.
+
+**Do not invent a task ID to get past the gate.** Adding the override means editing
+`.lucy/authority/**`, which is constitutional and refused unconditionally — only the owner can
+land that. If an override for this work has been ratified by the time you read this, apply the
+one-line change and reference that ID in the commit trailer. Otherwise leave it and say so in
+your report.
 
 ## Owner-only — not for any model
 
