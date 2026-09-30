@@ -22,7 +22,8 @@ from urllib.parse import parse_qs, urlsplit
 
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 
-from aion_core import api, approvals, bootstrap, config, db, governor, metrics, router, security, tasks  # noqa: E402
+from aion_core import (api, approvals, bootstrap, config, db, governor, metrics,  # noqa: E402
+                       router, security, tasks, util)
 
 ROOT = Path(__file__).resolve().parent.parent
 WEB_ROOT = ROOT / "web"
@@ -324,6 +325,10 @@ class InterfaceHandler(BaseHTTPRequestHandler):
         return self._json(200, {"ok": True, "data": router.handle(message, sender="interface")})
 
 
+class _InterfaceServer(util.NoReverseDnsMixin, ThreadingHTTPServer):
+    """ThreadingHTTPServer without the reverse-DNS lookup that stalled startup on macOS."""
+
+
 def build_server(host: str, port: int, *, token: str | None = None) -> ThreadingHTTPServer:
     value = token if token is not None else read_secret()
     if not value:
@@ -331,7 +336,7 @@ def build_server(host: str, port: int, *, token: str | None = None) -> Threading
             "AION_INTERFACE_TOKEN is not set; run `aion secrets set AION_INTERFACE_TOKEN` on this PC"
         )
     handler = type("BoundInterfaceHandler", (InterfaceHandler,), {"token": value})
-    return ThreadingHTTPServer((host, port), handler)
+    return _InterfaceServer((host, port), handler)
 
 
 def main(argv=None) -> int:

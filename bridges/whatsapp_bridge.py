@@ -253,6 +253,10 @@ class CloudHandler(BaseHTTPRequestHandler):
         self._json(200, {"ok": True})
 
 
+class LocalHTTPServer(util.NoReverseDnsMixin, HTTPServer):
+    """HTTPServer without the reverse-DNS lookup that stalled startup on macOS."""
+
+
 def run_webhook(host: str, port: int) -> int:
     Handler.secret_token = os.environ.get("WHATSAPP_BRIDGE_TOKEN", "")
     if not Handler.secret_token:
@@ -260,7 +264,7 @@ def run_webhook(host: str, port: int) -> int:
               file=sys.stderr)
         print("Bind to localhost only and put a tunnel or reverse proxy in front.",
               file=sys.stderr)
-    server = HTTPServer((host, port), Handler)
+    server = LocalHTTPServer((host, port), Handler)
     print(f"AION WhatsApp bridge listening on http://{host}:{port} "
           f"(auth {'on' if Handler.secret_token else 'OFF'})")
     try:
@@ -291,7 +295,7 @@ def run_cloud(host: str, port: int) -> int:
     CloudHandler.client = CloudAPI(values["WHATSAPP_ACCESS_TOKEN"],
                                    values["WHATSAPP_PHONE_NUMBER_ID"],
                                    values["WHATSAPP_GRAPH_API_VERSION"])
-    server = HTTPServer((host, port), CloudHandler)
+    server = LocalHTTPServer((host, port), CloudHandler)
     print(f"AION WhatsApp Cloud API bridge listening on http://{host}:{port}")
     try:
         server.serve_forever()
