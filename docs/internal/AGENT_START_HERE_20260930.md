@@ -1,5 +1,9 @@
 # Coding-agent entry point — LucyOS, 2026-09-30
 
+> **STATUS: COMPLETE and HISTORICAL (2026-09-30).** Every task in this file was done and merged.
+> The current state and what remains is in `.lucy/execution/SONNET_MASTER_PLAN_20260930.md`
+> (see its "Current status" section). Do not treat the base SHA, test counts or PR states below as current.
+
 One file to route from. **Read this, then exactly one plan file. Do not read the whole repo.**
 
 **Base:** `origin/main` @ `5d1c6e5` · **Goal:** get LucyOS answering on the owner's phone.

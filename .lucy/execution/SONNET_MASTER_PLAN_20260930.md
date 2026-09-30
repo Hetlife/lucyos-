@@ -7,6 +7,39 @@ on 2026-09-30.
 
 ---
 
+
+## Current status (end of 2026-09-30)
+
+**Read this first. Everything after it in this file is historical.**
+
+- **`main` @ `36c954c`, 795 tests OK.** Merged today: #75-#81 (R-01..R-07, M-01), #82 (docs), #83 and #86 (macOS
+  diagnostics), #84 (seed text), #85 (branch list), #87 (C-4: no reverse-DNS on server bind). Tasks R-01..R-07,
+  A-1..A-3, C-1, C-2, C-3, C-4 are **done**.
+- **Closed today (18 PRs):** #4-#10, #24, #27, #29, #30, #33, #34 (all contained in `main`), #50, #51, #56 (duplicates of
+  #66, #67, #69), #52 (files identical to #68), #54 (superseded by `d6df8c4`). Each has a comment saying why.
+- **Deliberately kept open:** #2. It was going to be closed as "content already in main", but that claim was **wrong**: its
+  branch has unrelated history, so the diff used to check it silently printed nothing. It holds 39 files `main` lacks.
+- **Still open, owner decisions:** #73 (real work; needs an owner-merge because it edits `.lucy/authority/**`),
+  #62 (draft, green CI), #53 (draft, docs), #11 (a 16-Sep authority-gate probe), #2 (above).
+
+**macOS is green (confirmed).** GitHub run #376 on `main` @ `36c954c` (the merge of #87) finished `success` with none of its 8
+jobs failing, so `macos-readiness` passed for the first time. The path fix (#81) cleared 5 errors and C-4 (#87) cleared the
+last failure: Python's `HTTPServer` reverse-DNS-looked-up its bind address, which hung on macOS. The diagnostics added in
+#83 and #86 are what found it.
+
+**Not done, and why**
+1. **Deleting the 65 contained branches.** Approved by the owner, re-proved safe, but the git proxy returns HTTP 403 on
+   any branch delete and no GitHub tool can delete one. Steps for the owner are in
+   `docs/internal/BRANCH_DELETION_LIST_20260930.md`. Nothing was deleted.
+2. **Six branches with unrelated history** (list section D) are **keep**. An earlier version of the list wrongly called them
+   zero-difference.
+
+**Owner-only:** run `aion openclaw-check` on the PC and send the output (nobody has seen whether OpenClaw's WhatsApp
+reaches LucyOS); decide the open PRs above; run the branch deletion steps; re-freeze the 5 drifting authority hashes;
+assign a task ID for R-05 (`.gitignore`); update the live task text with `aion task-update`.
+
+---
+
 ## Status update, 2026-09-30 (later)
 
 - **#75 (R-01) and #76 (R-02) are merged.** `main` is now `d7400b3`, no longer `5d1c6e5`.

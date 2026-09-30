@@ -1,5 +1,9 @@
 # Sonnet follow-ups after R-01..R-04 — 2026-09-30
 
+> **STATUS: COMPLETE and HISTORICAL (2026-09-30).** Every task in this file was done and merged.
+> The current state and what remains is in `.lucy/execution/SONNET_MASTER_PLAN_20260930.md`
+> (see its "Current status" section). Do not treat the base SHA, test counts or PR states below as current.
+
 **Depends on:** PRs #75 → #76 → #77 → #78 (stacked; merge in that order). These tasks assume
 that stack is merged, or stack their branches on `task/R-04-bridge-start-proof`.
 **Owner decisions recorded 2026-09-30:** (1) **OpenClaw is the primary WhatsApp channel.**
