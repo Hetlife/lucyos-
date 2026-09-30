@@ -17,23 +17,12 @@ import hashlib
 import hmac
 import os
 
-from . import config, db
+from . import bootstrap, config, db
 
 def _read_secret(name: str) -> str | None:
-    """Read one KEY=value line from the 0600 secret store.  Never logs or
-    returns the value except to the caller that asked for it by name.
-    Matches aion_core.backup._read_secret's pattern -- this module has no
-    dependency on it to avoid a cross-import for one helper."""
-    sf = config.secrets_file()
-    if not sf.exists():
-        return None
-    prefix = f"{name}="
-    for line in sf.read_text(encoding="utf-8").splitlines():
-        line = line.strip()
-        if line.startswith(prefix):
-            value = line[len(prefix):].strip()
-            return value or None
-    return None
+    """Read one value from the 0600 secret store via the single shared parser.
+    Never logs or returns the value except to the caller that asked for it."""
+    return bootstrap.read_secret(name)
 
 
 # --- wire contract ---------------------------------------------------------

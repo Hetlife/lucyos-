@@ -114,16 +114,7 @@ def _submission_storage_key(idempotency_key: str) -> str:
 
 def read_secret(name: str = "AION_INTERFACE_TOKEN") -> str:
     """Read one value without placing it in logs, state, or process arguments."""
-    path = config.secrets_file()
-    if not path.exists():
-        return ""
-    for line in path.read_text(encoding="utf-8").splitlines():
-        if not line or line.lstrip().startswith("#") or "=" not in line:
-            continue
-        key, value = line.split("=", 1)
-        if key.strip() == name:
-            return value.strip()
-    return ""
+    return bootstrap.read_secret(name) or ""
 
 
 class InterfaceHandler(BaseHTTPRequestHandler):

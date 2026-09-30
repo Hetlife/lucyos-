@@ -60,6 +60,8 @@ def main() -> int:
         return 1
 
     fake = {n: "fake" + secrets.token_hex(6) for n in NAMES}
+    # a value the shell would corrupt if it were stored unquoted
+    fake["WHATSAPP_VERIFY_TOKEN"] += " q$x&y;'z"
     store = subprocess.run(
         [sys.executable, "-c",
          "import sys; from aion_core import bootstrap\n"
