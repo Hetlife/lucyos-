@@ -7,6 +7,8 @@
 ## Mission (unchanged)
 LucyOS is the control layer for Het's companies, projects, agents, machines, approvals, knowledge and automation. Owner steers from WhatsApp / LucyNest; the machine holds canonical state; work routes to the cheapest reliable executor; every result carries evidence; state survives restarts; new projects and companies plug in without editing the core.
 
+**Resuming? Read `CHECKPOINT.md` first.** It records the exact state, what is in flight and the next steps as of 2026-09-30.
+
 ## Truth hierarchy used here
 1. Live runtime + canonical SQLite (not reachable from this session: Lucy-den, Mark-2, Nebula are **UNKNOWN until TR-0-04 runs**).
 2. Current code and Git objects at `36c954c` (verified directly).
