@@ -139,6 +139,9 @@
     "S-22": [
       "systemd/mark2-desktop-commander.service",
       "systemd/README.md"
+    ],
+    "FABLE-10": [
+      "aion_core/worker.py"
     ]
   },
   "allowed_executor_scope": {
