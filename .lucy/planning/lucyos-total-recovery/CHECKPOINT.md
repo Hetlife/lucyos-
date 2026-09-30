@@ -43,3 +43,7 @@ This also clears the stale resume pointer (ISSUE-037):
 - Stray task `TASK-77EAD62D` is CANCELLED (observed). Two probe approvals exist and are PENDING: A-108, A-109.
 - New blocker found in that task's `last_error`: ISSUE-040, imported `/root/...` session log paths make every compile fail, so `aion work` cannot run tasks on Lucy-den. The E2E does not depend on it. TR-1-08 fixes it.
 - TR-1-05 reordered: the old order could not detect the old bug. Loose message first, against a pending approval.
+
+## Update 2026-09-30 19:57 UTC
+- Owner preflight: `~/lucyos` is at `8125fb8` (equal to main, router fix present, `decision_hint` count 2) but **dirty with a coding agent's uncommitted work** in `cli.py`, `context.py`, `model_gateway.py`. The verb path lives in `cli.py`, so the E2E must not run from there. Decision: run it from a clean detached worktree `~/lucyos-main` (proved on a scratch copy: the loose message returns "Nothing was decided" and leaves the approval pending).
+- `main` moved again to include #62. After the E2E passes, repoint OpenClaw's `LUCYOS_AION_BIN` (routine and forwarding) to `~/lucyos-main/aion` permanently.
