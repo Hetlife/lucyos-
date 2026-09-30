@@ -43,10 +43,21 @@ aion owner-setup        # reads the list; nothing here is asked twice
 
 Then, on the machine only — never through chat:
 
+For the direct WhatsApp Cloud API bridge (what `aion-bridge.service` runs), the
+service refuses to start unless all six values are set. `aion owner-setup` lists
+them with where to find each; enter every one with `aion secrets set <NAME>`:
+
 ```bash
-aion secrets set WHATSAPP_BRIDGE_TOKEN
-aion secrets set GITHUB_TOKEN            # optional today
+aion secrets set WHATSAPP_ACCESS_TOKEN
+aion secrets set WHATSAPP_APP_SECRET
+aion secrets set WHATSAPP_VERIFY_TOKEN       # a value you invent; reuse it in the Meta console
+aion secrets set WHATSAPP_PHONE_NUMBER_ID
+aion secrets set WHATSAPP_ALLOWED_SENDER     # your number, digits only, exact match
+aion secrets set WHATSAPP_GRAPH_API_VERSION  # copy from your Meta app console
+aion secrets set GITHUB_TOKEN                # optional today
 ```
+
+`WHATSAPP_BRIDGE_TOKEN` is only for the plain `webhook` adapter, not the service.
 
 Free and worth doing while you are there, so routine work costs nothing:
 

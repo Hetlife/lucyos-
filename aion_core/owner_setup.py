@@ -4,6 +4,16 @@ from __future__ import annotations
 
 from . import bootstrap, config, health, util, worker
 
+# What the shipped aion-bridge.service (the Meta Cloud API adapter) refuses to
+# start without. aion_core must not import from bridges/, so this is a separate
+# list; tests/test_owner_setup.py compares it with
+# bridges/whatsapp_bridge.py:CLOUD_ENV_REQUIRED so the two cannot drift apart.
+# All six go through `aion secrets set` because the service only loads
+# private_state/secrets.env.
+CLOUD_BRIDGE_VARS = ("WHATSAPP_ACCESS_TOKEN", "WHATSAPP_PHONE_NUMBER_ID",
+                     "WHATSAPP_VERIFY_TOKEN", "WHATSAPP_APP_SECRET",
+                     "WHATSAPP_GRAPH_API_VERSION", "WHATSAPP_ALLOWED_SENDER")
+
 # Each requirement states the minimum permission and what resumes afterwards.
 # `satisfied(caps)` decides — from measured state, never a guess — whether the
 # owner action is still needed at all; `satisfied_detail(caps)` explains why
@@ -26,6 +36,38 @@ REQUIREMENTS = [
              "owner-channel end-to-end reachability NOT YET PROVEN — presence is not "
              f"proof WhatsApp is live. AION loopback/openclaw_port reconciliation "
              f"({c['openclaw_gateway_detail']}) belongs to R-05, not this owner ask")),
+    dict(tier="REQUIRED NOW", service="WhatsApp Cloud API bridge (aion-bridge.service)",
+         secret=", ".join(CLOUD_BRIDGE_VARS),
+         purpose="Direct Meta WhatsApp Cloud API channel. The shipped bridge service exits "
+                 "at start unless all six values below are set. Needed only if you run this "
+                 "bridge; skip it if OpenClaw carries WhatsApp for you.",
+         permission="Cloud API access for your own WhatsApp Business number only; replies go "
+                    "only to WHATSAPP_ALLOWED_SENDER",
+         action="Take the values from your Meta app console, then on the PC run "
+                "`aion secrets set <NAME>` once for each: "
+                "WHATSAPP_ACCESS_TOKEN (app access token); "
+                "WHATSAPP_APP_SECRET (app secret, used to verify inbound signatures); "
+                "WHATSAPP_VERIFY_TOKEN (a value you invent, then paste the same value into "
+                "the Meta webhook setup); "
+                "WHATSAPP_PHONE_NUMBER_ID (numeric id of the sending number); "
+                "WHATSAPP_ALLOWED_SENDER (your own number exactly as Meta reports it in the "
+                "message `from` field: digits only, no + or spaces; it is an exact-match "
+                "allowlist); "
+                "WHATSAPP_GRAPH_API_VERSION (the Graph API version your Meta app uses, copied "
+                "from the console; it is explicit on purpose so provider upgrades never "
+                "happen silently). Even the non-secret ones go through `aion secrets set`: "
+                "the service loads only private_state/secrets.env. Do not send any of them "
+                "over WhatsApp.",
+         security="The access token can send messages as your business number and the app "
+                  "secret authenticates inbound traffic; both are stored 0600 in "
+                  "private_state/secrets.env and never enter git, logs or chat.",
+         revoke="Rotate the token and app secret in the Meta app console, then re-run "
+                "`aion secrets set` for each.",
+         resumes="The bridge service can start (`scripts/install_services.sh` prints the "
+                 "start command for this platform); Meta still needs a public HTTPS "
+                 "callback URL (see R-03).",
+         satisfied=lambda c: not c["cloud_bridge_missing"],
+         satisfied_detail=lambda c: "all six WhatsApp Cloud API values are set"),
     dict(tier="REQUIRED NOW", service="GitHub (repo scope)",
          secret="GITHUB_TOKEN",
          purpose="Version control and safe collaboration for code and prompts",
@@ -126,6 +168,7 @@ def _capabilities(*, probe_external: bool = False) -> dict:
         "openclaw_evidence": evidence,
         "openclaw_gateway_detail": oc_gateway["detail"],
         "legacy_bridge_credential_present": bootstrap.has_secret("WHATSAPP_BRIDGE_TOKEN"),
+        "cloud_bridge_missing": [n for n in CLOUD_BRIDGE_VARS if not bootstrap.has_secret(n)],
         "razorpay_keys": (bootstrap.has_secret("RAZORPAY_KEY_ID")
                            and bootstrap.has_secret("RAZORPAY_KEY_SECRET")),
     }

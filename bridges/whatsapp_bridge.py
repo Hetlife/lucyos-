@@ -270,10 +270,16 @@ def run_webhook(host: str, port: int) -> int:
     return 0
 
 
+# Every variable the cloud adapter refuses to start without. Kept at module
+# level so tests can check that aion_core/owner_setup.py asks the owner for all
+# of them; the two lists must not drift apart.
+CLOUD_ENV_REQUIRED = ("WHATSAPP_ACCESS_TOKEN", "WHATSAPP_PHONE_NUMBER_ID",
+                      "WHATSAPP_VERIFY_TOKEN", "WHATSAPP_APP_SECRET",
+                      "WHATSAPP_GRAPH_API_VERSION", "WHATSAPP_ALLOWED_SENDER")
+
+
 def run_cloud(host: str, port: int) -> int:
-    names = ("WHATSAPP_ACCESS_TOKEN", "WHATSAPP_PHONE_NUMBER_ID",
-             "WHATSAPP_VERIFY_TOKEN", "WHATSAPP_APP_SECRET",
-             "WHATSAPP_GRAPH_API_VERSION", "WHATSAPP_ALLOWED_SENDER")
+    names = CLOUD_ENV_REQUIRED
     values = {name: os.environ.get(name, "").strip() for name in names}
     missing = [name for name, value in values.items() if not value]
     if missing:
