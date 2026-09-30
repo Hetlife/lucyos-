@@ -1,3 +1,5 @@
+> STATUS: HISTORICAL — superseded by `.lucy/planning/lucyos-total-recovery/` (Fable, 2026-09-30). Evidence, not instructions.
+
 # FINAL-SONNET-PUSH — Verify, Commit, and Push Repaired LucyOS State
 
 **Priority:** P1 · **Depends on:** TASK-001, TASK-002, TASK-003, TASK-004, and a fully

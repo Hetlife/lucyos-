@@ -1,3 +1,5 @@
+> STATUS: HISTORICAL — superseded by `.lucy/planning/lucyos-total-recovery/` (Fable, 2026-09-30). Evidence, not instructions.
+
 # R-Series Repair Tasks
 
 Use this file for daily execution. Read the full master plan only when a task needs context not present here.

@@ -1,3 +1,5 @@
+> STATUS: HISTORICAL — superseded by `.lucy/planning/lucyos-total-recovery/` (Fable, 2026-09-30). Evidence, not instructions.
+
 # Owner Authorization — PRM-LUCYOS-REPAIR-SCALE-20260923
 
 The owner has instructed that the LucyOS repair mission be executed comprehensively: fix and debug the identified issues, integrate the fixes cleanly, and proceed toward merge after verification.

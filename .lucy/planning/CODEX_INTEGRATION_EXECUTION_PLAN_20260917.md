@@ -1,3 +1,5 @@
+> STATUS: HISTORICAL — superseded by `.lucy/planning/lucyos-total-recovery/` (Fable, 2026-09-30). Evidence, not instructions.
+
 # LucyOS / Mark-2 — Codex Integration Execution Plan
 
 - **Status**: SUPERVISED EXECUTION PLAN. Not authority to merge `main`, change governance, deploy, spend, or enable unattended Codex.

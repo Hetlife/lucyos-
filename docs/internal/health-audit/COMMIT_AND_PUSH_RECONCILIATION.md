@@ -1,3 +1,5 @@
+> STATUS: HISTORICAL — superseded by `.lucy/planning/lucyos-total-recovery/` (Fable, 2026-09-30). Evidence, not instructions.
+
 # Commit and Push Reconciliation — 2026-09-17
 
 Method: for every task branch tip, `git merge-base --is-ancestor <tip> <branch>` against

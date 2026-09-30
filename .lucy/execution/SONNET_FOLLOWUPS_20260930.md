@@ -1,3 +1,5 @@
+> STATUS: HISTORICAL — superseded by `.lucy/planning/lucyos-total-recovery/` (Fable, 2026-09-30). Evidence, not instructions.
+
 # Sonnet follow-ups after R-01..R-04 — 2026-09-30
 
 > **STATUS: COMPLETE and HISTORICAL (2026-09-30).** Every task in this file was done and merged.

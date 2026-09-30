@@ -1,3 +1,5 @@
+> STATUS: HISTORICAL — superseded by `.lucy/planning/lucyos-total-recovery/` (Fable, 2026-09-30). Evidence, not instructions.
+
 # LucyOS Health Report — 2026-09-17
 
 Auditor: high-reasoning pass per `docs/internal/LUCYOS_REPO_HEALTH_AUDITOR_TEMP.md`.

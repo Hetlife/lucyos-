@@ -1,3 +1,5 @@
+> STATUS: HISTORICAL — superseded by `.lucy/planning/lucyos-total-recovery/` (Fable, 2026-09-30). Evidence, not instructions.
+
 # OPUS_PROGRESS — LucyOS readiness audit
 
 Branch: `planning/opus-fable-20260916`
