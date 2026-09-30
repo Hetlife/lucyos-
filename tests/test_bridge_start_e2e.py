@@ -74,27 +74,37 @@ class TestBridgeStartsAsAService(AionTest):
         proc = subprocess.Popen([sys.executable, str(BRIDGE), "cloud", "--host", "127.0.0.1",
                                  "--port", str(port)], cwd=ROOT, env=_fixture_env(),
                                 stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True)
+        listening = (False, "no attempt made")
+        gate = None
         try:
-            deadline = time.time() + 15
-            listening = (False, "")
+            # Generous deadline and a short per-attempt timeout: a slow CI runner
+            # (macOS cold start) is not a failure, a wedged process is.
+            deadline = time.time() + 30
             while time.time() < deadline and proc.poll() is None:
-                listening = preflight.check_listening("127.0.0.1", port)
+                listening = preflight.check_listening("127.0.0.1", port, timeout=0.5)
                 if listening[0]:
                     break
                 time.sleep(0.2)
-            self.assertIsNone(proc.poll(), "bridge exited instead of staying up")
-            self.assertTrue(listening[0], listening[1])
-            ok, detail = preflight.check_handshake_gate("127.0.0.1", port)
-            self.assertTrue(ok, detail)
-            # bound to loopback only: the printed address says so
+            exited = proc.poll() is not None
+            if listening[0] and not exited:
+                gate = preflight.check_handshake_gate("127.0.0.1", port)
         finally:
             proc.terminate()
             try:
-                out, _ = proc.communicate(timeout=10)
+                out, err = proc.communicate(timeout=10)
             except subprocess.TimeoutExpired:
                 proc.kill()
-                out, _ = proc.communicate()
-        self.assertIn("127.0.0.1", out)
+                out, err = proc.communicate()
+        # On any failure show what the bridge itself said. The credentials are
+        # runtime-built fakes and the bridge never prints them.
+        diag = (f"\n--- bridge exit code: {proc.returncode} ---"
+                f"\n--- bridge stdout ---\n{out[-1500:]}"
+                f"\n--- bridge stderr ---\n{err[-1500:]}")
+        self.assertFalse(exited, "bridge exited instead of staying up" + diag)
+        self.assertTrue(listening[0], listening[1] + diag)
+        self.assertTrue(gate[0], gate[1] + diag)
+        # bound to loopback only: the printed address says so
+        self.assertIn("127.0.0.1", out, diag)
 
 
 if __name__ == "__main__":
