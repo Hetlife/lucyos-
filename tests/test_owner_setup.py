@@ -269,3 +269,45 @@ class TestOwnerSetupCoversCloudBridge(AionTest):
             missing = owner_setup._capabilities()["cloud_bridge_missing"]
         self.assertEqual(set(missing),
                          set(owner_setup.CLOUD_BRIDGE_VARS) - fake_present)
+
+
+class TestOpenClawOwnerIsNotAskedForTheMetaBridge(AionTest):
+    """OpenClaw carries WhatsApp for this owner, so the direct Meta Cloud API
+    bridge is optional. Listing it as REQUIRED NOW (and starting its service
+    unconditionally) leaves a service that exits and restarts every few seconds."""
+
+    HEADING = "### WhatsApp Cloud API bridge (aion-bridge.service)  ·  not set"
+
+    @staticmethod
+    def _section_of(text, heading):
+        """Return the '## ' tier heading whose section contains `heading`."""
+        current = None
+        for line in text.splitlines():
+            if line.startswith("## "):
+                current = line[3:].strip()
+            elif line.strip() == heading:
+                return current
+        return None
+
+    def _render(self, **overrides):
+        with mock.patch.object(owner_setup, "_capabilities",
+                               return_value=_caps(openclaw_present=True, **overrides)):
+            return owner_setup.render()
+
+    def test_missing_meta_variables_are_optional_not_required(self):
+        text = self._render()  # cloud_bridge_missing defaults to all six
+        self.assertEqual(self._section_of(text, self.HEADING), "OPTIONAL LATER")
+
+    def test_it_is_still_listed_so_the_owner_can_opt_in(self):
+        text = self._render()
+        self.assertIn(self.HEADING, text)
+        for name in owner_setup.CLOUD_BRIDGE_VARS:
+            self.assertIn(name, text)
+
+    def test_it_never_appears_under_required_now_or_soon(self):
+        text = self._render()
+        self.assertNotIn(self._section_of(text, self.HEADING),
+                         ("REQUIRED NOW", "REQUIRED SOON"))
+
+    def test_purpose_says_openclaw_owners_can_skip_it(self):
+        self.assertIn("OpenClaw carries WhatsApp for you", self._render())

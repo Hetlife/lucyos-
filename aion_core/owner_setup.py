@@ -36,11 +36,12 @@ REQUIREMENTS = [
              "owner-channel end-to-end reachability NOT YET PROVEN — presence is not "
              f"proof WhatsApp is live. AION loopback/openclaw_port reconciliation "
              f"({c['openclaw_gateway_detail']}) belongs to R-05, not this owner ask")),
-    dict(tier="REQUIRED NOW", service="WhatsApp Cloud API bridge (aion-bridge.service)",
+    dict(tier="OPTIONAL LATER", service="WhatsApp Cloud API bridge (aion-bridge.service)",
          secret=", ".join(CLOUD_BRIDGE_VARS),
-         purpose="Direct Meta WhatsApp Cloud API channel. The shipped bridge service exits "
-                 "at start unless all six values below are set. Needed only if you run this "
-                 "bridge; skip it if OpenClaw carries WhatsApp for you.",
+         purpose="Only if you also want a direct Meta WhatsApp Cloud API channel alongside "
+                 "OpenClaw. OpenClaw carries WhatsApp for you by default, so you can skip "
+                 "this. If you do start the bridge service without all six values below it "
+                 "exits and restarts every few seconds.",
          permission="Cloud API access for your own WhatsApp Business number only; replies go "
                     "only to WHATSAPP_ALLOWED_SENDER",
          action="Take the values from your Meta app console, then on the PC run "

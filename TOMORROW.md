@@ -43,9 +43,15 @@ aion owner-setup        # reads the list; nothing here is asked twice
 
 Then, on the machine only — never through chat:
 
-For the direct WhatsApp Cloud API bridge (what `aion-bridge.service` runs), the
+```bash
+aion secrets set GITHUB_TOKEN            # optional today
+```
+
+**Only if you use the direct WhatsApp Cloud API bridge** (what `aion-bridge.service`
+runs; **OpenClaw owners skip this**, because OpenClaw carries your WhatsApp): the
 service refuses to start unless all six values are set. `aion owner-setup` lists
-them with where to find each; enter every one with `aion secrets set <NAME>`:
+them under OPTIONAL LATER with where to find each; enter every one with
+`aion secrets set <NAME>`:
 
 ```bash
 aion secrets set WHATSAPP_ACCESS_TOKEN
@@ -54,7 +60,6 @@ aion secrets set WHATSAPP_VERIFY_TOKEN       # you invent it: letters, digits, -
 aion secrets set WHATSAPP_PHONE_NUMBER_ID
 aion secrets set WHATSAPP_ALLOWED_SENDER     # your number, digits only, exact match
 aion secrets set WHATSAPP_GRAPH_API_VERSION  # copy from your Meta app console
-aion secrets set GITHUB_TOKEN                # optional today
 ```
 
 `WHATSAPP_BRIDGE_TOKEN` is only for the plain `webhook` adapter, not the service.
@@ -88,8 +93,15 @@ ceiling and the rule that its output is plans, not code.
 
 ```bash
 scripts/install_services.sh
-systemctl --user enable --now aion-bridge.service
 loginctl enable-linger "$USER"
+```
+
+Only if you use the direct WhatsApp Cloud API bridge (not needed with OpenClaw),
+and only after all six values are set and `python3 scripts/bridge_preflight.py`
+passes. Started without them, the service exits and restarts every 5 seconds:
+
+```bash
+systemctl --user enable --now aion-bridge.service
 ```
 
 From then on: the build loop runs every 10 minutes, the nightly maintenance run
