@@ -171,11 +171,14 @@ TASKS = [
     ("Connect the WhatsApp bridge to the real transport", dict(
         model_class="B", priority=1, impact=5, probability=0.7, unlocks=3, cost=1, risk=2,
         human_dependence=2,
-        description="The bridge answers correctly on stdin and file adapters. It needs a real "
-                    "transport and its token before the phone can drive the system.",
+        description="OpenClaw is the primary WhatsApp channel and LucyOS is the brain behind "
+                    "it. The bridge answers correctly on stdin and file adapters. The direct "
+                    "Meta Cloud API bridge (aion-bridge.service) is optional and needs its "
+                    "six WHATSAPP_ values set first.",
         success_criteria="A message sent from the owner's phone returns a status reply",
         validation_method="End-to-end message from the real phone, recorded as evidence",
-        next_action="aion secrets set WHATSAPP_BRIDGE_TOKEN, then start aion-bridge.service")),
+        next_action="aion openclaw-check to see whether OpenClaw's WhatsApp can reach LucyOS; "
+                    "the direct aion-bridge.service is optional")),
     ("Record the true current financial position", dict(
         model_class="DET", priority=2, impact=3, probability=0.95, cost=1, risk=1,
         description="Every recurring cost and every rupee actually received, with evidence. "
