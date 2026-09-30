@@ -61,3 +61,8 @@ This also clears the stale resume pointer (ISSUE-037):
 **Still unmerged:** branch `fable/e2e-order-and-path-rebase` (docs only: corrected TR-1-05, TR-1-08, ISSUE-040/041, this update). Remote branch `fable/FABLE-10-override-20260930` is still to be deleted by the owner.
 
 **Not done / unverified:** CI result for main after #62; whether `~/lucyos-main` exists yet; whether the stray-task cancel and the owner's dev-checkout edits survived the freeze (check `git -C ~/lucyos status`).
+
+## Update 2026-10-01 02:00 IST (after the Lucy-den reboot)
+- Observed: persistent journal present; `aion-work.timer` and `aion-maintenance.timer` active; OpenClaw reachable on 127.0.0.1:18789; `~/lucyos-main` exists and boots. Health shows required check `errors` failing (ISSUE-044) and authority drift 6.
+- Freeze evidence read (ISSUE-042 update): no hang, OOM, watchdog, MCE or GPU-hang lines; ended in a clean shutdown; i915 GuC firmware 70.36.0 loaded vs 70.53.0 recommended. Leading hypothesis only.
+- Next: owner runs `./aion errors`, updates `linux-firmware`, reboots, confirms the GuC version; then TR-1-05 probe 3 and the evidence block; then TR-1-08.
