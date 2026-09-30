@@ -37,6 +37,36 @@ class TestRouter(AionTest):
         self.assertIn(a, reply)
         self.assertEqual(approvals.get(a)["status"], "APPROVED")
 
+    def test_only_the_exact_form_decides_an_approval(self):
+        # Every one of these once decided an approval through a loose pattern.
+        loose = [
+            "don't approve {a}", "not yet, will approve {a} tomorrow", "yes to {a}",
+            "go ahead with {a}", "approved {a}", "should I approve {a}?",
+            "I denied {a} last week?", "don't cancel {a}", "no to {a} for now",
+            "approve {a} please",
+        ]
+        for template in loose:
+            t = tasks.create("guarded step")
+            a = approvals.create("guarded action", task_id=t)
+            reply = router.handle(template.format(a=a))
+            self.assertEqual(approvals.get(a)["status"], "PENDING", template)
+            self.assertEqual(tasks.get(t)["status"], "NEEDS_APPROVAL", template)
+            self.assertIn(f"APPROVE {a} or DENY {a}", reply, template)
+            self.assertIn("Nothing was decided", reply, template)
+
+    def test_strict_form_is_case_and_space_tolerant_and_still_decides(self):
+        for text, expected in (("  approve {a}  ", "APPROVED"), ("Deny {a}", "DENIED"),
+                               ("REJECT {a}", "DENIED")):
+            a = approvals.create("x")
+            router.handle(text.format(a=a))
+            self.assertEqual(approvals.get(a)["status"], expected, text)
+
+    def test_why_with_a_decision_word_explains_and_does_not_decide(self):
+        a = approvals.create("buy hosting", why="needed for the site")
+        reply = router.handle(f"why would I approve {a}?")
+        self.assertEqual(approvals.get(a)["status"], "PENDING")
+        self.assertNotIn("Nothing was decided", reply)
+
     def test_reject_is_accepted_as_deny(self):
         a = approvals.create("buy hosting")
         router.handle(f"reject {a}")
