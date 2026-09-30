@@ -6,6 +6,7 @@ verify-token gate. Does NOT contact Meta and proves nothing about a real
 phone."""
 import importlib.util
 import os
+import signal
 import socket
 import subprocess
 import sys
@@ -17,6 +18,8 @@ from tests.base import AionTest
 
 ROOT = Path(__file__).resolve().parents[1]
 BRIDGE = ROOT / "bridges" / "whatsapp_bridge.py"
+# Generous, so a slow cold start on a CI runner is not a failure; a wedged process is.
+START_DEADLINE_SECONDS = 30
 
 
 def _load(name, rel):
@@ -41,6 +44,7 @@ def _fixture_env(omit=()):
     obviously fake values assembled at runtime; drop any named in `omit`."""
     env = dict(os.environ)
     env["PYTHONUNBUFFERED"] = "1"  # the address line must survive SIGTERM
+    env["PYTHONFAULTHANDLER"] = "1"  # SIGABRT then prints every thread's stack
     for name in bridge.CLOUD_ENV_REQUIRED:
         env.pop(name, None)
     for name in bridge.CLOUD_ENV_REQUIRED:
@@ -79,7 +83,7 @@ class TestBridgeStartsAsAService(AionTest):
         try:
             # Generous deadline and a short per-attempt timeout: a slow CI runner
             # (macOS cold start) is not a failure, a wedged process is.
-            deadline = time.time() + 30
+            deadline = time.time() + START_DEADLINE_SECONDS
             while time.time() < deadline and proc.poll() is None:
                 listening = preflight.check_listening("127.0.0.1", port, timeout=0.5)
                 if listening[0]:
@@ -89,7 +93,12 @@ class TestBridgeStartsAsAService(AionTest):
             if listening[0] and not exited:
                 gate = preflight.check_handshake_gate("127.0.0.1", port)
         finally:
-            proc.terminate()
+            if proc.poll() is None and not listening[0]:
+                # Alive but never listening: ask Python for a stack dump (see
+                # PYTHONFAULTHANDLER above) so the failure shows where it is stuck.
+                proc.send_signal(signal.SIGABRT)
+            else:
+                proc.terminate()
             try:
                 out, err = proc.communicate(timeout=10)
             except subprocess.TimeoutExpired:
