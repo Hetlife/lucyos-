@@ -21,9 +21,19 @@ Branch task/TR-1-03-openclaw-whatsapp-verb, one PR, stop. If the change needs a 
 ```
 Queue after it (same header, swap the work order): TR-1-02, TR-1-06 (needs the override first), TR-2-02, TR-2-04 (needs override), TR-C-02, TR-I-01.
 
-## OpenClaw — operations (until TR-1-03 merges, read verbs only)
+## OpenClaw — operations
+Before PR #89 (TR-1-03) is merged and pulled, only read verbs exist:
 ```
-Preflight: scripts/lucyosctl status; scripts/lucyosctl health. Morning: send the owner `status` and `blockers` output. Never run shell outside lucyosctl verbs, never store state, never spend money. When TR-1-03 is merged and pulled, approvals go through `scripts/lucyosctl whatsapp "approve <ID>"` with LUCYOS_PRINCIPAL set to the sender id; then execute work_orders/TR-1-05.md and record evidence.
+Preflight: scripts/lucyosctl status; scripts/lucyosctl health.
+Morning message to the owner: the output of `scripts/lucyosctl status` and `scripts/lucyosctl approvals`, labelled "Status" and "Pending approvals" (not "blockers": that full view needs the whatsapp verb).
+Never run shell outside lucyosctl verbs, never store state, never spend money, never decide an approval.
+```
+After PR #89 is merged and pulled on this host:
+```
+Every owner WhatsApp message goes through exactly one door:
+  LUCYOS_PRINCIPAL=<sender id> scripts/lucyosctl whatsapp "<the owner's words, unchanged>"
+Morning message: `scripts/lucyosctl whatsapp "status"` and `scripts/lucyosctl whatsapp "blockers"` with LUCYOS_PRINCIPAL=openclaw-routine.
+Then execute .lucy/planning/lucyos-total-recovery/work_orders/TR-1-05.md (on main once the planning branch is merged; until then on branch fable/total-recovery-20260930) and record evidence.
 ```
 
 ## Fable — next session
