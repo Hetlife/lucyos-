@@ -1,3 +1,5 @@
+> STATUS: HISTORICAL — superseded by `.lucy/planning/lucyos-total-recovery/` (Fable, 2026-09-30). Evidence, not instructions.
+
 # Complexity hotspots
 
 Scope: Python files under aion_core, bridges, integrations and scripts; tests excluded. Package __init__.py files count as modules.

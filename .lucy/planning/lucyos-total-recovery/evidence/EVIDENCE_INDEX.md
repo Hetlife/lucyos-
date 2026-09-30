@@ -26,3 +26,12 @@
 | EV-SECRETS | Single 0600 `private_state/secrets.env`; `aion secrets set/list`; excluded from backups/export; no scoping by project | `config.py`, `cli.py` | 2026-09-30 |
 | EV-EXEC | Worker executes: DET via allowlisted argv (no shell); A via Ollama; B via free auxiliary gateway or one configured cloud command (`aion set-cloud-cmd '... {prompt_file}'`); C held for strong session; D raises approval; budget governor demotes | `worker.py`, `agents.py`, `governor.py` | 2026-09-30 |
 | EV-DANGLING | `docs/internal/AGENT_START_HERE_20260930.md` cites `docs/internal/CODE_REVIEW_20260924.md`, which exists only on `review/code-review-20260924` | `ls`, branch | 2026-09-30 |
+| EV-MAIN2 | `origin/main` = `fad9ed4` (#73, #88 merged); 3 branches deleted upstream (#73's, #88's, `test/authority-gate-positive`) | `git fetch --prune` | 2026-09-30 (pass 2) |
+| EV-TESTS2 | 810 tests OK, 2 skipped, 148 s on `fad9ed4` merged into the planning branch; all gates as before | local run | 2026-09-30 (pass 2) |
+| EV-DRIFT2 | `verify_authority.py self`: 6 drifts (adds `aion_core/worker.py`) | local run | 2026-09-30 (pass 2) |
+| EV-CI-CANCEL2 | run #382 (`09fad0a`, #73 merge) cancelled by the #88 push; run #383 (`fad9ed4`) success | Actions | 2026-09-30 |
+| EV-COMPILER | `context_compiler.compile_context` on the repo with a seeded home: BUILT 76 ms, 27 sources, 12 KB md / 17 KB json; CACHE_HIT 43 ms; called for every class before RUNNING | measured | 2026-09-30 |
+| EV-DEAD-MODULES | `guardian`, `tempworker`, `intake`, `sync_outbox`: no importer outside tests | grep | 2026-09-30 |
+| EV-UI | Control Center candidates: `web/` (629 lines vanilla, token auth, SSE, offline queue) + `api.py` 9 read models + `http_server.py`; PR #53 and the Drive `LUCYOS_UI_UX_MASTER_REFERENCE` (2026-09-17) both say extend this, no new stack; Framer: no repo artefacts | files, PR #53, Drive doc | 2026-09-30 |
+| EV-LEDGER2 | 127 branches: 54 CONTAINED, 7 PATCH_IN_BASE, 7 UNRELATED, 59 UNIQUE (incl. 3 Fable branches) | `branch_ledger_20260930b.tsv` | 2026-09-30 |
+| EV-BRANCH-DELETE | `git push --delete` from the agent session fails ("remote end hung up"); remote branch deletion is owner-only | attempted | 2026-09-30 |

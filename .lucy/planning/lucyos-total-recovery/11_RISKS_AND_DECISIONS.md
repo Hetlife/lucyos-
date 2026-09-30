@@ -33,3 +33,10 @@
 | WhatsApp/OpenClaw identity weak (phone number as identity) | medium | unauthorised approval | envelope carries enrolled key id; approvals log principal; D-6 follow-up |
 | Mac launchd semantics differ | medium | silent non-execution | TR-7-01 + reboot test |
 | Cost creep from cloud executors | low | budget | governor caps per project (TR-5-06) |
+
+## Decisions added in the post-merge pass
+| ID | Decision | Why |
+|---|---|---|
+| D-15 | The Main Control Center is `web/` + `bridges/http_server.py` + `aion_core/api.py`; no new frontend stack, no Framer runtime, no Node toolchain | 629 lines already implement auth, SSE, offline queue, approvals; PR #53 and the Drive design reference agree; interface work becomes read models + sections (TR-I-01/02) |
+| D-16 | Context compilation stays mandatory and fail-closed for model classes (A/B/C) and is removed from the DET path | ISSUE-030; deterministic steps need no context and must not depend on git |
+| D-17 | Cleanup follows `14_CLEANUP_REGISTER.md`; nothing is deleted before it is archived under `.lucy/archive/` or tagged | master-prompt rule: archive when uncertain, keep rollback trivial |

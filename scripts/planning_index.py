@@ -42,6 +42,8 @@ def collect(root: Path = REPO) -> list[tuple[str, str]]:
         if not base.is_dir():
             continue
         for p in sorted(base.rglob("*.md")):
+            if p.relative_to(root).as_posix() == ".lucy/planning/INDEX.md":
+                continue  # the generated index never indexes itself
             rows.append((p.relative_to(root).as_posix(), status_of(p, root)))
     return rows
 

@@ -1,3 +1,5 @@
+> STATUS: HISTORICAL — superseded by `.lucy/planning/lucyos-total-recovery/` (Fable, 2026-09-30). Evidence, not instructions.
+
 # LucyOS / Mark-2 — Integration & Autonomy Roadmap **V2**
 
 - **Status**: DRAFT SKELETON V2, planning only. Supersedes `INTEGRATION_ROADMAP_20260917.md` (kept for history).

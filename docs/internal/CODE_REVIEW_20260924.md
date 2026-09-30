@@ -1,3 +1,5 @@
+> STATUS: HISTORICAL — superseded by `.lucy/planning/lucyos-total-recovery/` (Fable, 2026-09-30). Evidence, not instructions.
+
 # LucyOS — Full Codebase Review
 
 **Date:** 2026-09-24 · **Reviewed:** `origin/main` @ `81d25a1` · **Reviewer:** Opus full-code pass

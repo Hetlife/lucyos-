@@ -1,3 +1,5 @@
+> STATUS: HISTORICAL — superseded by `.lucy/planning/lucyos-total-recovery/` (Fable, 2026-09-30). Evidence, not instructions.
+
 # LucyOS master plan: overview, corrections, next steps (2026-09-30)
 
 **Read this file first.** It supersedes the task lists in `SONNET_GET_LUCY_RUNNING_20260930.md`

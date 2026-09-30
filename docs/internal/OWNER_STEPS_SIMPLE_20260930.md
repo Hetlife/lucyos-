@@ -1,3 +1,5 @@
+> STATUS: HISTORICAL — superseded by `.lucy/planning/lucyos-total-recovery/` (Fable, 2026-09-30). Evidence, not instructions.
+
 # What only YOU can do — in plain words
 
 You do **not** need to know how to code. Every step below is either "click a button on

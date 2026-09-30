@@ -1,3 +1,5 @@
+> STATUS: HISTORICAL — superseded by `.lucy/planning/lucyos-total-recovery/` (Fable, 2026-09-30). Evidence, not instructions.
+
 # Sonnet Execution Plan — get LucyOS onto the owner's phone
 
 > **STATUS: COMPLETE and HISTORICAL (2026-09-30).** Every task in this file was done and merged.

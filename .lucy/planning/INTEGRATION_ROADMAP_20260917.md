@@ -1,3 +1,5 @@
+> STATUS: HISTORICAL — superseded by `.lucy/planning/lucyos-total-recovery/` (Fable, 2026-09-30). Evidence, not instructions.
+
 # LucyOS / Mark-2 — Integration & Autonomy Roadmap (planning skeleton)
 
 - **Status**: DRAFT SKELETON, awaiting external review. Not approved. Not executed.

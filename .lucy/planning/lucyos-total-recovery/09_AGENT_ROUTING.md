@@ -25,3 +25,14 @@
 - Scripts before judgement: ledger, boundaries, portability, tests. If a script can answer, no model is asked.
 - Cached evidence: census JSON (TR-0-04) is reused by every phase-1/2 work order.
 - Target metric (TR-2-05/TR-4-04): tokens and INR per **verified** DONE task, per executor, reported by `aion usage`.
+
+## Executor ladder per task type (post-merge addendum)
+| Task type | First choice | Escalate to | Never |
+|---|---|---|---|
+| scans, indexes, ledgers, gates, formatting, health | DETERMINISTIC (scripts) | — | any model |
+| docstrings, test scaffolds, table reformats, log summaries, classification of low-risk items | LOCAL_MODEL (Ollama, class A) | CLAUDE_CODE review | Fable |
+| status, approvals, notifications, morning routine, `work --dry-run`, small DET runs on the primary host | OPENCLAW (DET verbs) | owner | design decisions |
+| bounded code with named files and tests; schema migrations under an override; UI read models | CLAUDE_CODE (class B) | FABLE review for protected/identity/schema | merges |
+| cross-machine census, deploys, restore drills, Drive, tags, multi-tool debugging, Mac runbook | CODEX | FABLE review of evidence | canonical state edits outside `aion` |
+| architecture, contradictions, security/authority, overrides, freeze, acceptance, prioritisation | FABLE | owner | mechanical edits |
+Rule of thumb: if a script or test can decide it, no model is asked; if one model can verify it, a second model is not asked; a frontier model reads a work order and the evidence index, never the repo.

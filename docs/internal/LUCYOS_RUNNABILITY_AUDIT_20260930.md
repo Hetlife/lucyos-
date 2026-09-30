@@ -1,3 +1,5 @@
+> STATUS: HISTORICAL — superseded by `.lucy/planning/lucyos-total-recovery/` (Fable, 2026-09-30). Evidence, not instructions.
+
 # LucyOS — Runnability Audit
 
 **Date:** 2026-09-30 · **Audited:** `origin/main` @ `5d1c6e5` · **Method:** clean clone, real

@@ -1,3 +1,5 @@
+> STATUS: HISTORICAL — superseded by `.lucy/planning/lucyos-total-recovery/` (Fable, 2026-09-30). Evidence, not instructions.
+
 # Branch deletion list (prepared, NOT executed): 2026-09-30
 
 > **CORRECTION (2026-09-30, later the same day).** The first version of this file listed six branches as "zero file

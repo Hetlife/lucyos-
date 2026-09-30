@@ -1,25 +1,25 @@
-# 12 — Owner summary (plain words)
+# 12 — Owner summary (plain words, updated after the merge phase)
 
-**LucyOS today.** It works as a machine-side control system: install from a clean clone, boot, plan, execute with evidence, approve, back up, restore, resume after a crash. 795 tests pass; CI is green on Linux and macOS. What does **not** exist yet: a proven way for you to approve things from your phone through OpenClaw (the bridge only reads today), real projects and companies (a project is just a label), and any live proof on your machines that this audit could see.
+**Where LucyOS is.** The merge phase is done: #73 (context compiler) and #88 are on `main`, 810 tests pass, CI is green on Linux and macOS. The engineering core is solid. What is still missing is the same three things as this morning: a proven way to approve from your phone through OpenClaw, real projects and companies, and any live observation of your machines.
 
-**What I did.** Read every branch (127), every PR (88), the CI history, the authority model, and the code paths that matter; ran the full suite and every gate; re-tested PR #73 on today's main (green, needs your merge with a one-line override); wrote this package and 42 work orders; added `scripts/branch_ledger.py` so branch lists are never hand-made again.
+**What changed in this pass.** Re-measured everything on the new `main`; audited the fifteen AI-OS harnesses (`15_`); wrote the cleanup register (`14_`), the interface decision (`16_`: the Control Center is the existing `web/` PWA plus `api.py`, no new frontend), and the critical path (`17_`); did two safe cleanups directly (32 stale plan files now carry a HISTORICAL banner and `.lucy/planning/INDEX.md` names the one current plan; the missing code-review doc is on the branch); added nine work orders (51 total). Found one post-merge mistake worth fixing early: the context compiler now gates even deterministic shell steps (TR-1-06).
 
-## Your actions, in order (nobody else can do these)
-1. Merge **#88**. Open and merge a PR from branch `fable/FABLE-10-override-20260930` (one baseline entry; the authority gate fails by design, merge with admin bypass), press "Update branch" on **#73**, then merge **#73**. Also open and merge `fable/TR-1-01-ci-main-no-cancel` the same way. Close **#2** and **#11**. Decide **#53** and **#62** (default: close).
-2. On Lucy-den: `git pull && aion boot && aion status && aion openclaw-check` and paste the output for Codex (TR-0-04).
-3. Answer D-4, D-5, D-11, D-12 in `11_RISKS_AND_DECISIONS.md` (one word each is enough).
-4. `aion secrets set SEVAA_AUTOMATION_TOKEN` on Lucy-den (starts the first real workflow).
-5. Install Ollama on Lucy-den (`curl -fsSL https://ollama.com/install.sh | sh && ollama pull llama3.1:8b`).
-6. After TR-0-06 tags exist: run the branch-delete script it produces.
+## Your actions, in order
+1. Open and merge the planning branch `fable/total-recovery-20260930` (docs + two scripts + one test; no protected path).
+2. Open and merge `fable/TR-1-01-ci-main-no-cancel` with admin bypass (the authority gate fails by design on that file). #73's own merge run was cancelled again today, which is exactly the defect.
+3. Close #2, decide #53 and #62 (default close), delete the redundant remote branch `fable/FABLE-10-override-20260930` (agents cannot delete branches).
+4. On Lucy-den: `git pull && aion boot && aion status && aion openclaw-check`; paste the output for Codex (TR-0-04).
+5. Answer D-4, D-5, D-8, D-11, D-12 in `11_RISKS_AND_DECISIONS.md`.
+6. `aion secrets set SEVAA_AUTOMATION_TOKEN` and install Ollama on Lucy-den.
 
-## What happens next without you
-Codex runs the census (TR-0-04) and tags branches (TR-0-06). Claude Code builds the OpenClaw write verb (TR-1-03), the boundary fix (TR-1-02), the backup push (TR-2-02) and the root-path cleanup (TR-2-04). OpenClaw stays on read verbs until TR-1-03 merges.
+## What runs without you
+Codex: census (TR-0-04), archive tags (TR-0-06). Claude Code: OpenClaw write verb (TR-1-03), DET decoupling (TR-1-06), boundary zero (TR-1-02), backup push (TR-2-02), root-path cleanup (TR-2-04), archive batch (TR-C-01/02). OpenClaw: read verbs only until TR-1-03 merges.
 
-## Path to the first real project/company
-SEVAA first: token -> nightly reconcile + brief -> `money` on WhatsApp (weeks). Then phase 5 gives `aion workspace create` / `aion project create`; strategy-factory is the first project created that way, with GitHub as its first integration.
+## First real project and company
+SEVAA first (token -> nightly reconcile + brief -> `money` on WhatsApp). Then phase 5: `aion workspace create sevaaconnect`, `aion project create strategy-factory`, GitHub as its first integration, one three-step plan executed with evidence (TR-8-04).
 
-## Path to the Mac mini
-Not before L3. Then: export from Lucy-den, clean install on the Mac, import, launchd agents, Ollama, OpenClaw, Tailscale, E2E, promote. Lucy-den stays as the safety net. Details in `07_`.
+## Mac mini
+After L3. Export, clean install, import, launchd, Ollama, OpenClaw, Tailscale, phone round trip, promote; Lucy-den stays as the safety net (`07_`).
 
 ## Confidence
-HIGH: engineering health, branch/PR classification, capability status of code. MEDIUM: OpenClaw/LucyNest live behaviour (secondhand). LOW: Mark-2 and pad current state (unobserved). The census (TR-0-04) raises the last two.
+HIGH: code and CI state, branch/PR classification, harness status. MEDIUM: OpenClaw and LucyNest behaviour (secondhand). LOW: Mark-2 and pad state (unobserved). The census raises the last two.

@@ -1,3 +1,5 @@
+> STATUS: HISTORICAL — superseded by `.lucy/planning/lucyos-total-recovery/` (Fable, 2026-09-30). Evidence, not instructions.
+
 # Issue Register — 2026-09-17
 
 Severity per the auditor spec. Not inflated: no P0 exists, and saying so is the finding.

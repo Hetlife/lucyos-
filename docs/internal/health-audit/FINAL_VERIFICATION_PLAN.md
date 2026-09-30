@@ -1,3 +1,5 @@
+> STATUS: HISTORICAL — superseded by `.lucy/planning/lucyos-total-recovery/` (Fable, 2026-09-30). Evidence, not instructions.
+
 # Final Verification Plan — 2026-09-17
 
 Run **after** TASK-001 through TASK-004 and **before** `FINAL_SONNET_PUSH_TASK.md`.
