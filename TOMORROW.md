@@ -50,7 +50,7 @@ them with where to find each; enter every one with `aion secrets set <NAME>`:
 ```bash
 aion secrets set WHATSAPP_ACCESS_TOKEN
 aion secrets set WHATSAPP_APP_SECRET
-aion secrets set WHATSAPP_VERIFY_TOKEN       # a value you invent; reuse it in the Meta console
+aion secrets set WHATSAPP_VERIFY_TOKEN       # you invent it: letters, digits, - and _ only
 aion secrets set WHATSAPP_PHONE_NUMBER_ID
 aion secrets set WHATSAPP_ALLOWED_SENDER     # your number, digits only, exact match
 aion secrets set WHATSAPP_GRAPH_API_VERSION  # copy from your Meta app console

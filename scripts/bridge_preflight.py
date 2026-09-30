@@ -4,8 +4,9 @@
 Checks, in order, and stops reporting green at the first thing that will stop
 Meta's messages arriving:
 
-  1. every variable the cloud adapter requires is present in the secret store
-     (checked by name only; values are never read into output)
+  1. every variable the cloud adapter requires is present in the secret store,
+     and survives being loaded the way the service loads it (a shell `source`);
+     checked by name only, values are never printed
   2. something is listening on the bridge's loopback port
   3. the verification handshake rejects a wrong token (403) -- proves the
      verify-token gate is live without needing the real token
@@ -23,6 +24,7 @@ import argparse
 import importlib.util
 import secrets
 import socket
+import subprocess
 import sys
 from http.client import HTTPConnection
 from pathlib import Path
@@ -31,7 +33,7 @@ ROOT = Path(__file__).resolve().parents[1]
 if str(ROOT) not in sys.path:
     sys.path.insert(0, str(ROOT))
 
-from aion_core import bootstrap  # noqa: E402
+from aion_core import bootstrap, config  # noqa: E402
 
 
 def required_variables() -> tuple:
@@ -50,6 +52,59 @@ def check_variables(names=None) -> tuple:
     if missing:
         return False, "missing from the secret store: " + ", ".join(missing)
     return True, f"all {len(names)} required variables are set"
+
+
+def _stored_values(names) -> dict:
+    """NAME -> raw stored value, held in memory only, for comparison."""
+    path = config.secrets_file()
+    found = {}
+    if path.exists():
+        for line in path.read_text(encoding="utf-8").splitlines():
+            key, sep, value = line.partition("=")
+            if sep and key.strip() in names:
+                found[key.strip()] = value  # last assignment wins, as in a shell
+    return found
+
+
+def check_service_view(names=None) -> tuple:
+    """Load the secret store the way the service does (a shell `source` with
+    auto-export) and compare what comes out with what was stored.
+
+    `has_secret` only proves a `NAME=value` line exists. The service loads the
+    file through a shell, so a value containing a space, `&`, `$` or `;` is
+    silently mangled or truncated and the bridge then exits or misbehaves.
+    Comparing against the stored value catches truncation that an emptiness
+    check would miss (`pa$word` loads as `pa`). Values stay in memory; only
+    variable names are ever reported, and shell output and errors are never
+    printed because they can contain fragments of a value.
+    """
+    names = tuple(required_variables() if names is None else names)
+    marker = "\0<<AION-PREFLIGHT>>\0"
+    script = ('set -a; [ -f "$1" ] && . "$1"; set +a; shift; '
+              "printf '\\0<<AION-PREFLIGHT>>\\0'; "
+              'for v in "$@"; do printf \'%s\\0\' "${!v}"; done')
+    try:
+        done = subprocess.run(["bash", "-c", script, "_", str(config.secrets_file()), *names],
+                              capture_output=True, text=True, timeout=10)
+    except (OSError, subprocess.TimeoutExpired) as exc:
+        return False, f"could not load the secret store ({exc.__class__.__name__})"
+    loaded = done.stdout.split(marker)[-1].split("\0")[:len(names)]
+    stored = _stored_values(names)
+    if len(loaded) != len(names):
+        return False, "could not read back what the service would load"
+    unset = [n for n, got in zip(names, loaded) if not got and not stored.get(n)]
+    if unset:
+        return False, "not set: " + ", ".join(unset)
+    bad = [n for n, got in zip(names, loaded) if got != stored.get(n, "")]
+    if bad:
+        return False, ("differs from what is stored, as the service would load it: "
+                       + ", ".join(bad) + ". A value probably contains a space or one of "
+                       "& $ ; ` \" ' \\ . Re-enter it with letters, digits, - and _ only. "
+                       "(Values and shell output are never printed.)")
+    if done.stderr.strip():
+        return False, ("secrets.env printed errors when loaded as the service loads it; "
+                       "a value probably has a shell character. (Output suppressed.)")
+    return True, f"all {len(names)} load exactly as stored, the way the service loads them"
 
 
 def check_listening(host: str, port: int, timeout: float = 3.0) -> tuple:
@@ -95,7 +150,8 @@ def check_signature_gate(host: str, port: int) -> tuple:
 
 
 def run(host: str, port: int, probe_signature: bool, names=None) -> int:
-    results = [("variables", check_variables(names))]
+    results = [("variables stored", check_variables(names)),
+               ("variables as service loads them", check_service_view(names))]
     listening = check_listening(host, port)
     results.append(("listening", listening))
     if listening[0]:

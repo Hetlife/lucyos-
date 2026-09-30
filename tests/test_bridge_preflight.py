@@ -7,6 +7,7 @@ from http.server import HTTPServer
 from pathlib import Path
 from unittest import mock
 
+from aion_core import bootstrap
 from tests.base import AionTest
 
 ROOT = Path(__file__).resolve().parents[1]
@@ -98,6 +99,7 @@ class TestBridgePreflight(AionTest):
         buf = io.StringIO()
         with _LiveBridge() as live, \
                 mock.patch.object(preflight.bootstrap, "has_secret", return_value=True), \
+                mock.patch.object(preflight, "check_service_view", return_value=(True, "stub")), \
                 contextlib.redirect_stdout(buf):
             code = preflight.run("127.0.0.1", live.port, probe_signature=False)
             out_default = buf.getvalue()
@@ -110,9 +112,55 @@ class TestBridgePreflight(AionTest):
         buf = io.StringIO()
         with _LiveBridge() as live, \
                 mock.patch.object(preflight.bootstrap, "has_secret", return_value=True), \
+                mock.patch.object(preflight, "check_service_view", return_value=(True, "stub")), \
                 contextlib.redirect_stdout(buf):
             self.assertEqual(preflight.run("127.0.0.1", live.port, probe_signature=True), 0)
         self.assertIn("signature gate", buf.getvalue())
+
+
+class TestServiceViewCheck(AionTest):
+    """The service loads secrets.env through a shell `source`. The preflight
+    must see what the service sees, not merely that a NAME=value line exists.
+    Values are written with the real set_secret, in its real (unquoted) format."""
+
+    def _store(self, **overrides):
+        values = {name: "v" + name[-4:].lower() + "9Z" for name in bridge.CLOUD_ENV_REQUIRED}
+        values.update(overrides)
+        for name, value in values.items():
+            bootstrap.set_secret(name, value)
+
+    def test_clean_values_load_exactly_as_stored(self):
+        self._store()
+        self.assertTrue(preflight.check_variables()[0])
+        ok, detail = preflight.check_service_view()
+        self.assertTrue(ok, detail)
+
+    def test_a_value_with_a_space_is_stored_but_broken_for_the_service(self):
+        self._store(WHATSAPP_VERIFY_TOKEN="qw3 uniqfrag8")
+        # the naive check is satisfied ...
+        self.assertTrue(preflight.check_variables()[0])
+        # ... but the service would not get the variable, and the preflight says so
+        ok, detail = preflight.check_service_view()
+        self.assertFalse(ok)
+        self.assertIn("letters, digits", detail)
+
+    def test_no_fragment_of_a_bad_value_is_ever_printed(self):
+        for bad in ("qw3 uniqfrag8", "a&uniqfrag8", "pa$uniqfrag8", "x;echo uniqfrag8"):
+            self._store(WHATSAPP_VERIFY_TOKEN=bad)
+            ok, detail = preflight.check_service_view()
+            self.assertFalse(ok, bad)
+            self.assertNotIn("uniqfrag8", detail, bad)
+            self.assertNotIn("echo", detail, bad)
+
+    def test_a_missing_variable_is_named(self):
+        self._store()
+        sf = bootstrap.config.secrets_file()
+        keep = [l for l in sf.read_text().splitlines()
+                if not l.startswith("WHATSAPP_APP_SECRET=")]
+        sf.write_text("\n".join(keep) + "\n")
+        ok, detail = preflight.check_service_view()
+        self.assertFalse(ok)
+        self.assertIn("WHATSAPP_APP_SECRET", detail)
 
 
 if __name__ == "__main__":
