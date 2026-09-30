@@ -8,12 +8,13 @@
       "id": "manual_action",
       "title": "Complete the requested action",
       "instruction": "Read the task instructions above, perform only the requested manual action, then record whether it was completed.",
-      "help": "Use PASS when completed successfully, FAIL when attempted but unsuccessful, and SKIP only when the action cannot safely be performed. Add a note explaining failures or skips.",
+      "help": "Use PASS when completed successfully, FAIL when attempted but unsuccessful, and SKIP only when the action cannot safely be performed. Enter the requested decision/result in the note field; for approvals, record the exact approved value.",
       "expected_result": "The requested human action is completed and its result is recorded.",
       "required": true,
       "severity": "MEDIUM",
       "evidence_allowed": true,
-      "note_allowed": true
+      "note_allowed": true,
+      "note_required": true
     }
   ],
   "critical_rules": []

@@ -1,3 +1,5 @@
+> STATUS: HISTORICAL — superseded by `.lucy/planning/lucyos-total-recovery/` (Fable, 2026-09-30). Evidence, not instructions.
+
 # LucyOS — Repository Cleanup, Merge & Execution Plan
 
 **Written:** 2026-09-17 by the Opus planning pass. **Status:** verified by execution, ready to run.

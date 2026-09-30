@@ -8,7 +8,7 @@ from pathlib import Path
 from urllib.parse import urlsplit
 
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
-from aion_core import bootstrap, taskcheck  # noqa: E402
+from aion_core import bootstrap, taskcheck, util  # noqa: E402
 
 ROOT=Path(__file__).resolve().parents[1]
 WEB=ROOT/'taskcheck_web'
@@ -106,8 +106,12 @@ class Handler(BaseHTTPRequestHandler):
         except ValueError as e: return self.error_json(400,str(e))
         return self.error_json(404,'not found')
 
+class _TaskCheckServer(util.NoReverseDnsMixin, ThreadingHTTPServer):
+    """ThreadingHTTPServer without the reverse-DNS lookup that stalled startup on macOS."""
+
+
 def build_server(host='127.0.0.1',port=8790):
-    bootstrap.ensure(); taskcheck.load_builtin_templates(); return ThreadingHTTPServer((host,port),Handler)
+    bootstrap.ensure(); taskcheck.load_builtin_templates(); return _TaskCheckServer((host,port),Handler)
 
 def main(argv=None):
     p=argparse.ArgumentParser(); p.add_argument('--host',default='127.0.0.1'); p.add_argument('--port',type=int,default=8790); a=p.parse_args(argv); s=build_server(a.host,a.port); print(f'TaskCheck listening on http://{a.host}:{a.port}');

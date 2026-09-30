@@ -50,6 +50,77 @@ The nightly timer runs `scripts/maintenance.sh` at 03:15: boot loop, notebook
 sync, backup with a real restore test, doc regeneration, secret scan and a deep
 health check, all inside one logged session.
 
+## WhatsApp Cloud API bridge (public callback)
+
+**Skip this section if OpenClaw carries your WhatsApp** (the default setup). It is only
+for running a direct Meta channel alongside or instead of OpenClaw.
+
+`aion-bridge.service` runs the Meta Cloud API adapter on `127.0.0.1:8765`.
+Meta delivers messages by POSTing to a public HTTPS URL, so unlike the private
+phone interface above, **this endpoint must be reachable from the public
+internet.** A tailnet-only URL (Tailscale Serve) cannot receive Meta's calls; a
+public tunnel can. The bridge itself stays on loopback: never bind it to
+`0.0.0.0`, and expose it only through a TLS-terminating tunnel or reverse proxy
+that forwards to `127.0.0.1:8765`.
+
+What protects a public endpoint is already in `bridges/whatsapp_bridge.py`:
+
+- **Handshake (GET)**: `hub.mode=subscribe` and a `hub.verify_token` that matches
+  `WHATSAPP_VERIFY_TOKEN` (constant-time compare), otherwise 403.
+- **Messages (POST)**: `X-Hub-Signature-256` must equal
+  `sha256=HMAC-SHA256(WHATSAPP_APP_SECRET, raw body)`, otherwise 401 and a
+  `whatsapp.signature_failed` event. Bodies over 64 KiB get 413.
+- **Sender allowlist**: only `WHATSAPP_ALLOWED_SENDER` is answered; anyone else
+  is dropped and logged as `whatsapp.sender_rejected`.
+
+Known limits to accept before exposing it: the server is single-threaded with no
+per-connection timeout and no rate limiting, so one stalled or abusive
+connection can block it; the HTTP access log is suppressed; and behind a tunnel
+every request arrives from `127.0.0.1`, so an event's subject cannot tell you
+who sent it. None of this exposes data, but it can make the bridge unavailable.
+
+### Steps
+
+1. **Set the six values** (`aion owner-setup` lists where to find each), each with
+   `aion secrets set <NAME>`. The service refuses to start without all of them.
+2. **Install and start the service** with `scripts/install_services.sh`, which
+   prints the start command for your platform. It restarts every 5 seconds if it
+   exits, so a missing variable shows up as a crash loop, not one clear error.
+3. **Run the preflight before touching Meta:**
+
+   ```bash
+   python3 scripts/bridge_preflight.py
+   ```
+
+   It checks, without printing any value, that the six variables are set, that
+   the port is listening, and that a wrong verify token gets 403. Add
+   `--probe-signature` to also confirm an unsigned POST gets 401; that writes one
+   `whatsapp.signature_failed` event, which is indistinguishable from a real one
+   once tunnelled, so expect exactly one in step 6 if you use it.
+4. **Expose the port.** Use any HTTPS tunnel or reverse proxy that forwards to
+   `127.0.0.1:8765`. Tailscale Funnel, Cloudflare Tunnel or your own proxy all
+   work; some cost money or need an account, so that choice is yours and nothing
+   here creates one. You need a stable `https://` URL whose root reaches the
+   bridge.
+5. **Configure Meta.** In the app's WhatsApp webhook settings, set the callback
+   URL to that `https://` URL and the verify token to the exact value you stored
+   as `WHATSAPP_VERIFY_TOKEN`, then subscribe to `messages`. Meta sends the GET
+   handshake immediately; the console shows it as verified only if the bridge
+   echoed the challenge.
+6. **Send a real message** from the allowed number, for example `status`. Expect
+   a reply within seconds. Then run `aion today`: the activity line should show
+   your traffic and no unexpected `whatsapp.signature_failed` or
+   `whatsapp.sender_rejected`.
+
+If the handshake fails, re-run the preflight first; it tells you whether the
+problem is local (variables, port) or between Meta and the tunnel.
+
+### What this does not prove
+
+The preflight proves the bridge starts and its two gates are live on loopback.
+It does not prove Meta can reach your URL or that a message reaches a phone;
+only step 5 and step 6 with your real credentials do that.
+
 ## Daily use
 
 The owner uses WhatsApp. On the machine:

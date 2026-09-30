@@ -1,3 +1,5 @@
+> STATUS: HISTORICAL — superseded by `.lucy/planning/lucyos-total-recovery/` (Fable, 2026-09-30). Evidence, not instructions.
+
 # Sonnet Execution Queue — 2026-09-17
 
 Execute **strictly in order**. TASK-003 is an owner decision and gates TASK-004 and the

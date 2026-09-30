@@ -1,0 +1,84 @@
+{
+  "project": "sevaa-sales-os",
+  "goal": "First real rupee (M0) from a paid SevaaConnect consultation, then a repeat payer (M1), before any public deployment or ad spend.",
+  "steps": [
+    {
+      "id": "s1",
+      "title": "Experiment designed with numbers that can fail it",
+      "you": "",
+      "how": "PROJECTS/sevaa-sales-os/experiments/EXP-001-paid-design-consult/EXPERIMENT.md",
+      "checks": [
+        {"file": "PROJECTS/sevaa-sales-os/experiments/EXP-001-paid-design-consult/EXPERIMENT.md"},
+        {"file": "PROJECTS/sevaa-sales-os/experiments/EXP-001-paid-design-consult/experiment.json"}
+      ]
+    },
+    {
+      "id": "s2",
+      "title": "Outreach message, brief template and call checklist drafted by the cheap model",
+      "you": "",
+      "how": "aion plan apply incoming/plan-exp001-paid-consult.json && aion work --max 10",
+      "checks": [
+        {"file": "PROJECTS/sevaa-sales-os/experiments/EXP-001-paid-design-consult/outreach_message.md"},
+        {"file": "PROJECTS/sevaa-sales-os/experiments/EXP-001-paid-design-consult/brief_template.md"},
+        {"file": "PROJECTS/sevaa-sales-os/experiments/EXP-001-paid-design-consult/call_checklist.md"}
+      ]
+    },
+    {
+      "id": "s3",
+      "title": "Payment link created and the five unknowns answered",
+      "you": "Open the Razorpay dashboard, confirm live mode, create a payment link 'Design Clarity Call' for INR 2,499, and paste the link plus your answers to the five unknowns into PAYMENT_LINK.md (about 15 minutes).",
+      "how": "Template: PROJECTS/sevaa-sales-os/experiments/EXP-001-paid-design-consult/PAYMENT_LINK.template.md",
+      "checks": [
+        {"file_contains": ["PROJECTS/sevaa-sales-os/experiments/EXP-001-paid-design-consult/PAYMENT_LINK.md", "https://"]}
+      ]
+    },
+    {
+      "id": "s4",
+      "title": "Message sent personally to 30 warm contacts within 3 days",
+      "you": "Send outreach_message.md one-to-one to 30 people who fit the buyer, and add one row per person to contacts.csv using codes C01-C30 (never a name or number).",
+      "how": "PROJECTS/sevaa-sales-os/experiments/EXP-001-paid-design-consult/contacts.csv",
+      "checks": [
+        {"experiment": ["EXP-001", "sent", ">=", 30]}
+      ]
+    },
+    {
+      "id": "s5",
+      "title": "First rupee recorded with a Razorpay payment id (M0)",
+      "you": "When a payment lands, record it the same day: aion money-add revenue 2499 --stage ACTUAL --description \"EXP-001 payer C07\" --evidence razorpay:pay_XXXX. Then hold the call within 5 days and send the brief within 48 hours.",
+      "how": "aion money-add ... then aion experiment EXP-001",
+      "checks": [
+        {"milestone": "M0"}
+      ]
+    },
+    {
+      "id": "s6",
+      "title": "Verdict reached by the rules (3 paid = success)",
+      "you": "",
+      "how": "aion experiment EXP-001 --decide",
+      "checks": [
+        {"experiment": ["EXP-001", "decided", "=", true]}
+      ]
+    },
+    {
+      "id": "s7",
+      "title": "Only after SUCCESS: open the public funnel (T100, the founder gate)",
+      "you": "Authorise the Railway trial, set the four env vars there, choose the privacy mailbox, name the first lawful traffic source, and on the PC run aion secrets set for SEVAA_AUTOMATION_TOKEN, SEVAA_FOUNDER_TOKEN and SEVAA_NOTIFY_WEBHOOK_SECRET.",
+      "how": "aion plan apply incoming/plan-t100-go-public.json",
+      "checks": [
+        {"experiment": ["EXP-001", "state", "=", "SUCCESS"]},
+        {"secret": "SEVAA_AUTOMATION_TOKEN"},
+        {"secret": "SEVAA_FOUNDER_TOKEN"},
+        {"secret": "SEVAA_NOTIFY_WEBHOOK_SECRET"}
+      ]
+    },
+    {
+      "id": "s8",
+      "title": "Repeat payer: the same code pays a second time (M1)",
+      "you": "",
+      "how": "EXP-002 (written by the cheap model after the verdict): consult -> first project stage",
+      "checks": [
+        {"milestone": "M1"}
+      ]
+    }
+  ]
+}

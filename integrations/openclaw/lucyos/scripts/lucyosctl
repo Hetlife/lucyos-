@@ -59,8 +59,16 @@ dispatch_local() {
       max="${2:-1}"
       [[ $# -le 2 ]] || { echo "usage: lucyosctl work-dry [MAX]" >&2; exit 2; }
       exec "$AION" work --max "$max" --dry-run ;;
+    whatsapp)
+      # Owner message from OpenClaw. LUCYOS_PRINCIPAL must be the WhatsApp
+      # sender id OpenClaw authenticated; the CLI validates and logs it.
+      [[ $# -eq 2 && -n "$2" ]] || { echo 'usage: lucyosctl whatsapp "<message>"' >&2; exit 2; }
+      [[ -n "${LUCYOS_PRINCIPAL:-}" ]] || { echo "whatsapp requires LUCYOS_PRINCIPAL (the sender id)" >&2; exit 2; }
+      args=(whatsapp --channel openclaw --principal "$LUCYOS_PRINCIPAL")
+      [[ -n "${LUCYOS_KEY_ID:-}" ]] && args+=(--key-id "$LUCYOS_KEY_ID")
+      exec "$AION" "${args[@]}" -- "$2" ;;
     *)
-      echo "usage: lucyosctl {status|skills|health|learnrepo-status|tasks|approvals|context|route|architecture-check|work-dry}" >&2
+      echo "usage: lucyosctl {status|skills|health|learnrepo-status|tasks|approvals|context|route|architecture-check|work-dry|whatsapp}" >&2
       exit 2 ;;
   esac
 }
@@ -94,8 +102,17 @@ case "${1:-}" in
     [[ "$max" =~ ^[0-9]+$ ]] && (( max >= 1 && max <= 10 )) || { echo "work-dry max must be 1..10" >&2; exit 2; }
     remote_exec work-dry "$max"
     ;;
+  whatsapp)
+    # ssh joins its arguments with spaces and the server-side dispatcher
+    # re-splits them, so the text is sent as ONE single-quoted argument. The
+    # sender identity is not sent: the dispatcher derives it from the enrolled key.
+    [[ $# -eq 2 && -n "$2" ]] || { echo 'usage: lucyosctl whatsapp "<message>"' >&2; exit 2; }
+    [[ "$2" != *$'\n'* && "$2" != *$'\r'* ]] || { echo "whatsapp message must be a single line" >&2; exit 2; }
+    quoted="$(printf '%s' "$2" | sed "s/'/'\\\\''/g")"
+    remote_exec whatsapp "'${quoted}'"
+    ;;
   *)
-    echo "usage: lucyosctl {status|skills|health|learnrepo-status|tasks|approvals|context|route|architecture-check|work-dry}" >&2
+    echo "usage: lucyosctl {status|skills|health|learnrepo-status|tasks|approvals|context|route|architecture-check|work-dry|whatsapp}" >&2
     exit 2
     ;;
 esac

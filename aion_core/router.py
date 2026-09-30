@@ -36,9 +36,11 @@ Never send secrets here."""
 
 # Ordinary-language triggers.  Ordered: first match wins.
 INTENTS = [
-    ("approve", re.compile(r"(?i)\b(approve|approved|go ahead with|yes to)\b\s*(?P<id>[A-Za-z]+-[A-Za-z0-9]{1,12})")),
-    ("deny", re.compile(r"(?i)\b(deny|denied|reject|rejected|no to|cancel)\b\s*(?P<id>[A-Za-z]+-[A-Za-z0-9]{1,12})")),
     ("why", re.compile(r"(?i)\bwhy\b.*?(?P<id>[A-Za-z]+-[A-Za-z0-9]{1,12})")),
+    # Decision words near an approval id, in anything other than the strict form,
+    # never decide: "don't approve A-12" must not approve A-12. They get the
+    # exact reply form back instead (only APPROVE_STRICT decides).
+    ("decision_hint", re.compile(r"(?i)\b(approve|approved|go ahead with|yes to|deny|denied|reject|rejected|no to|cancel)\b.*?(?P<id>\bA-[0-9]{1,12}\b)")),
     ("deep_check", re.compile(r"(?i)\b(deep check|deepcheck|full check|verify everything|deep verify)\b")),
     ("safe_mode_off", re.compile(r"(?i)\b(safe mode off|exit safe mode|unsafe mode|leave safe mode)\b")),
     ("safe_mode", re.compile(r"(?i)\b(safe mode|safemode|lock down|lockdown)\b")),
@@ -103,10 +105,10 @@ def handle(message: str, *, sender: str = "owner") -> str:
         m = pattern.search(raw)
         if not m:
             continue
-        if name == "approve":
-            return _decide(m.group("id"), "APPROVED", sender)
-        if name == "deny":
-            return _decide(m.group("id"), "DENIED", sender)
+        if name == "decision_hint":
+            aid = m.group("id").upper()
+            return (f"Nothing was decided. To decide {aid}, reply with exactly "
+                    f"APPROVE {aid} or DENY {aid} and nothing else.")
         if name == "why":
             return memory.why(m.group("id"))
         return {

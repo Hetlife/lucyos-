@@ -1,3 +1,5 @@
+> STATUS: HISTORICAL — superseded by `.lucy/planning/lucyos-total-recovery/` (Fable, 2026-09-30). Evidence, not instructions.
+
 # LucyOS Repair Mission — START HERE
 
 Mission ID: PRM-LUCYOS-REPAIR-SCALE-20260923

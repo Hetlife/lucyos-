@@ -1,3 +1,5 @@
+> STATUS: HISTORICAL — superseded by `.lucy/planning/lucyos-total-recovery/` (Fable, 2026-09-30). Evidence, not instructions.
+
 # SONNET_TASK_QUEUE — LucyOS consolidation cycle 2026-09-16
 
 Frozen by Fable (overnight pass). Canonical queue — there is no other.

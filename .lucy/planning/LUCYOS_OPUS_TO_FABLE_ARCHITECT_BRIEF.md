@@ -1,3 +1,5 @@
+> STATUS: HISTORICAL — superseded by `.lucy/planning/lucyos-total-recovery/` (Fable, 2026-09-30). Evidence, not instructions.
+
 # LucyOS — Opus → Fable Architect Brief
 
 Produced by: Opus, pre-architect auditor

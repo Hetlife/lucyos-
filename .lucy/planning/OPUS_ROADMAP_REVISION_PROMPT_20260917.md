@@ -1,3 +1,5 @@
+> STATUS: HISTORICAL — superseded by `.lucy/planning/lucyos-total-recovery/` (Fable, 2026-09-30). Evidence, not instructions.
+
 # Opus Revision Prompt — LucyOS / Mark-2 Integration Roadmap
 
 You are performing a **second, compact planning pass** on LucyOS / Mark-2.

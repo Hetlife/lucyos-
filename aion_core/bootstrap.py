@@ -1,6 +1,8 @@
 """Create and repair the canonical shared brain on the owner's machine."""
 from __future__ import annotations
 
+import re
+
 import os
 from pathlib import Path
 
@@ -166,20 +168,73 @@ def init_secret_store() -> Path:
     return sf
 
 
+_SECRET_NAME = re.compile(r"[A-Za-z_][A-Za-z0-9_]*\Z")
+# str.splitlines() breaks on all of these, and the file is line-oriented.
+_LINE_BREAKS = "\n\r\x0b\x0c\x1c\x1d\x1e\x85\u2028\u2029\x00"
+
+
+def _quote_secret(value: str) -> str:
+    """Shell single-quote `value` so both a shell `source` (how the bridge
+    service loads the file) and _parse_secret_value read back the exact bytes.
+    An embedded single quote becomes '\\'' ."""
+    return "'" + value.replace("'", "'\\''") + "'"
+
+
+def _parse_secret_value(raw: str) -> str:
+    """Inverse of _quote_secret. Also accepts the legacy unquoted form written
+    before secrets were quoted, so files stored earlier keep working."""
+    text = raw.strip()
+    if text.startswith("'"):
+        out, i, n = [], 0, len(text)
+        while i < n:
+            if text[i] == "'":
+                j = text.find("'", i + 1)
+                if j < 0:
+                    break
+                out.append(text[i + 1:j])
+                i = j + 1
+            elif text.startswith("\\'", i):
+                out.append("'")
+                i += 2
+            else:
+                break
+        else:
+            return "".join(out)
+    return text
+
+
+def read_secret(name: str) -> str | None:
+    """The one reader of the secret store. Returns the stored value, or None
+    if the file, the name or a non-empty value is missing. Never logs it."""
+    sf = config.secrets_file()
+    if not sf.exists():
+        return None
+    prefix = f"{name}="
+    value = None
+    for line in sf.read_text(encoding="utf-8").splitlines():
+        line = line.strip()
+        if line.startswith(prefix):
+            value = _parse_secret_value(line[len(prefix):])  # last wins, as in a shell
+    return value or None
+
+
 def set_secret(name: str, value: str) -> str:
-    """Store a secret locally.  The value never enters the database or logs."""
+    """Store a secret locally.  The value never enters the database or logs.
+    Written single-quoted so the shell that loads the file reads it back
+    exactly. Names must be valid shell variable names; values cannot contain a
+    line break or NUL because the file is line-oriented."""
+    if not _SECRET_NAME.match(name):
+        raise ValueError("secret names must be letters, digits and _ and not start with a digit")
+    if any(ch in value for ch in _LINE_BREAKS):
+        raise ValueError("a secret value cannot contain a line break or NUL")
     sf = init_secret_store()
     lines = [l for l in sf.read_text(encoding="utf-8").splitlines()
              if not l.strip().startswith(f"{name}=")]
-    lines.append(f"{name}={value}")
+    lines.append(f"{name}={_quote_secret(value)}")
     util.atomic_write(sf, "\n".join(lines) + "\n", mode=0o600)
     db.log_event("owner", "secret.set", name, "value not recorded")
     return name
 
 
 def has_secret(name: str) -> bool:
-    sf = config.secrets_file()
-    if not sf.exists():
-        return False
-    return any(l.strip().startswith(f"{name}=") and len(l.split("=", 1)[1].strip()) > 0
-               for l in sf.read_text(encoding="utf-8").splitlines())
+    return bool(read_secret(name))

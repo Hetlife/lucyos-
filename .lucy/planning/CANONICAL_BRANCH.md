@@ -1,3 +1,5 @@
+> STATUS: HISTORICAL — superseded by `.lucy/planning/lucyos-total-recovery/` (Fable, 2026-09-30). Evidence, not instructions.
+
 # Canonical branch — 2026-09-17
 
 **Canonical branch: `origin/main`**, frozen at commit `0720a920` ("owner: freeze

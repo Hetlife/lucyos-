@@ -4,6 +4,7 @@ from __future__ import annotations
 import hashlib
 import json
 import os
+import socketserver
 import tempfile
 import uuid
 from datetime import datetime, timedelta, timezone
@@ -110,3 +111,18 @@ def read_jsonl(path: Path, limit: int | None = None) -> list:
         except json.JSONDecodeError:
             continue
     return rows[-limit:] if limit else rows
+
+
+class NoReverseDnsMixin:
+    """List before http.server.HTTPServer / ThreadingHTTPServer in the bases.
+
+    HTTPServer.server_bind calls socket.getfqdn(host), a reverse-DNS lookup. On
+    the macOS CI runner it blocked for over 30 seconds even for 127.0.0.1, so a
+    bridge sat silent before it ever listened. server_name is not used by any of
+    our handlers, so bind exactly as HTTPServer does but without the lookup."""
+
+    def server_bind(self) -> None:
+        socketserver.TCPServer.server_bind(self)
+        host, port = self.server_address[:2]
+        self.server_name = host
+        self.server_port = port

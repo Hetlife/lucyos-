@@ -4,6 +4,7 @@ from __future__ import annotations
 import argparse
 import getpass
 import json
+import re
 import sys
 from pathlib import Path
 
@@ -19,6 +20,48 @@ def _print(text):
 
 class CliError(Exception):
     """A user-facing failure: printed as one line, never as a traceback."""
+
+
+# Bridge-originated owner messages (OpenClaw -> lucyosctl/dispatcher -> here).
+# The principal names who sent the message; it is an identifier for the audit
+# trail, never authority. Authority stays with the strict APPROVE/DENY grammar
+# in router.py and with whatever enrolled the caller (host access or SSH key).
+BRIDGE_MAX_MESSAGE_BYTES = 512
+_BRIDGE_PRINCIPAL = re.compile(r"[A-Za-z0-9_.:+@-]{1,64}")
+_BRIDGE_KEY_ID = re.compile(r"[A-Za-z0-9_.:+/=@-]{1,128}")
+_BRIDGE_VERB = re.compile(r"[a-z]{1,16}")
+
+
+def _bridge_message(words: list[str]) -> str:
+    """Validate a bridge message; refuse before anything is routed or stored."""
+    if words and words[0] == "--":  # argparse leaves the separator on some versions
+        words = words[1:]
+    text = " ".join(words)
+    if not text.strip():
+        raise CliError("bridge message is empty")
+    if not text.isprintable():  # newlines, tabs, control chars, lone surrogates
+        raise CliError("bridge message contains a control character or newline")
+    if len(text.encode("utf-8")) > BRIDGE_MAX_MESSAGE_BYTES:
+        raise CliError(f"bridge message exceeds {BRIDGE_MAX_MESSAGE_BYTES} bytes")
+    return text
+
+
+def _bridge_whatsapp(args) -> str:
+    if not (args.channel and args.principal):
+        raise CliError("--channel and --principal are required together "
+                       "(fail closed: unattributed bridge input is refused)")
+    if not _BRIDGE_PRINCIPAL.fullmatch(args.principal):
+        raise CliError("invalid --principal")
+    if args.key_id is not None and not _BRIDGE_KEY_ID.fullmatch(args.key_id):
+        raise CliError("invalid --key-id")
+    text = _bridge_message(args.message)
+    first = text.split(None, 1)[0]
+    # Only a short lowercase word can be logged: a credential pasted as the
+    # first word can never reach the event log through this field.
+    verb = first if _BRIDGE_VERB.fullmatch(first) else "other"
+    db.log_event("whatsapp", args.channel, args.principal,
+                 f"verb={verb} key_id={args.key_id or '-'}")
+    return router.handle(text, sender=f"{args.channel}:{args.principal}")
 
 
 def main(argv=None) -> int:
@@ -56,6 +99,7 @@ def _main(argv=None) -> int:
     bk = sub.add_parser("backup", help="create a backup and restore-test it")
     bk.add_argument("--verify-only", action="store_true")
     sub.add_parser("openclaw-check", help="loopback reachability probe for an optional OpenClaw gateway")
+    sub.add_parser("sevaa-reconcile", help="record newly verified-paid SEVAA payment links as revenue")
     sub.add_parser("export", help="write a portable archive of canonical state (no secrets)")
     im = sub.add_parser("import", help="verify and restore a portable archive into this AION_HOME")
     im.add_argument("archive", help="path to a lucyos-export-*.tar.gz")
@@ -117,9 +161,17 @@ def _main(argv=None) -> int:
     wa = sub.add_parser("whatsapp", help="route one owner message")
     wa.add_argument("message", nargs="+")
     wa.add_argument("--sender", default="owner")
+    wa.add_argument("--channel", choices=["openclaw"], default=None,
+                    help="bridge-originated message: validated, attributed, and logged")
+    wa.add_argument("--principal", default=None, help="sender id (with --channel)")
+    wa.add_argument("--key-id", default=None, help="enrolled key identity (with --channel)")
 
     hc = sub.add_parser("health")
     hc.add_argument("--deep", action="store_true")
+
+    sv = sub.add_parser("supervisor", help="compact deterministic autonomy snapshot")
+    sv.add_argument("--deep", action="store_true")
+    sv.add_argument("--json", action="store_true", help="machine-readable output")
 
     ae = sub.add_parser("audit-export", help="export the events log as a hash-chained, tamper-evident file")
     ae.add_argument("--out", help="write JSON here instead of AION_HOME/state/AUDIT_EXPORT-<stamp>.json")
@@ -280,6 +332,16 @@ def _main(argv=None) -> int:
 
     ctx = sub.add_parser("context", help="build a task-specific context packet")
     ctx.add_argument("task_id")
+    ctx.add_argument("--module")
+    ctx.add_argument("--budget-bytes", type=int)
+    ctx.add_argument("--since")
+    ctx.add_argument("--json", action="store_true")
+
+    cctx = sub.add_parser("context-compile", help="build read-only derived local context")
+    cctx.add_argument("--task", default=None)
+    cctx.add_argument("--project", default=None)
+    cctx.add_argument("--budget-bytes", type=int, default=28 * 1024)
+    cctx.add_argument("--output-root", default=None)
 
     args = p.parse_args(argv)
     cmd = args.cmd
@@ -322,7 +384,7 @@ def _main(argv=None) -> int:
     elif cmd == "sync-docs":
         _print("\n".join(reports.render_markdown_surfaces()))
     elif cmd == "owner-setup":
-        _print(owner_setup.write())
+        _print(owner_setup.write(probe_external=True))
     elif cmd == "fable-pack":
         _print("\n".join(fable.build_pack()))
     elif cmd == "fable-ready":
@@ -342,6 +404,17 @@ def _main(argv=None) -> int:
             _print(f"created {backup.create()}")
         result = backup.verify()
         _print(result["detail"])
+        return 0 if result["ok"] else 1
+    elif cmd == "sevaa-reconcile":
+        from . import sevaa
+        if not sevaa.automation_token():
+            _print(f"not configured: {sevaa.AUTOMATION_TOKEN_NAME} has no secret store value")
+            return 0
+        result = sevaa.reconcile_payments()
+        if result["ok"]:
+            _print(f"{len(result['recorded'])} payment(s) recorded")
+        else:
+            _print(f"skipped: {result['error']}")
         return 0 if result["ok"] else 1
     elif cmd == "openclaw-check":
         from bridges import openclaw_check
@@ -395,7 +468,10 @@ def _main(argv=None) -> int:
     elif cmd == "ingest-inbox":
         _print(packets.ingest_inbox())
     elif cmd == "whatsapp":
-        _print(router.handle(" ".join(args.message), sender=args.sender))
+        if args.channel or args.principal or args.key_id:
+            _print(_bridge_whatsapp(args))
+        else:
+            _print(router.handle(" ".join(args.message), sender=args.sender))
     elif cmd == "health":
         r = health.run_all(deep=args.deep)
         for c in r["checks"]:
@@ -410,6 +486,9 @@ def _main(argv=None) -> int:
         else:
             print("FAILING: " + ", ".join(r["required_failing"]))
         return 0 if r["healthy"] else 1
+    elif cmd == "supervisor":
+        snap = health.supervisor_snapshot(deep=args.deep)
+        _print(snap if args.json else health.render_supervisor(snap))
     elif cmd == "audit-export":
         chain = reports.audit_export()
         out = Path(args.out) if args.out else (
@@ -617,7 +696,18 @@ def _main(argv=None) -> int:
         _print(f"cloud worker: {args.template}")
     elif cmd == "context":
         from . import context
-        _print(context.build(args.task_id))
+        try:
+            _print(context.build(args.task_id, module=args.module, budget_bytes=args.budget_bytes,
+                                 since=args.since, json_output=args.json))
+        except (ValueError, OSError) as exc:
+            raise CliError(security.redact(str(exc))) from None
+    elif cmd == "context-compile":
+        from .recall import context_compiler
+        _print(context_compiler.compile_context(
+            repo=Path(__file__).resolve().parents[1], task_id=args.task,
+            project=args.project,
+            output_root=Path(args.output_root) if args.output_root else None,
+            budget_bytes=args.budget_bytes))
     return 0
 
 

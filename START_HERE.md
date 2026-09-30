@@ -10,7 +10,7 @@ Live AION/SQLite state wins over prose; authority files win over ordinary docs.
 3. Use `./aion search "<query>"` for durable memory and `./aion why <ID>` for provenance.
 4. Read `$AION_HOME/RESUME.md` for the current checkpoint/resume pointer.
 5. Read `.lucy/authority/HIGH_MODEL_BASELINE.json` before architecture, policy, protected-path, or executor-scope changes.
-6. Read `.lucy/execution/SONNET_TASK_QUEUE.md` only as a planning/execution view; re-check live task state before acting.
+6. Read `.lucy/planning/INDEX.md` and open only the CURRENT plan (`.lucy/planning/lucyos-total-recovery/`); every other plan file is historical evidence.
 7. For architecture changes, follow `docs/skill-system/Q000_ARCHITECTURE_AUDIT.txt` and `docs/skill-system/Q006_ARCHITECTURE_ANTI_DUPLICATION.txt`; use `./aion architecture-check <proposal.json>` when the change is a skill/integration proposal.
 8. Use `docs/README.md` to route to architecture/operations docs. Dated handoffs are historical until reverified against live state.
 

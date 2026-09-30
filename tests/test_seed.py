@@ -60,8 +60,6 @@ class TestSeed(AionTest):
         self.assertEqual(fable.budget()["remaining"], 3800.0)
 
 
-if __name__ == "__main__":
-    unittest.main()
 
 
 class TestMission(AionTest):
@@ -127,3 +125,33 @@ class TestTwoPhaseBudget(AionTest):
         self.assertIn("INR 1000", text)
         self.assertIn("EXPERIMENT.md", text)
         self.assertIn("validation_command", text)
+
+
+class TestSeededTextNamesOnlyRealCommands(unittest.TestCase):
+    """Every `aion <command>` a seeded task tells the owner to run must exist in
+    the CLI parser. The command set is read from the parser, never copied here."""
+
+    FIELDS = ("description", "success_criteria", "validation_method", "next_action")
+
+    def test_no_seeded_task_names_a_missing_command(self):
+        import re
+        from tests import test_owner_setup as owner_tests  # module ref: no re-collection
+        commands = owner_tests.TestOwnerSetupNamesOnlyRealCommands._cli_commands()
+        self.assertIn("openclaw-check", commands)  # guards a silent parse failure
+        missing = {}
+        for title, kw in seed.TASKS:
+            text = " ".join(str(kw.get(f, "")) for f in self.FIELDS)
+            bad = sorted(set(re.findall(r"\baion ([a-z][a-z0-9-]*)", text)) - commands)
+            if bad:
+                missing[title] = bad
+        self.assertEqual(missing, {})
+
+    def test_whatsapp_task_points_an_openclaw_owner_at_openclaw_check(self):
+        kw = dict(seed.TASKS)["Connect the WhatsApp bridge to the real transport"]
+        self.assertIn("aion openclaw-check", kw["next_action"])
+        self.assertNotIn("WHATSAPP_BRIDGE_TOKEN", kw["next_action"])
+        self.assertIn("optional", kw["next_action"] + kw["description"])
+
+
+if __name__ == "__main__":
+    unittest.main()
