@@ -47,3 +47,17 @@ This also clears the stale resume pointer (ISSUE-037):
 ## Update 2026-09-30 19:57 UTC
 - Owner preflight: `~/lucyos` is at `8125fb8` (equal to main, router fix present, `decision_hint` count 2) but **dirty with a coding agent's uncommitted work** in `cli.py`, `context.py`, `model_gateway.py`. The verb path lives in `cli.py`, so the E2E must not run from there. Decision: run it from a clean detached worktree `~/lucyos-main` (proved on a scratch copy: the loose message returns "Nothing was decided" and leaves the approval pending).
 - `main` moved again to include #62. After the E2E passes, repoint OpenClaw's `LUCYOS_AION_BIN` (routine and forwarding) to `~/lucyos-main/aion` permanently.
+
+## Update 2026-09-30 20:06 UTC (Lucy-den stuck; owner rebooting)
+**TR-1-05 live E2E, first run (owner + OpenClaw, observed in the WhatsApp transcript):**
+- Proven: exact `APPROVE A-109` decided through OpenClaw; `Approve A-108` (mixed case) decided, which is by design (`(?i)` pattern, pinned by a test); `don't approve A-108` returned "Nothing was decided", a reply only the fixed router emits, so the router fix is active on that path; `DENY A-108` after approval returned "already approved, nothing re-applied"; `why A-108` returned `Status: APPROVED` under two principals; `status` and `tasks` reach LucyOS.
+- NOT yet proven: (1) a loose message leaving a PENDING approval pending (both probes were decided first); (2) attribution in the audit export (`decided_by` = `openclaw:<masked id>`). Close both with probe 3 and the one-block evidence command in `work_orders/TR-1-05.md` step 3b/4. Level 2 is not yet recorded as proven.
+- The owner must not treat mixed-case acceptance as a finding; OpenClaw repeatedly reported it as one.
+
+**Incident:** Lucy-den reported stuck; the owner is rebooting. This matches the earlier unexplained desktop freeze. After the reboot, capture previous-boot logs and confirm the journal is persistent (commands given in chat; result unknown). Do not install firmware before the logs are read.
+
+**Resume order after the reboot:** `cd ~/lucyos-main && ./aion boot`, timers present (`systemctl --user list-timers | grep aion`), `./aion openclaw-check`; then probe 3 and the evidence block; then owner-run `./aion checkpoint ...` (command above, not yet confirmed run); then repoint OpenClaw's `LUCYOS_AION_BIN` to `~/lucyos-main/aion`.
+
+**Still unmerged:** branch `fable/e2e-order-and-path-rebase` (docs only: corrected TR-1-05, TR-1-08, ISSUE-040/041, this update). Remote branch `fable/FABLE-10-override-20260930` is still to be deleted by the owner.
+
+**Not done / unverified:** CI result for main after #62; whether `~/lucyos-main` exists yet; whether the stray-task cancel and the owner's dev-checkout edits survived the freeze (check `git -C ~/lucyos status`).
