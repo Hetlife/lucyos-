@@ -14,6 +14,7 @@ def _caps(**overrides):
         openclaw_present=False, openclaw_evidence="home contents: none",
         openclaw_gateway_detail="openclaw_port not configured",
         legacy_bridge_credential_present=False,
+        cloud_bridge_missing=list(owner_setup.CLOUD_BRIDGE_VARS),
         razorpay_keys=False,
     )
     base.update(overrides)
@@ -107,7 +108,8 @@ class TestOwnerSetupMeasuredState(AionTest):
     def test_all_capabilities_present_yields_no_required_sections(self):
         caps = _caps(ollama=True, cloud_worker=True, model_credential_present=True,
                       github_remote_ok=True, github_write_ok=True, github_credential_present=True,
-                      openclaw_present=True, legacy_bridge_credential_present=True)
+                      openclaw_present=True, legacy_bridge_credential_present=True,
+                      cloud_bridge_missing=[])
         with mock.patch.object(owner_setup, "_capabilities", return_value=caps):
             text = owner_setup.render()
         self.assertNotIn("REQUIRED NOW", text)
@@ -217,3 +219,53 @@ class TestOwnerSetupNamesOnlyRealCommands(AionTest):
         referenced = set(re.findall(r"`aion ([a-z][a-z0-9-]*)", text))
         self.assertTrue(referenced)
         self.assertEqual(sorted(referenced - commands), [])
+
+
+class TestOwnerSetupCoversCloudBridge(AionTest):
+    """The shipped aion-bridge.service exits 2 unless every variable in the
+    cloud adapter's required list is set. Owner-setup must ask for all of them,
+    and that list is read from the bridge itself, never copied here."""
+
+    @staticmethod
+    def _bridge_required():
+        import importlib.util
+        from pathlib import Path
+        path = Path(__file__).resolve().parents[1] / "bridges" / "whatsapp_bridge.py"
+        spec = importlib.util.spec_from_file_location("whatsapp_bridge_under_test", path)
+        module = importlib.util.module_from_spec(spec)
+        spec.loader.exec_module(module)
+        return set(module.CLOUD_ENV_REQUIRED)
+
+    def test_owner_setup_covers_every_variable_the_bridge_requires(self):
+        required = self._bridge_required()
+        self.assertGreaterEqual(len(required), 6)  # guards a silent empty read
+        self.assertEqual(required - set(owner_setup.CLOUD_BRIDGE_VARS), set(),
+                         "bridge requires variables owner-setup does not track")
+        self.assertEqual(set(owner_setup.CLOUD_BRIDGE_VARS) - required, set(),
+                         "owner-setup tracks variables the bridge no longer requires")
+
+    def test_rendered_file_names_every_required_variable_when_none_set(self):
+        with mock.patch.object(owner_setup, "_capabilities", return_value=_caps()):
+            text = owner_setup.render()
+        for name in self._bridge_required():
+            self.assertIn(name, text)
+        self.assertIn("WhatsApp Cloud API bridge (aion-bridge.service)  ·  not set", text)
+
+    def test_entry_is_satisfied_only_when_nothing_is_missing(self):
+        with mock.patch.object(owner_setup, "_capabilities",
+                               return_value=_caps(cloud_bridge_missing=[])):
+            text = owner_setup.render()
+        self.assertNotIn("WhatsApp Cloud API bridge (aion-bridge.service)  ·  not set", text)
+        self.assertIn("all six WhatsApp Cloud API values are set", text)
+        with mock.patch.object(owner_setup, "_capabilities",
+                               return_value=_caps(cloud_bridge_missing=["WHATSAPP_APP_SECRET"])):
+            self.assertIn("WhatsApp Cloud API bridge (aion-bridge.service)  ·  not set",
+                          owner_setup.render())
+
+    def test_measured_state_reads_the_secret_store_by_name_only(self):
+        fake_present = {"WHATSAPP_ACCESS_TOKEN", "WHATSAPP_APP_SECRET"}
+        with mock.patch.object(owner_setup.bootstrap, "has_secret",
+                               side_effect=lambda n: n in fake_present):
+            missing = owner_setup._capabilities()["cloud_bridge_missing"]
+        self.assertEqual(set(missing),
+                         set(owner_setup.CLOUD_BRIDGE_VARS) - fake_present)
