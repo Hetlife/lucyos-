@@ -23,7 +23,7 @@ They **must be approved in this order**, because each one builds on the one befo
 | 3 | #77 | A guide + checker for connecting WhatsApp through Meta |
 | 4 | #78 | Proof the bridge starts; catches passwords with special characters |
 | 5 | #79 | Meta WhatsApp is now "optional" because you use OpenClaw |
-| 6 | (R-07) | Passwords with special characters are saved safely (I'll give you the number) |
+| 6 | #80 | Passwords with special characters are saved safely |
 
 For **each** one, in order:
 1. Open the link, for example `https://github.com/Hetlife/lucyos-/pull/75`.
