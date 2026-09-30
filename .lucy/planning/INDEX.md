@@ -39,6 +39,7 @@ Read CURRENT documents only. HISTORICAL and UNMARKED files are evidence, not ins
 | CURRENT | `.lucy/planning/lucyos-total-recovery/work_orders/TR-1-05.md` |
 | CURRENT | `.lucy/planning/lucyos-total-recovery/work_orders/TR-1-06.md` |
 | CURRENT | `.lucy/planning/lucyos-total-recovery/work_orders/TR-1-07.md` |
+| CURRENT | `.lucy/planning/lucyos-total-recovery/work_orders/TR-1-08.md` |
 | CURRENT | `.lucy/planning/lucyos-total-recovery/work_orders/TR-2-01.md` |
 | CURRENT | `.lucy/planning/lucyos-total-recovery/work_orders/TR-2-02.md` |
 | CURRENT | `.lucy/planning/lucyos-total-recovery/work_orders/TR-2-03.md` |
@@ -111,4 +112,4 @@ Read CURRENT documents only. HISTORICAL and UNMARKED files are evidence, not ins
 | HISTORICAL | `docs/internal/health-audit/ISSUE_REGISTER.md` |
 | HISTORICAL | `docs/internal/health-audit/SONNET_EXECUTION_QUEUE.md` |
 
-Counts: CURRENT=74, HISTORICAL=32
+Counts: CURRENT=75, HISTORICAL=32

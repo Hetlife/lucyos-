@@ -36,3 +36,10 @@ This also clears the stale resume pointer (ISSUE-037):
 ```
 ./aion checkpoint --objective "Make LucyOS operable from the phone via OpenClaw, then executors, then projects" --current-state "main 8125fb8, healthy, OpenClaw whatsapp verb live" --next-action "Run TR-1-05 live E2E, then Codex census TR-0-04" --last-verified-success "Router fix, whatsapp verb and CI fix merged; boot healthy" --bottleneck "TR-1-05 live approval proof not yet run" --files-to-read ".lucy/planning/lucyos-total-recovery/CHECKPOINT.md"
 ```
+
+## Update 2026-09-30 17:50 UTC
+- `main` = `4a41b0b` (#93 forwarding rule merged). The `lucy:` rule is in the skill and in TR-1-05 on main.
+- Lucy-den's `~/lucyos` is on local branch `feature/question-context-reduction` with no upstream (observed), so `git pull` is a no-op there (ISSUE-041). Whether it contains the router fix is unverified: run the TR-1-05 preflight.
+- Stray task `TASK-77EAD62D` is CANCELLED (observed). Two probe approvals exist and are PENDING: A-108, A-109.
+- New blocker found in that task's `last_error`: ISSUE-040, imported `/root/...` session log paths make every compile fail, so `aion work` cannot run tasks on Lucy-den. The E2E does not depend on it. TR-1-08 fixes it.
+- TR-1-05 reordered: the old order could not detect the old bug. Loose message first, against a pending approval.
