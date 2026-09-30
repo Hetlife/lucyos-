@@ -7,6 +7,8 @@ expansion. The bridge is read-mostly; architecture checks and work are dry-run.
 """
 from __future__ import annotations
 
+import base64
+import hashlib
 import os
 import re
 import shlex
@@ -21,6 +23,12 @@ MAX_STDIN = 16 * 1024
 MAX_OUTPUT = 256 * 1024
 TASK_ID = re.compile(r"^(?:TASK-[A-Z0-9]{6,}|S-[0-9]{1,4})$")
 ATOM = re.compile(r"^[A-Za-z0-9_.:-]{1,64}$")
+MAX_MESSAGE = 512
+# Raw-length guard only (the real bound is MAX_MESSAGE): single-quoting expands an
+# apostrophe 4x in shell (`'\''`) and 5x with Python's shlex.quote.
+MAX_WHATSAPP_COMMAND = 5 * MAX_MESSAGE + 64
+KEY_ID = re.compile(r"^[A-Za-z0-9_.:+/=@-]{1,128}$")
+MAX_AUTH_INFO = 8 * 1024
 
 SIMPLE = {
     "status": ["status"],
@@ -39,7 +47,7 @@ def parse_original() -> list[str]:
     original = os.environ.get("SSH_ORIGINAL_COMMAND", "").strip()
     if not original:
         fail("missing command")
-    if len(original) > 512:
+    if len(original) > MAX_WHATSAPP_COMMAND:
         fail("command too long")
     try:
         parts = shlex.split(original, posix=True)
@@ -47,10 +55,61 @@ def parse_original() -> list[str]:
         fail("invalid quoting")
     if not parts:
         fail("missing command")
+    # Only `whatsapp` carries free text; every other command keeps the 512 cap.
+    if parts[0] != "whatsapp" and len(original) > 512:
+        fail("command too long")
     return parts
 
 
-def build(parts: list[str]) -> tuple[list[str], bytes | None]:
+def fingerprint_from_auth_info(path: str) -> str | None:
+    """OpenSSH-style SHA256 fingerprint of the key sshd authenticated.
+
+    sshd (ExposeAuthInfo yes) points SSH_USER_AUTH at a file whose first line is
+    'publickey <type> <base64-blob>'. Only sshd sets it; a client cannot.
+    """
+    try:
+        file = Path(path)
+        if not file.is_file() or file.stat().st_size > MAX_AUTH_INFO:
+            return None
+        for line in file.read_text(encoding="utf-8", errors="replace").splitlines():
+            fields = line.split()
+            if len(fields) >= 3 and fields[0] == "publickey":
+                blob = base64.b64decode(fields[2], validate=True)
+                digest = base64.b64encode(hashlib.sha256(blob).digest()).decode().rstrip("=")
+                return "SHA256:" + digest
+    except (OSError, ValueError):
+        return None
+    return None
+
+
+def caller_key_id(cli_key_id: str | None) -> str:
+    """Identity of the enrolled key. Never client-supplied; fail closed."""
+    auth = os.environ.get("SSH_USER_AUTH")
+    key_id = (fingerprint_from_auth_info(auth) if auth else None) or cli_key_id
+    if not key_id or not KEY_ID.fullmatch(key_id):
+        fail("whatsapp needs an enrolled key identity: enable sshd ExposeAuthInfo "
+             "or start the forced command with --key-id <label>")
+    return key_id
+
+
+def whatsapp_message(args: list[str]) -> str:
+    if len(args) != 1:
+        fail("whatsapp takes exactly one quoted message argument")
+    text = args[0]
+    if not text.strip():
+        fail("whatsapp message is empty")
+    if not text.isprintable():
+        fail("whatsapp message contains a control character or newline")
+    try:
+        size = len(text.encode("utf-8"))
+    except UnicodeEncodeError:
+        fail("whatsapp message is not valid UTF-8")
+    if size > MAX_MESSAGE:
+        fail(f"whatsapp message exceeds {MAX_MESSAGE} bytes")
+    return text
+
+
+def build(parts: list[str], key_id: str | None = None) -> tuple[list[str], bytes | None]:
     command, *args = parts
     if command in SIMPLE:
         if args:
@@ -77,6 +136,15 @@ def build(parts: list[str]) -> tuple[list[str], bytes | None]:
         if not maximum.isdigit() or not 1 <= int(maximum) <= 10:
             fail("work-dry max must be 1..10")
         return ["work", "--max", maximum, "--dry-run"], None
+
+    if command == "whatsapp":
+        text = whatsapp_message(args)
+        identity = caller_key_id(key_id)
+        # The principal is derived from the key that authenticated, so the
+        # audit trail names the enrolled caller, not a client-asserted string.
+        principal = "key:" + re.sub(r"[^A-Za-z0-9]", "", identity)[:24]
+        return ["whatsapp", "--channel", "openclaw", "--principal", principal,
+                "--key-id", identity, "--", text], None
 
     if command == "architecture-check":
         if args:
@@ -124,9 +192,19 @@ def run_aion(argv: list[str], stdin_data: bytes | None) -> int:
     return result.returncode
 
 
+def forced_command_key_id(argv: list[str]) -> str | None:
+    """Only `--key-id <label>` is accepted; it is set by the admin in authorized_keys."""
+    if not argv:
+        return None
+    if len(argv) == 2 and argv[0] == "--key-id":
+        return argv[1]
+    fail("unexpected dispatcher argument")
+
+
 def main() -> int:
+    key_id = forced_command_key_id(sys.argv[1:])
     parts = parse_original()
-    argv, stdin_data = build(parts)
+    argv, stdin_data = build(parts, key_id)
     return run_aion(argv, stdin_data)
 
 

@@ -4,6 +4,7 @@ from __future__ import annotations
 import argparse
 import getpass
 import json
+import re
 import sys
 from pathlib import Path
 
@@ -19,6 +20,48 @@ def _print(text):
 
 class CliError(Exception):
     """A user-facing failure: printed as one line, never as a traceback."""
+
+
+# Bridge-originated owner messages (OpenClaw -> lucyosctl/dispatcher -> here).
+# The principal names who sent the message; it is an identifier for the audit
+# trail, never authority. Authority stays with the strict APPROVE/DENY grammar
+# in router.py and with whatever enrolled the caller (host access or SSH key).
+BRIDGE_MAX_MESSAGE_BYTES = 512
+_BRIDGE_PRINCIPAL = re.compile(r"[A-Za-z0-9_.:+@-]{1,64}")
+_BRIDGE_KEY_ID = re.compile(r"[A-Za-z0-9_.:+/=@-]{1,128}")
+_BRIDGE_VERB = re.compile(r"[a-z]{1,16}")
+
+
+def _bridge_message(words: list[str]) -> str:
+    """Validate a bridge message; refuse before anything is routed or stored."""
+    if words and words[0] == "--":  # argparse leaves the separator on some versions
+        words = words[1:]
+    text = " ".join(words)
+    if not text.strip():
+        raise CliError("bridge message is empty")
+    if not text.isprintable():  # newlines, tabs, control chars, lone surrogates
+        raise CliError("bridge message contains a control character or newline")
+    if len(text.encode("utf-8")) > BRIDGE_MAX_MESSAGE_BYTES:
+        raise CliError(f"bridge message exceeds {BRIDGE_MAX_MESSAGE_BYTES} bytes")
+    return text
+
+
+def _bridge_whatsapp(args) -> str:
+    if not (args.channel and args.principal):
+        raise CliError("--channel and --principal are required together "
+                       "(fail closed: unattributed bridge input is refused)")
+    if not _BRIDGE_PRINCIPAL.fullmatch(args.principal):
+        raise CliError("invalid --principal")
+    if args.key_id is not None and not _BRIDGE_KEY_ID.fullmatch(args.key_id):
+        raise CliError("invalid --key-id")
+    text = _bridge_message(args.message)
+    first = text.split(None, 1)[0]
+    # Only a short lowercase word can be logged: a credential pasted as the
+    # first word can never reach the event log through this field.
+    verb = first if _BRIDGE_VERB.fullmatch(first) else "other"
+    db.log_event("whatsapp", args.channel, args.principal,
+                 f"verb={verb} key_id={args.key_id or '-'}")
+    return router.handle(text, sender=f"{args.channel}:{args.principal}")
 
 
 def main(argv=None) -> int:
@@ -118,6 +161,10 @@ def _main(argv=None) -> int:
     wa = sub.add_parser("whatsapp", help="route one owner message")
     wa.add_argument("message", nargs="+")
     wa.add_argument("--sender", default="owner")
+    wa.add_argument("--channel", choices=["openclaw"], default=None,
+                    help="bridge-originated message: validated, attributed, and logged")
+    wa.add_argument("--principal", default=None, help="sender id (with --channel)")
+    wa.add_argument("--key-id", default=None, help="enrolled key identity (with --channel)")
 
     hc = sub.add_parser("health")
     hc.add_argument("--deep", action="store_true")
@@ -421,7 +468,10 @@ def _main(argv=None) -> int:
     elif cmd == "ingest-inbox":
         _print(packets.ingest_inbox())
     elif cmd == "whatsapp":
-        _print(router.handle(" ".join(args.message), sender=args.sender))
+        if args.channel or args.principal or args.key_id:
+            _print(_bridge_whatsapp(args))
+        else:
+            _print(router.handle(" ".join(args.message), sender=args.sender))
     elif cmd == "health":
         r = health.run_all(deep=args.deep)
         for c in r["checks"]:
