@@ -1,5 +1,9 @@
 # Sonnet Execution Plan — get LucyOS onto the owner's phone
 
+> **STATUS: COMPLETE and HISTORICAL (2026-09-30).** Every task in this file was done and merged.
+> The current state and what remains is in `.lucy/execution/SONNET_MASTER_PLAN_20260930.md`
+> (see its "Current status" section). Do not treat the base SHA, test counts or PR states below as current.
+
 **Base:** `origin/main` @ `5d1c6e5` · **Evidence:** `docs/internal/LUCYOS_RUNNABILITY_AUDIT_20260930.md`
 **Written for:** a low-token Sonnet session. Four tasks. One branch and one PR each.
 

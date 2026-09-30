@@ -1,12 +1,20 @@
 # Branch deletion list (prepared, NOT executed): 2026-09-30
 
+> **CORRECTION (2026-09-30, later the same day).** The first version of this file listed six branches as "zero file
+> differences" and safe to delete once the tip SHA was recorded. **That was wrong.** Those branches have *no merge base*
+> with `main` (unrelated histories), so the three-dot `git diff` used to classify them errored silently and printed
+> nothing, which read as "0 files". Compared properly they differ from `main` in 393 to 487 files each, and at least three of them hold
+> files `main` lacks (17 to 51 each). They are now section D and must **not** be deleted. Groups A and B are unaffected: A is decided by
+> "is the tip an ancestor of `main`", B by `git cherry`, and neither can fail this way.
+
 **Nothing has been deleted.** Deleting a branch is an owner action. This is the evidence to decide with.
 Computed against `origin/main` @ `cda8059`. Remote branches (excluding `main`): **126**.
 
 | Group | Count | Meaning |
 |---|---|---|
 | A. Contained in `main` | 65 | Every commit is already in `main`. Deleting loses nothing. |
-| B. Content already in `main`, commits are not | 13 | B1 (6): zero file differences. B2 (7): every commit's exact patch is already in `main` (`git cherry`). **Record the tip SHA before deleting.** |
+| B. Patches already in `main` under different commit IDs | 7 | Every commit's exact patch is already in `main` (`git cherry`). **Record the tip SHA before deleting.** |
+| D. Unrelated history, **KEEP** | 6 | No merge base with `main`. They hold real work `main` does not have (section D). An earlier version of this file wrongly listed them as zero-difference. |
 | C. Unique work, keep | 48 | At least one commit's patch is not in `main`. Do not delete without a decision. |
 
 **Open PRs.** Deleting a branch that has an open PR closes that PR (as happened to #76 and #77). The `PR` column shows which.
@@ -81,19 +89,26 @@ Two group-C branches with open PRs are judged superseded by inspection (noted be
 | `task/cerebras-e0-cost-safety-20260925` | `79a8aaa` |  |
 | `task/eaa-token-scanner-20260927` | `4467aca` |  |
 
-## B1. Zero file differences (6): delete only with the SHA recorded
-Not ancestors of `main`, so once the ref is gone the commits are only recoverable from a reflog or GitHub support.
-The **content** is safe either way: it is already in `main`.
-| Branch | Tip (KEEP THIS) | Commits ahead | Open PR |
-|---|---|---|---|
-| `arch/lucyos-interface-m-a` | `fab1506` | 36 |  |
-| `backup/pre-mark2-loop-v1.2-20260908` | `e126529` | 12 |  |
-| `candidate/mark2-loop-v1.2-20260908` | `2c12556` | 13 |  |
-| `claude/aion-whatsapp-control-1seild` | `a968606` | 35 | #2 |
-| `claude/fable-deploy-setup-mc5nr6` | `cc778c9` | 39 |  |
-| `feature/lucyos-aion-handoff` | `0afe7d7` | 2 |  |
+## D. Unrelated history: KEEP (6)
+No merge base with `main`, so `git merge-base` finds nothing and a three-dot diff errors. Counts are a plain two-dot tree comparison with `main`.
+"Only on branch" = files present on the branch that `main` does not have.
 
-## B2. Every patch already in `main` under a different commit ID (7): delete only with the SHA recorded
+| Branch | Tip | Commits | Files differing from main | Only on branch |
+|---|---|---|---|---|
+| `arch/lucyos-interface-m-a` | `fab1506` | 36 | 393 | 2 |
+| `backup/pre-mark2-loop-v1.2-20260908` | `e126529` | 12 | 424 | 0 |
+| `candidate/mark2-loop-v1.2-20260908` | `2c12556` | 13 | 425 | 1 |
+| `claude/aion-whatsapp-control-1seild` | `a968606` | 35 | 470 | 39 |
+| `claude/fable-deploy-setup-mc5nr6` | `cc778c9` | 39 | 471 | 51 |
+| `feature/lucyos-aion-handoff` | `0afe7d7` | 2 | 487 | 17 |
+
+Example: `claude/aion-whatsapp-control-1seild` (PR #2) has 39 files `main` lacks, including `aion_core/phone.py`, the `deploy/fable/` set and the Sevaa Sales OS project files.
+Three of the six (`claude/aion-whatsapp-control-1seild`, `claude/fable-deploy-setup-mc5nr6`, `feature/lucyos-aion-handoff`) have
+17 to 51 files `main` lacks: real work. The other three (`arch/...`, `backup/...`, `candidate/...`) have 0 to 2 such files; their
+hundreds of differences are mostly *older versions* of files `main` has since changed, so they are probably superseded backups.
+That is still not "identical", so keep all six until the owner decides.
+
+## B. Every patch already in `main` under a different commit ID (7): delete only with the SHA recorded
 | Branch | Tip (KEEP THIS) | Commits ahead | Files differing | Open PR |
 |---|---|---|---|---|
 | `candidate/learnrepo-sse-study-20260918` | `13d31a2` | 1 | 1 |  |
@@ -158,6 +173,22 @@ with edits (see the Note column).
 | `test/authority-gate-positive-20260916` | `34ffcea` | 1 | 1 | 1 | #11 |  |
 | `trip-smoke-opencode-20260925` | `986b35c` | 28 | 96 | 27 |  |  |
 
+## Deleting group A (the Claude session cannot: the git proxy returns HTTP 403 on branch deletes)
+On 2026-09-30 the owner approved deleting group A. All 65 were re-proved as contained in `main` @ `36c954c`, but the
+deletion itself is **blocked in the Claude session**: every `git push --delete` returned HTTP 403, and no GitHub tool
+offers a delete-branch call. So it is a two-step job for the owner, from any machine with the repo:
+```bash
+git fetch origin --prune
+awk '/^## A\./{f=1;next} /^## D\./{f=0} f' docs/internal/BRANCH_DELETION_LIST_20260930.md \
+  | grep -oE '^\| `[^`]+`' | sed 's/^| `//; s/`$//' > /tmp/group_a.txt
+wc -l /tmp/group_a.txt                      # expect 65
+# 1) dry run: read every line, expect only SAFE
+while read b; do git merge-base --is-ancestor "origin/$b" origin/main && echo "SAFE $b" || echo "STOP $b"; done < /tmp/group_a.txt
+# 2) delete, but only branches that still prove contained (a STOP line is skipped, never deleted)
+while read b; do git merge-base --is-ancestor "origin/$b" origin/main && git push origin --delete "$b"; done < /tmp/group_a.txt
+```
+Or use the branches page on GitHub. Deleting a branch that still has an open PR closes that PR.
+
 ## Re-prove before you delete anything
 This is a snapshot; `main` moves. Run this immediately before deleting, and delete only lines that print `SAFE`.
 ```bash
@@ -170,7 +201,7 @@ for b in $(cat branches_to_delete.txt); do
   else echo "STOP $b has unique work"; fi
 done
 ```
-Never delete `main`. Never delete a group-C branch without a decision. A deleted branch is easy to recreate while you still
+Never delete `main`. Never delete a group-C or group-D branch without a decision. A deleted branch is easy to recreate while you still
 have its tip: `git push origin <tip>:refs/heads/<branch>`.
 
 ## Notes

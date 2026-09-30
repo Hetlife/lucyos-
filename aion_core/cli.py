@@ -290,6 +290,12 @@ def _main(argv=None) -> int:
     ctx.add_argument("--since")
     ctx.add_argument("--json", action="store_true")
 
+    cctx = sub.add_parser("context-compile", help="build read-only derived local context")
+    cctx.add_argument("--task", default=None)
+    cctx.add_argument("--project", default=None)
+    cctx.add_argument("--budget-bytes", type=int, default=28 * 1024)
+    cctx.add_argument("--output-root", default=None)
+
     args = p.parse_args(argv)
     cmd = args.cmd
 
@@ -645,6 +651,13 @@ def _main(argv=None) -> int:
                                  since=args.since, json_output=args.json))
         except (ValueError, OSError) as exc:
             raise CliError(security.redact(str(exc))) from None
+    elif cmd == "context-compile":
+        from .recall import context_compiler
+        _print(context_compiler.compile_context(
+            repo=Path(__file__).resolve().parents[1], task_id=args.task,
+            project=args.project,
+            output_root=Path(args.output_root) if args.output_root else None,
+            budget_bytes=args.budget_bytes))
     return 0
 
 
