@@ -52,6 +52,9 @@ health check, all inside one logged session.
 
 ## WhatsApp Cloud API bridge (public callback)
 
+**Skip this section if OpenClaw carries your WhatsApp** (the default setup). It is only
+for running a direct Meta channel alongside or instead of OpenClaw.
+
 `aion-bridge.service` runs the Meta Cloud API adapter on `127.0.0.1:8765`.
 Meta delivers messages by POSTing to a public HTTPS URL, so unlike the private
 phone interface above, **this endpoint must be reachable from the public
