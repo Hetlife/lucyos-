@@ -123,11 +123,19 @@ class TestServiceViewCheck(AionTest):
     must see what the service sees, not merely that a NAME=value line exists.
     Values are written with the real set_secret, in its real (unquoted) format."""
 
-    def _store(self, **overrides):
+    def _store(self, legacy=None, **overrides):
+        """Store all six via the real set_secret (quoted). `legacy` maps a name
+        to a raw value written unquoted, as older versions wrote the file."""
         values = {name: "v" + name[-4:].lower() + "9Z" for name in bridge.CLOUD_ENV_REQUIRED}
         values.update(overrides)
         for name, value in values.items():
             bootstrap.set_secret(name, value)
+        if legacy:
+            sf = bootstrap.config.secrets_file()
+            keep = [l for l in sf.read_text().splitlines()
+                    if not any(l.startswith(n + "=") for n in legacy)]
+            keep += [f"{n}={v}" for n, v in legacy.items()]
+            sf.write_text("\n".join(keep) + "\n")
 
     def test_clean_values_load_exactly_as_stored(self):
         self._store()
@@ -135,22 +143,28 @@ class TestServiceViewCheck(AionTest):
         ok, detail = preflight.check_service_view()
         self.assertTrue(ok, detail)
 
-    def test_a_value_with_a_space_is_stored_but_broken_for_the_service(self):
-        self._store(WHATSAPP_VERIFY_TOKEN="qw3 uniqfrag8")
+    def test_a_legacy_unquoted_value_with_a_space_is_stored_but_broken_for_the_service(self):
+        self._store(legacy={"WHATSAPP_VERIFY_TOKEN": "qw3 uniqfrag8"})
         # the naive check is satisfied ...
         self.assertTrue(preflight.check_variables()[0])
         # ... but the service would not get the variable, and the preflight says so
         ok, detail = preflight.check_service_view()
         self.assertFalse(ok)
-        self.assertIn("letters, digits", detail)
+        self.assertIn("aion secrets set", detail)
 
     def test_no_fragment_of_a_bad_value_is_ever_printed(self):
         for bad in ("qw3 uniqfrag8", "a&uniqfrag8", "pa$uniqfrag8", "x;echo uniqfrag8"):
-            self._store(WHATSAPP_VERIFY_TOKEN=bad)
+            self._store(legacy={"WHATSAPP_VERIFY_TOKEN": bad})
             ok, detail = preflight.check_service_view()
             self.assertFalse(ok, bad)
             self.assertNotIn("uniqfrag8", detail, bad)
             self.assertNotIn("echo", detail, bad)
+
+    def test_quoted_values_with_hostile_characters_now_load_correctly(self):
+        for value in ("qw3 uniqfrag8", "a&b", "pa$word", "x;echo hi", "it's"):
+            self._store(WHATSAPP_VERIFY_TOKEN=value)
+            ok, detail = preflight.check_service_view()
+            self.assertTrue(ok, f"{value!r}: {detail}")
 
     def test_a_missing_variable_is_named(self):
         self._store()

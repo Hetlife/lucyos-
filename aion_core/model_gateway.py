@@ -11,7 +11,7 @@ import time
 import urllib.error
 import urllib.request
 
-from . import config, db, security
+from . import bootstrap, config, db, security
 
 PROVIDERS = {
     "openrouter_free": {
@@ -45,16 +45,7 @@ COOLDOWN_SECONDS = 15 * 60
 
 
 def _secret(name: str) -> str:
-    path = config.secrets_file()
-    if not path.exists():
-        return ""
-    for line in path.read_text(encoding="utf-8").splitlines():
-        if not line or line.lstrip().startswith("#") or "=" not in line:
-            continue
-        key, value = line.split("=", 1)
-        if key.strip() == name:
-            return value.strip()
-    return ""
+    return bootstrap.read_secret(name) or ""
 
 
 def _model(provider_id: str) -> str:

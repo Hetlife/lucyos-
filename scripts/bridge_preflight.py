@@ -55,15 +55,9 @@ def check_variables(names=None) -> tuple:
 
 
 def _stored_values(names) -> dict:
-    """NAME -> raw stored value, held in memory only, for comparison."""
-    path = config.secrets_file()
-    found = {}
-    if path.exists():
-        for line in path.read_text(encoding="utf-8").splitlines():
-            key, sep, value = line.partition("=")
-            if sep and key.strip() in names:
-                found[key.strip()] = value  # last assignment wins, as in a shell
-    return found
+    """NAME -> stored value via the shared parser, held in memory only, for
+    comparison with what the service's shell would load."""
+    return {n: v for n in names if (v := bootstrap.read_secret(n))}
 
 
 def check_service_view(names=None) -> tuple:
@@ -99,7 +93,8 @@ def check_service_view(names=None) -> tuple:
     if bad:
         return False, ("differs from what is stored, as the service would load it: "
                        + ", ".join(bad) + ". A value probably contains a space or one of "
-                       "& $ ; ` \" ' \\ . Re-enter it with letters, digits, - and _ only. "
+                       "& $ ; ` \" ' \\ . It was probably saved by an older version that did not "
+                       "quote values: re-enter it with `aion secrets set <NAME>`. "
                        "(Values and shell output are never printed.)")
     if done.stderr.strip():
         return False, ("secrets.env printed errors when loaded as the service loads it; "
