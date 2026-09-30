@@ -87,5 +87,41 @@ class DuplicationScanTests(unittest.TestCase):
         self.assertEqual(report['dead_links']['findings'], [])
 
 
+
+
+class DuplicationScanSymlinkedRootTests(unittest.TestCase):
+    """macOS temp dirs live under /var, itself a symlink to /private/var. A scan
+    root reached through a symlinked ancestor must work exactly like a real one.
+    Reproduced here on any OS: alias -> real, root = alias/proj."""
+
+    def setUp(self):
+        self.tmp = tempfile.TemporaryDirectory()
+        self.addCleanup(self.tmp.cleanup)
+        base = Path(self.tmp.name).resolve()
+        (base / 'real' / 'proj').mkdir(parents=True)
+        (base / 'alias').symlink_to(base / 'real', target_is_directory=True)
+        self.root = base / 'alias' / 'proj'
+        patcher = patch.object(scan, 'REPO', self.root)
+        patcher.start()
+        self.addCleanup(patcher.stop)
+
+    def write(self, name, text):
+        path = self.root / name
+        path.parent.mkdir(parents=True, exist_ok=True)
+        path.write_text(text, encoding='utf-8')
+
+    def test_scan_and_dead_weight_work_through_a_symlinked_ancestor(self):
+        body = ''.join(f'    x = {i}\n' for i in range(16))
+        self.write('aion_core/a.py', 'def validate_a():\n' + body)
+        self.write('bridges/b.py', 'def validate_b():\n' + body)
+        self.write('aion_core/orphan.py', 'VALUE = 1\n')
+        report = scan.run_scan()
+        self.assertEqual(len(report['duplicate_functions']), 1)
+        rows = {r['file']: r for r in scan.dead_weight_modules()}
+        self.assertIn('aion_core/orphan.py', rows)
+        # reported paths are clean repo-relative posix paths, never absolute
+        self.assertFalse(any(name.startswith('/') for name in rows))
+
+
 if __name__ == '__main__':
     unittest.main()

@@ -97,7 +97,7 @@ MARKDOWN_LINK = re.compile(r"\[[^\]]*\]\(([^)\s]+)(?:\s+\"[^\"]*\")?\)")
 
 
 def relpath(path: Path) -> str:
-    return path.resolve().relative_to(REPO).as_posix()
+    return path.resolve().relative_to(REPO.resolve()).as_posix()
 
 
 # ---------------------------------------------------------------- file walks

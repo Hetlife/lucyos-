@@ -21,12 +21,24 @@ EXCLUDED = {".git", "private_state", "secrets", ".ssh", "browser", "oauth",
 DOC_SUFFIXES = {".md", ".txt", ".json"}
 
 
+def _symlink_inside(root: Path, name: str) -> bool:
+    """True if any component of `name` below `root` is a symlink. Components at
+    or above `root` are deliberately not checked: on macOS the temp dir sits
+    under /var, itself a symlink, and that is not the repository's business."""
+    current = root
+    for part in Path(name).parts:
+        current = current / part
+        if current.is_symlink():
+            return True
+    return False
+
+
 def local_path(root: Path, name: str) -> Path:
     path = root / name
     if (Path(name).is_absolute() or ".." in Path(name).parts
             or any(part.lower() in EXCLUDED for part in Path(name).parts)
-            or any(parent.is_symlink() for parent in (path, *path.parents) if parent != root)
-            or not path.resolve().is_relative_to(root)):
+            or _symlink_inside(root, name)
+            or not path.resolve().is_relative_to(root.resolve())):
         raise ValueError(f"not a safe repository file: {name}")
     return path
 
