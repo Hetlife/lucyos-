@@ -29,6 +29,29 @@ def log_dir() -> Path:
     return d
 
 
+def log_file(recorded: str) -> Path:
+    """The session log inside THIS brain for a recorded `log_path`.
+
+    `log_path` is stored absolute at creation. After an import from another host or user
+    (for example `/root/openclaw/shared_brain/...` on Mark-2, now under `/home/<user>/...`)
+    the recorded prefix is wrong or unreadable. Only the file name is trusted, so the log
+    is always looked up, written and compacted inside this brain's own log directory and
+    a recorded path can never point a read or write anywhere else.
+    """
+    name = Path(recorded or "").name
+    if name in ("", ".", ".."):
+        raise ValueError("session has no usable log name")
+    return log_dir() / name
+
+
+def read_log(recorded: str) -> str | None:
+    """Text of a session log, or None when it is missing or unreadable. Never raises for those."""
+    try:
+        return log_file(recorded).read_text(encoding="utf-8")
+    except (OSError, ValueError, UnicodeError):
+        return None
+
+
 def start(actor: str, *, model: str = "", model_class: str = "B", objective: str = "") -> str:
     """Open a session.  Returns the session id used for every later call."""
     session_id = util.new_id("SES")
@@ -66,7 +89,7 @@ def log(session_id: str, kind: str, text: str) -> None:
     clean = security.redact(text).replace("\n", " ").replace("|", "/")
     if len(clean) > MAX_ENTRY_CHARS:
         clean = clean[:MAX_ENTRY_CHARS - 1] + "…"
-    path = Path(row["log_path"])
+    path = log_file(row["log_path"])
     # Insert before the trailing blank line so the table stays valid.
     with open(path, "a", encoding="utf-8") as fh:
         fh.write(f"| {util.now()[11:19]} | {kind} | {clean} |\n")
@@ -87,7 +110,7 @@ def end(session_id: str, *, outcome: str, resume_point: str = "", spend_inr: flo
         (util.now(), security.redact(outcome), security.redact(resume_point), spend_inr,
          status, tasks_touched, session_id))
     conn.commit()
-    path = Path(row["log_path"])
+    path = log_file(row["log_path"])
     with open(path, "a", encoding="utf-8") as fh:
         fh.write("\n".join([
             "",
@@ -145,8 +168,11 @@ def compact_old(keep_days: int = KEEP_DAYS) -> int:
         "WHERE status!='OPEN' AND started_at < ?", (cutoff,)).fetchall()
     compacted = 0
     for r in rows:
-        path = Path(r["log_path"])
-        if not path.exists() or path.stat().st_size < 400:
+        try:
+            path = log_file(r["log_path"])
+            if not path.is_file() or path.stat().st_size < 400:
+                continue
+        except (OSError, ValueError):
             continue
         util.atomic_write(path, "\n".join([
             f"# SESSION {r['session_id']} (compacted)", "",
