@@ -36,3 +36,34 @@ This also clears the stale resume pointer (ISSUE-037):
 ```
 ./aion checkpoint --objective "Make LucyOS operable from the phone via OpenClaw, then executors, then projects" --current-state "main 8125fb8, healthy, OpenClaw whatsapp verb live" --next-action "Run TR-1-05 live E2E, then Codex census TR-0-04" --last-verified-success "Router fix, whatsapp verb and CI fix merged; boot healthy" --bottleneck "TR-1-05 live approval proof not yet run" --files-to-read ".lucy/planning/lucyos-total-recovery/CHECKPOINT.md"
 ```
+
+## Update 2026-09-30 17:50 UTC
+- `main` = `4a41b0b` (#93 forwarding rule merged). The `lucy:` rule is in the skill and in TR-1-05 on main.
+- Lucy-den's `~/lucyos` is on local branch `feature/question-context-reduction` with no upstream (observed), so `git pull` is a no-op there (ISSUE-041). Whether it contains the router fix is unverified: run the TR-1-05 preflight.
+- Stray task `TASK-77EAD62D` is CANCELLED (observed). Two probe approvals exist and are PENDING: A-108, A-109.
+- New blocker found in that task's `last_error`: ISSUE-040, imported `/root/...` session log paths make every compile fail, so `aion work` cannot run tasks on Lucy-den. The E2E does not depend on it. TR-1-08 fixes it.
+- TR-1-05 reordered: the old order could not detect the old bug. Loose message first, against a pending approval.
+
+## Update 2026-09-30 19:57 UTC
+- Owner preflight: `~/lucyos` is at `8125fb8` (equal to main, router fix present, `decision_hint` count 2) but **dirty with a coding agent's uncommitted work** in `cli.py`, `context.py`, `model_gateway.py`. The verb path lives in `cli.py`, so the E2E must not run from there. Decision: run it from a clean detached worktree `~/lucyos-main` (proved on a scratch copy: the loose message returns "Nothing was decided" and leaves the approval pending).
+- `main` moved again to include #62. After the E2E passes, repoint OpenClaw's `LUCYOS_AION_BIN` (routine and forwarding) to `~/lucyos-main/aion` permanently.
+
+## Update 2026-09-30 20:06 UTC (Lucy-den stuck; owner rebooting)
+**TR-1-05 live E2E, first run (owner + OpenClaw, observed in the WhatsApp transcript):**
+- Proven: exact `APPROVE A-109` decided through OpenClaw; `Approve A-108` (mixed case) decided, which is by design (`(?i)` pattern, pinned by a test); `don't approve A-108` returned "Nothing was decided", a reply only the fixed router emits, so the router fix is active on that path; `DENY A-108` after approval returned "already approved, nothing re-applied"; `why A-108` returned `Status: APPROVED` under two principals; `status` and `tasks` reach LucyOS.
+- NOT yet proven: (1) a loose message leaving a PENDING approval pending (both probes were decided first); (2) attribution in the audit export (`decided_by` = `openclaw:<masked id>`). Close both with probe 3 and the one-block evidence command in `work_orders/TR-1-05.md` step 3b/4. Level 2 is not yet recorded as proven.
+- The owner must not treat mixed-case acceptance as a finding; OpenClaw repeatedly reported it as one.
+
+**Incident:** Lucy-den reported stuck; the owner is rebooting. This matches the earlier unexplained desktop freeze. After the reboot, capture previous-boot logs and confirm the journal is persistent (commands given in chat; result unknown). Do not install firmware before the logs are read.
+
+**Resume order after the reboot:** `cd ~/lucyos-main && ./aion boot`, timers present (`systemctl --user list-timers | grep aion`), `./aion openclaw-check`; then probe 3 and the evidence block; then owner-run `./aion checkpoint ...` (command above, not yet confirmed run); then repoint OpenClaw's `LUCYOS_AION_BIN` to `~/lucyos-main/aion`.
+
+**Still unmerged:** branch `fable/e2e-order-and-path-rebase` (docs only: corrected TR-1-05, TR-1-08, ISSUE-040/041, this update). Remote branch `fable/FABLE-10-override-20260930` is still to be deleted by the owner.
+
+**Not done / unverified:** CI result for main after #62; whether `~/lucyos-main` exists yet; whether the stray-task cancel and the owner's dev-checkout edits survived the freeze (check `git -C ~/lucyos status`).
+
+## Update 2026-10-01 02:00 IST (after the Lucy-den reboot)
+- Observed: persistent journal present; `aion-work.timer` and `aion-maintenance.timer` active; OpenClaw reachable on 127.0.0.1:18789; `~/lucyos-main` exists and boots. Health shows required check `errors` failing (ISSUE-044) and authority drift 6.
+- Freeze evidence read (ISSUE-042 update): no hang, OOM, watchdog, MCE or GPU-hang lines; ended in a clean shutdown; i915 GuC firmware 70.36.0 loaded vs 70.53.0 recommended. Leading hypothesis only.
+- Next: owner runs `./aion errors`, updates `linux-firmware`, reboots, confirms the GuC version; then TR-1-05 probe 3 and the evidence block; then TR-1-08.
+- Correction (same night): Ubuntu has no newer `linux-firmware`; the GuC line is advisory (driver initialised GuC/SLPC/RC fine). Fable over-weighted it. Plan is now: review and apply the 8 normal updates, enable SysRq, confirm SSH/Tailscale reachability for the next stall, and capture logs at the next freeze. Firmware is not hand-installed.

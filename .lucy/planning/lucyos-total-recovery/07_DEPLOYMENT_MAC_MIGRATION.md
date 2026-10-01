@@ -24,6 +24,7 @@ Preconditions (gates from `10_`): L1 green on main; L2 proven on Lucy-den; TR-2-
 | 1 Freeze Lucy-den | `aion whatsapp pause`; `aion backup --encrypt`; `aion export ~/lucyos-export.tar` | archive verified (`backup --verify-only`) |
 | 2 Copy | export archive + separately the 0600 `private_state/secrets.env` (never via Drive/chat; USB or scp over tailnet) | sha256 matches |
 | 3 Mac bootstrap | Xcode CLT (`python3` >= 3.9), `git clone`, `scripts/install.sh`, `scripts/install_hooks.sh` | `aion health` healthy |
+| 3b Precondition | TR-1-08 merged: session logs recorded under another home directory (for example `/root/openclaw/...` from Mark-2) must not block compiles; rehearse with a real export from Lucy-den | `aion work --dry-run` shows a READY test task runnable on the Mac |
 | 4 Restore | `aion import ~/lucyos-export.tar`; place `secrets.env` (0600); `aion boot` | task counts equal Lucy-den's; `aion verify` READY |
 | 5 Services | `scripts/install_services.sh` (darwin branch) -> `launchctl bootstrap gui/$UID ...`; grant Login Items background permission | `launchctl list | grep com.lucyos` shows PIDs after reboot |
 | 6 Local model | `brew install ollama` (or the app); `ollama pull llama3.1:8b` | `aion health` shows local models |

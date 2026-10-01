@@ -54,5 +54,6 @@
 | [TR-I-01](TR-I-01.md) | Control Center: task detail, agents view, project-scoped command | CLAUDE_CODE | none (project scoping waits for TR-5-03) | NO |  |
 | [TR-I-02](TR-I-02.md) | Control Center: machines, routing, sessions, search | CLAUDE_CODE | TR-I-01 | NO |  |
 | [TR-1-07](TR-1-07.md) | Guard: bridge messages that are not LucyOS commands must not become tasks | CLAUDE_CODE | TR-1-05 evidence | YES |  |
+| [TR-1-08](TR-1-08.md) | Session logs with foreign absolute paths must not block task execution | CLAUDE_CODE | none | YES |  |
 
-52 work orders. Phases: 0 reality, 1 control plane, 2 runtime, 3 interfaces, 4 executors, 5 projects, 6 deployment, 7 Mac, 8 value, C cleanup, I interface.
+53 work orders. Phases: 0 reality, 1 control plane, 2 runtime, 3 interfaces, 4 executors, 5 projects, 6 deployment, 7 Mac, 8 value, C cleanup, I interface.
