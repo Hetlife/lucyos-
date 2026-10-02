@@ -1,0 +1,32 @@
+{
+  "schema_version": 1,
+  "name": "lucy-nest-function-tokens",
+  "source": "Native red-eye identity as pinned in DESIGN.md (standalone device/theme.py). Native palette parity with the reconciliation worktree is unresolved; see handoffs/UI-0-opencode.md.",
+  "color": {
+    "red": "#f20710",
+    "ink": "#100706",
+    "background": "#090a09",
+    "text": "#f2efe6",
+    "muted": "#aaaaa5",
+    "rule": "#393939"
+  },
+  "spacing_px": [4, 8, 16, 24, 32],
+  "radius_px": { "surface": 4, "pill": 999 },
+  "touch_target_px": 48,
+  "contrast": {
+    "normal_text_min": 4.5,
+    "note": "Ratios are compared unrounded. Ink on red is only narrowly above the threshold, so essential text must not be faded with opacity.",
+    "pairs": [
+      { "name": "ink_on_red", "foreground": "#100706", "background": "#f20710", "use": "normal_text", "expected": "pass" },
+      { "name": "text_on_background", "foreground": "#f2efe6", "background": "#090a09", "use": "normal_text", "expected": "pass" },
+      { "name": "muted_on_background", "foreground": "#aaaaa5", "background": "#090a09", "use": "normal_text", "expected": "pass" },
+      { "name": "text_on_red_negative_control", "foreground": "#f2efe6", "background": "#f20710", "use": "negative_control", "expected": "fail" }
+    ]
+  },
+  "motion": {
+    "glance_period_ms": 7200,
+    "blink_ms": 160,
+    "reduced_motion": "static"
+  },
+  "color_policy": "Color is never the sole carrier of status; pair it with text and shape."
+}
