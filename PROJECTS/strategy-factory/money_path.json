@@ -1,0 +1,111 @@
+{
+  "project": "strategy-factory",
+  "goal": "First rupee of REAL capital placed by the Capital Engine only after one contestant earns rung 1 through the promotion gate, an independent validation exists, and Het writes the exact authorization sentence (strategy-factory docs/capital_engine/00_DESIGN.md section 8). Until then: paper evidence, for free.",
+  "steps": [
+    {
+      "id": "s1",
+      "title": "Design, research and work-order package merged to main (CE-0-01)",
+      "you": "Read docs/capital_engine/00_DESIGN.md sections 0, 1 and 8 in the strategy-factory PR (about 10 minutes), then reply 'merge CE-0-01' in a Claude session or merge the PR on GitHub yourself.",
+      "how": "strategy-factory PR from claude/scheduled-maintenance-template-d7yufr to main",
+      "checks": [
+        {"file": "PROJECTS/strategy-factory/evidence/CE-0-01.md"}
+      ]
+    },
+    {
+      "id": "s2",
+      "title": "Evidence base cleaned: duplicate-day fix confirmed live, 5-year validation run, benchmark backfilled (CE-0-02)",
+      "you": "",
+      "how": "GitHub Actions workflow_dispatch acceleration_tools.yml; evidence packet synced by CE-5-02",
+      "checks": [
+        {"file": "PROJECTS/strategy-factory/evidence/CE-0-02.md"}
+      ]
+    },
+    {
+      "id": "s3",
+      "title": "Golden-master harness and profile loader in place; equity arena byte-identical (CE-1-01, CE-1-02)",
+      "you": "",
+      "how": "ce-workorder skill, CLAUDE_CODE lane",
+      "checks": [
+        {"file": "PROJECTS/strategy-factory/evidence/CE-1-01.md"},
+        {"file": "PROJECTS/strategy-factory/evidence/CE-1-02.md"}
+      ]
+    },
+    {
+      "id": "s4",
+      "title": "Class A and class B hypotheses written before any data, and signed by you (CE-2-01, CE-3-01)",
+      "you": "Read the two hypothesis documents (15 minutes each). If you agree, write 'approved for paper trading as class A profile shield_nse' and 'AUTHORIZE CLASS B PAPER' in a session. If you disagree, say what is wrong; nothing is built until the document is right.",
+      "how": "strategy-factory docs/capital_engine/hypotheses/",
+      "checks": [
+        {"file": "PROJECTS/strategy-factory/evidence/CE-2-01.md"},
+        {"file": "PROJECTS/strategy-factory/evidence/CE-3-01.md"}
+      ]
+    },
+    {
+      "id": "s5",
+      "title": "All three paper ledgers running daily on free GitHub Actions with per-class health checks (CE-1-03, CE-1-04, CE-2-02, CE-3-03)",
+      "you": "",
+      "how": "factory.yml matrix over enabled profiles; supervisor.yml every 15 minutes",
+      "checks": [
+        {"file": "PROJECTS/strategy-factory/evidence/CE-1-04.md"},
+        {"file": "PROJECTS/strategy-factory/evidence/CE-2-02.md"}
+      ]
+    },
+    {
+      "id": "s6",
+      "title": "Portfolio view, activation gates and kill switch live; gates read RED everywhere, as expected (CE-2-03, CE-4-01, CE-4-02)",
+      "you": "",
+      "how": "portfolio/aggregate.py, portfolio/gates.py, factory_state/KILL",
+      "checks": [
+        {"file": "PROJECTS/strategy-factory/evidence/CE-4-01.md"},
+        {"file": "PROJECTS/strategy-factory/evidence/CE-4-02.md"}
+      ]
+    },
+    {
+      "id": "s7",
+      "title": "Execution-adapter contract written (no code) (CE-4-03)",
+      "you": "",
+      "how": "docs/capital_engine/EXECUTION_ADAPTER_CONTRACT.md",
+      "checks": [
+        {"file": "PROJECTS/strategy-factory/evidence/CE-4-03.md"}
+      ]
+    },
+    {
+      "id": "s8",
+      "title": "Wait for evidence: the first contestant in any class reaches rung 1 through the real promotion gate (12+ months of paper is the realistic clock)",
+      "you": "",
+      "how": "weekly report() on GitHub Actions; CE-4-01 gate evaluator flips G1",
+      "checks": [
+        {"file": "PROJECTS/strategy-factory/evidence/G1_FIRST_PROMOTION.md"}
+      ]
+    },
+    {
+      "id": "s9",
+      "title": "Independent validation in a different session, broker chosen, read-only adapter authorised and reconciling (CE-X-02)",
+      "you": "Open the broker account you choose from 00_DESIGN.md section 5 (Dhan or Upstox shortlisted), get a static IP from your ISP, and store the API credentials with aion secrets set PJ_strategy-factory__<BROKER>_API_KEY (never paste them in chat). Then write 'AUTHORIZE BROKER ADAPTER READ-ONLY <broker>' in a session.",
+      "how": "strategy-factory CE-X-02",
+      "checks": [
+        {"file": "PROJECTS/strategy-factory/evidence/CE-X-02.md"},
+        {"secret": "PJ_strategy-factory__BROKER_API_KEY"}
+      ]
+    },
+    {
+      "id": "s10",
+      "title": "First real rupee: rung-1 capital for ONE contestant in class A, with your sentence (G4)",
+      "you": "Fund the broker account with exactly the rung-1 amount (LADDER[1], currently Rs 25,000) and write 'AUTHORIZE REAL CAPITAL A <contestant> 25000' in a session. Record the funding with aion money-add.",
+      "how": "CE-4-01 must read AMBER (G1, G2, G3, G5 met) before this step is even shown as NEXT",
+      "checks": [
+        {"file": "PROJECTS/strategy-factory/evidence/G4_REAL_CAPITAL_A.md"}
+      ]
+    },
+    {
+      "id": "s11",
+      "title": "SIP from sevaa-sales-os profits into the engine (owner finance; never automated)",
+      "you": "Only after sevaa-sales-os reaches M1 and class A is GREEN: decide a monthly amount, transfer it yourself, record it with aion money-add. The system shows you the trigger; it never moves money.",
+      "how": "CE-X-03",
+      "checks": [
+        {"milestone": "M1"},
+        {"file": "PROJECTS/strategy-factory/evidence/SIP_FIRST_CONTRIBUTION.md"}
+      ]
+    }
+  ]
+}

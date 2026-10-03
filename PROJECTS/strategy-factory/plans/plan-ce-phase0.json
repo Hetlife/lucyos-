@@ -1,0 +1,47 @@
+{
+  "plan_id": "PLAN-ce-phase0",
+  "project": "strategy-factory",
+  "objective": "Lucy-den holds a current checkout of strategy-factory, its health check passes, and the next Capital Engine work order is identified without any model reasoning.",
+  "bottleneck": "LucyOS has no local view of the strategy-factory repo, so the money path cannot be evidenced from the phone.",
+  "success": "aion money-path strategy-factory shows s1 as NEXT with the owner's one action, and the evidence directory exists.",
+  "steps": [
+    {
+      "id": "s1",
+      "title": "Clone or update the strategy-factory checkout under AION_HOME",
+      "kind": "git",
+      "why": "all later DET steps read files from it",
+      "model_class": "DET",
+      "exec_command": "sh -c 'D=\"$AION_HOME/PROJECTS/strategy-factory/repo\"; if [ -d \"$D/.git\" ]; then git -C \"$D\" pull --ff-only; else git clone --depth 50 https://github.com/hetlife/strategy-factory \"$D\"; fi'",
+      "validation_command": "test -f \"$AION_HOME/PROJECTS/strategy-factory/repo/factory.py\"",
+      "success_criteria": "factory.py exists in the checkout",
+      "impact": 3, "cost": 1, "risk": 1,
+      "output_location": "$AION_HOME/PROJECTS/strategy-factory/repo"
+    },
+    {
+      "id": "s2",
+      "title": "Run the repo's own deterministic health check",
+      "kind": "test_run",
+      "why": "C9: never trust a repo state that its own health check rejects",
+      "model_class": "DET",
+      "depends_on": ["s1"],
+      "exec_command": "sh -c 'cd \"$AION_HOME/PROJECTS/strategy-factory/repo\" && python3 tools/health_check.py'",
+      "validation_command": "sh -c 'cd \"$AION_HOME/PROJECTS/strategy-factory/repo\" && python3 tools/health_check.py | grep -qi \"no findings\"'",
+      "success_criteria": "health_check prints no findings",
+      "impact": 3, "cost": 1, "risk": 1,
+      "output_location": "stdout"
+    },
+    {
+      "id": "s3",
+      "title": "Copy evidence packets into the LucyOS project folder",
+      "kind": "file_write",
+      "why": "money_path.json checks read PROJECTS/strategy-factory/evidence/*.md",
+      "model_class": "DET",
+      "depends_on": ["s1"],
+      "exec_command": "sh -c 'S=\"$AION_HOME/PROJECTS/strategy-factory/repo/.autonomous/capital_engine/EVIDENCE\"; mkdir -p PROJECTS/strategy-factory/evidence; [ -d \"$S\" ] && cp -n \"$S\"/*.md PROJECTS/strategy-factory/evidence/ 2>/dev/null; true'",
+      "validation_command": "test -d PROJECTS/strategy-factory/evidence",
+      "success_criteria": "evidence directory exists; any packets present are copied (CE-5-02 makes this nightly and secret-scanned)",
+      "impact": 2, "cost": 1, "risk": 1,
+      "output_location": "PROJECTS/strategy-factory/evidence/"
+    }
+  ]
+}
