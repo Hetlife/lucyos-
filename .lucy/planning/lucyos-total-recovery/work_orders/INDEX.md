@@ -56,6 +56,6 @@
 | [TR-1-07](TR-1-07.md) | Guard: bridge messages that are not LucyOS commands must not become tasks | CLAUDE_CODE | TR-1-05 evidence | YES |  |
 | [TR-1-08](TR-1-08.md) | Session logs with foreign absolute paths must not block task execution | CLAUDE_CODE | none | YES | DONE (#95, live run pending) |
 | [TR-2-06](TR-2-06.md) | Encrypted secrets escrow backup (`aion secrets-backup`) | CLAUDE_CODE | none | YES |  |
-| [TR-C-05](TR-C-05.md) | Resolve PR #2 by salvage and close (never merge) | CLAUDE_CODE + OWNER | none | NO |  |
+| [TR-C-05](TR-C-05.md) | Resolve PR #2 by salvage and close (never merge) | CLAUDE_CODE + OWNER | none | NO | PR open (owner tag + close pending) |
 
 55 work orders. Status column refreshed 2026-10-04 (`18_AUDIT_20261004.md` §5); the roles and wave order are in `19_SONNET_PLAN.md`. Phases: 0 reality, 1 control plane, 2 runtime, 3 interfaces, 4 executors, 5 projects, 6 deployment, 7 Mac, 8 value, C cleanup, I interface.
