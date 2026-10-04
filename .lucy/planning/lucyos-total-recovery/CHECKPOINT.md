@@ -67,3 +67,9 @@ This also clears the stale resume pointer (ISSUE-037):
 - Freeze evidence read (ISSUE-042 update): no hang, OOM, watchdog, MCE or GPU-hang lines; ended in a clean shutdown; i915 GuC firmware 70.36.0 loaded vs 70.53.0 recommended. Leading hypothesis only.
 - Next: owner runs `./aion errors`, updates `linux-firmware`, reboots, confirms the GuC version; then TR-1-05 probe 3 and the evidence block; then TR-1-08.
 - Correction (same night): Ubuntu has no newer `linux-firmware`; the GuC line is advisory (driver initialised GuC/SLPC/RC fine). Fable over-weighted it. Plan is now: review and apply the 8 normal updates, enable SysRq, confirm SSH/Tailscale reachability for the next stall, and capture logs at the next freeze. Firmware is not hand-installed.
+
+## Update 2026-10-04 (whole-program audit; Sonnet plan)
+- `main` = `13f5e11` (#95 TR-1-08, #96 strategy-factory definitions, #97 CE-5-02 evidence sync). 864 tests OK; authority self still 6 drift; boundaries 2 warnings; only PR #2 open.
+- Report: `18_AUDIT_20261004.md`. Operating plan for Sonnet (roles, waves, session loop, prompts): `19_SONNET_PLAN.md`. INDEX status column refreshed. New orders TR-2-06 (secrets escrow) and TR-C-05 (PR #2 salvage). New issues 045–048.
+- PR #2 is not mergeable (no merge base; it is a 2026-09-05 snapshot). Decision: salvage and close via TR-C-05. Agent tag push was refused, so the owner runs the tag command in TR-C-05 before closing.
+- Biggest unblocker: Fable F1, one override-batch PR to the baseline (ISSUE-047). Then the owner's Wave 0 on Lucy-den (probe 3, TR-1-08 live run, `./aion errors`, repoint `LUCYOS_AION_BIN`).

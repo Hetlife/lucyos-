@@ -2,17 +2,17 @@
 
 | ID | Title | Executor | Depends | Fable review | Status |
 |---|---|---|---|---|---|
-| [TR-0-01](TR-0-01.md) | Owner PR decisions and merges | OWNER | none | YES | PARTLY |
+| [TR-0-01](TR-0-01.md) | Owner PR decisions and merges | OWNER | none | YES | PARTLY (only #2 left → TR-C-05) |
 | [TR-0-02](TR-0-02.md) | Planning hygiene: one CURRENT plan, dangling refs fixed | DETERMINISTIC | none | NO | DONE |
 | [TR-0-03](TR-0-03.md) | Authority re-freeze | FABLE | TR-0-01 (#73 merged) | YES |  |
 | [TR-0-04](TR-0-04.md) | Runtime census on Lucy-den, Mark-2 and the LucyNest pad | CODEX | none | NO |  |
 | [TR-0-05](TR-0-05.md) | PR #73 (context compiler) verification and override | FABLE | none | YES | DONE |
 | [TR-0-06](TR-0-06.md) | Archive tags and branch-delete script | CODEX | none | NO |  |
-| [TR-1-01](TR-1-01.md) | CI: never cancel in-progress runs on main | FABLE | none | YES |  |
+| [TR-1-01](TR-1-01.md) | CI: never cancel in-progress runs on main | FABLE | none | YES | DONE (#92) |
 | [TR-1-02](TR-1-02.md) | Boundary ratchet to zero warnings | CLAUDE_CODE | none | NO |  |
-| [TR-1-03](TR-1-03.md) | Governed `whatsapp` verb on the OpenClaw bridge | CLAUDE_CODE | none | YES |  |
+| [TR-1-03](TR-1-03.md) | Governed `whatsapp` verb on the OpenClaw bridge | CLAUDE_CODE | none | YES | DONE (#89) |
 | [TR-1-04](TR-1-04.md) | Bridge service restart policy | CLAUDE_CODE | owner decision D-5; Fable adds `"TR-1-04": ["systemd/aion-br | NO |  |
-| [TR-1-05](TR-1-05.md) | Live E2E: OpenClaw -> status and approve on Lucy-den | OPENCLAW + OWNER | TR-1-03 merged and pulled on Lucy-den | NO |  |
+| [TR-1-05](TR-1-05.md) | Live E2E: OpenClaw -> status and approve on Lucy-den | OPENCLAW + OWNER | TR-1-03 merged and pulled on Lucy-den | NO | PARTLY (probe 3 + export missing) |
 | [TR-1-06](TR-1-06.md) | Decouple DET execution from the context compiler | CLAUDE_CODE | override `"TR-1-06": ["aion_core/worker.py"]` | YES |  |
 | [TR-2-01](TR-2-01.md) | Clean-machine proof script | CLAUDE_CODE | none | NO |  |
 | [TR-2-02](TR-2-02.md) | Configurable Drive remote and nightly encrypted backup push | CLAUDE_CODE | none | NO |  |
@@ -23,7 +23,7 @@
 | [TR-3-02](TR-3-02.md) | LucyNest authority decision | OWNER + FABLE | none | YES |  |
 | [TR-3-03](TR-3-03.md) | Merge LucyNest source as inactive, tested code | CLAUDE_CODE | TR-3-02 (may merge before it as inactive source) | YES |  |
 | [TR-3-04](TR-3-04.md) | Archive SCG/RPAB design docs; re-verify churn fix | CLAUDE_CODE | none | NO |  |
-| [TR-4-01](TR-4-01.md) | Install Ollama on the primary host | OWNER | none | NO |  |
+| [TR-4-01](TR-4-01.md) | Install Ollama on the primary host | OWNER | none | NO | DONE (observed) |
 | [TR-4-02](TR-4-02.md) | Executor registry and portable worker scripts | CLAUDE_CODE | overrides recorded; TR-0-04 census (which binaries exist) | YES |  |
 | [TR-4-03](TR-4-03.md) | Context compiler live on one B task | CODEX | TR-0-05, TR-4-02 | NO |  |
 | [TR-4-04](TR-4-04.md) | Routing report with cost per verified task per executor | DETERMINISTIC | TR-2-05, TR-4-02 | NO |  |
@@ -45,8 +45,8 @@
 | [TR-7-03](TR-7-03.md) | Promote the Mac, demote Lucy-den, reboot test | CODEX + OWNER | TR-7-02 | YES |  |
 | [TR-8-01](TR-8-01.md) | Set the SEVAA automation token | OWNER | none | NO |  |
 | [TR-8-02](TR-8-02.md) | Nightly SEVAA reconcile and daily brief in maintenance | CLAUDE_CODE | TR-8-01 (live), TR-5-05 (manifest; optional) | NO |  |
-| [TR-8-03](TR-8-03.md) | OpenClaw morning routine | OPENCLAW | TR-3-01 | NO |  |
-| [TR-8-04](TR-8-04.md) | Second workload: strategy-factory project via the phase-5 path | OWNER + CLAUDE_CODE | TR-5-02..07, TR-4-02 | YES |  |
+| [TR-8-03](TR-8-03.md) | OpenClaw morning routine | OPENCLAW | TR-3-01 | NO | DONE (reported, routine live) |
+| [TR-8-04](TR-8-04.md) | Second workload: strategy-factory project via the phase-5 path | OWNER + CLAUDE_CODE | TR-5-02..07, TR-4-02 | YES | PARTLY (#96 definitions) |
 | [TR-C-01](TR-C-01.md) | Archive batch: stale work artefacts and decided proposals | DETERMINISTIC | override for deploy/queues | NO |  |
 | [TR-C-02](TR-C-02.md) | Archive the four unreachable contract-skeleton modules | CLAUDE_CODE | none | NO |  |
 | [TR-C-03](TR-C-03.md) | Consolidate skill-system design texts | CLAUDE_CODE | none | NO |  |
@@ -54,6 +54,8 @@
 | [TR-I-01](TR-I-01.md) | Control Center: task detail, agents view, project-scoped command | CLAUDE_CODE | none (project scoping waits for TR-5-03) | NO |  |
 | [TR-I-02](TR-I-02.md) | Control Center: machines, routing, sessions, search | CLAUDE_CODE | TR-I-01 | NO |  |
 | [TR-1-07](TR-1-07.md) | Guard: bridge messages that are not LucyOS commands must not become tasks | CLAUDE_CODE | TR-1-05 evidence | YES |  |
-| [TR-1-08](TR-1-08.md) | Session logs with foreign absolute paths must not block task execution | CLAUDE_CODE | none | YES |  |
+| [TR-1-08](TR-1-08.md) | Session logs with foreign absolute paths must not block task execution | CLAUDE_CODE | none | YES | DONE (#95, live run pending) |
+| [TR-2-06](TR-2-06.md) | Encrypted secrets escrow backup (`aion secrets-backup`) | CLAUDE_CODE | none | YES |  |
+| [TR-C-05](TR-C-05.md) | Resolve PR #2 by salvage and close (never merge) | CLAUDE_CODE + OWNER | none | NO |  |
 
-53 work orders. Phases: 0 reality, 1 control plane, 2 runtime, 3 interfaces, 4 executors, 5 projects, 6 deployment, 7 Mac, 8 value, C cleanup, I interface.
+55 work orders. Status column refreshed 2026-10-04 (`18_AUDIT_20261004.md` §5); the roles and wave order are in `19_SONNET_PLAN.md`. Phases: 0 reality, 1 control plane, 2 runtime, 3 interfaces, 4 executors, 5 projects, 6 deployment, 7 Mac, 8 value, C cleanup, I interface.
