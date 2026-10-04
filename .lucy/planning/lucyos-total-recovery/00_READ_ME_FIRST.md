@@ -48,6 +48,8 @@ LucyOS is the control layer for Het's companies, projects, agents, machines, app
 15_AI_OS_HARNESS_AUDIT.md      harnesses A-O: status, gap, work order
 16_INTERFACE_ARCHITECTURE.md   Control Center, LucyNest, OpenClaw/WhatsApp roles
 17_CRITICAL_PATH.md            dependency graph and level gates
+18_AUDIT_20261004.md           whole-program audit 2026-10-04 (state, gates, issues 045-048, PR #2)
+19_SONNET_PLAN.md              roles, waves, session loop and prompts for finishing with Sonnet
 evidence/                      indexed evidence, generated ledgers
 work_orders/                   TR-<phase>-<nn>.md, one executable task each
 ```

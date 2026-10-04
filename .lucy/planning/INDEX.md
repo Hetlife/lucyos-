@@ -22,6 +22,8 @@ Read CURRENT documents only. HISTORICAL and UNMARKED files are evidence, not ins
 | CURRENT | `.lucy/planning/lucyos-total-recovery/15_AI_OS_HARNESS_AUDIT.md` |
 | CURRENT | `.lucy/planning/lucyos-total-recovery/16_INTERFACE_ARCHITECTURE.md` |
 | CURRENT | `.lucy/planning/lucyos-total-recovery/17_CRITICAL_PATH.md` |
+| CURRENT | `.lucy/planning/lucyos-total-recovery/18_AUDIT_20261004.md` |
+| CURRENT | `.lucy/planning/lucyos-total-recovery/19_SONNET_PLAN.md` |
 | CURRENT | `.lucy/planning/lucyos-total-recovery/CHECKPOINT.md` |
 | CURRENT | `.lucy/planning/lucyos-total-recovery/START_PROMPTS.md` |
 | CURRENT | `.lucy/planning/lucyos-total-recovery/evidence/EVIDENCE_INDEX.md` |
@@ -45,6 +47,7 @@ Read CURRENT documents only. HISTORICAL and UNMARKED files are evidence, not ins
 | CURRENT | `.lucy/planning/lucyos-total-recovery/work_orders/TR-2-03.md` |
 | CURRENT | `.lucy/planning/lucyos-total-recovery/work_orders/TR-2-04.md` |
 | CURRENT | `.lucy/planning/lucyos-total-recovery/work_orders/TR-2-05.md` |
+| CURRENT | `.lucy/planning/lucyos-total-recovery/work_orders/TR-2-06.md` |
 | CURRENT | `.lucy/planning/lucyos-total-recovery/work_orders/TR-3-01.md` |
 | CURRENT | `.lucy/planning/lucyos-total-recovery/work_orders/TR-3-02.md` |
 | CURRENT | `.lucy/planning/lucyos-total-recovery/work_orders/TR-3-03.md` |
@@ -77,6 +80,7 @@ Read CURRENT documents only. HISTORICAL and UNMARKED files are evidence, not ins
 | CURRENT | `.lucy/planning/lucyos-total-recovery/work_orders/TR-C-02.md` |
 | CURRENT | `.lucy/planning/lucyos-total-recovery/work_orders/TR-C-03.md` |
 | CURRENT | `.lucy/planning/lucyos-total-recovery/work_orders/TR-C-04.md` |
+| CURRENT | `.lucy/planning/lucyos-total-recovery/work_orders/TR-C-05.md` |
 | CURRENT | `.lucy/planning/lucyos-total-recovery/work_orders/TR-I-01.md` |
 | CURRENT | `.lucy/planning/lucyos-total-recovery/work_orders/TR-I-02.md` |
 | HISTORICAL | `.lucy/execution/NIGHT_HANDOFF_20260916.md` |
@@ -112,4 +116,4 @@ Read CURRENT documents only. HISTORICAL and UNMARKED files are evidence, not ins
 | HISTORICAL | `docs/internal/health-audit/ISSUE_REGISTER.md` |
 | HISTORICAL | `docs/internal/health-audit/SONNET_EXECUTION_QUEUE.md` |
 
-Counts: CURRENT=75, HISTORICAL=32
+Counts: CURRENT=79, HISTORICAL=32
