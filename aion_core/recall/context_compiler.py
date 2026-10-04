@@ -14,7 +14,7 @@ import time
 from collections import defaultdict
 from pathlib import Path
 
-from .. import config, db, security, util
+from .. import config, db, security, sessions, util
 
 DEFAULT_BUDGET_BYTES = 28 * 1024
 MIN_BUDGET_BYTES = 4 * 1024
@@ -108,13 +108,13 @@ def _source_item(kind: str, identity: str, project: str, title: str, body: str,
 
 
 def _session_log_excerpt(path: str, metrics: dict) -> tuple[str, str]:
-    p = Path(path)
-    if not p.is_file():
-        raise ContextCompilerError(f"session source missing: {p}")
-    try:
-        text = p.read_text(encoding="utf-8")
-    except (OSError, UnicodeError) as exc:
-        raise ContextCompilerError(f"session source unreadable: {p}: {exc}") from exc
+    # The log is only a supplement to the session row, which carries the objective,
+    # outcome and resume point. A log recorded under another home (an imported brain)
+    # or an unreadable one must never fail a compile: that would block every task.
+    text = sessions.read_log(path)
+    if text is None:
+        metrics["unavailable_sources"] = metrics.get("unavailable_sources", 0) + 1
+        return "", hashlib.sha256(f"unavailable:{path}".encode()).hexdigest()
     significant = []
     for line in text.splitlines():
         if not line.startswith("|"):
@@ -373,6 +373,7 @@ def compile_context(*, repo: Path, task_id: str | None = None, project: str | No
                 "bytes": {"markdown": current_md.stat().st_size, "json": current_json.stat().st_size},
                 "cache": {"hits": len(source_hashes), "misses": 0},
                 "rejected_sensitive_items": old.get("rejected_sensitive_items", 0),
+                "unavailable_sources": old.get("unavailable_sources", 0),
                 "build_duration_ms": round((time.monotonic() - started) * 1000, 3),
                 "source_revision": revision}
     packet, md, js = _packet(items, task, project, revision, budget_bytes, metrics)
@@ -389,6 +390,7 @@ def compile_context(*, repo: Path, task_id: str | None = None, project: str | No
                 "cache": {"hits": hits, "misses": misses},
                 "projection_files_changed": projection_changes,
                 "rejected_sensitive_items": metrics["rejected_sensitive_items"],
+                "unavailable_sources": metrics.get("unavailable_sources", 0),
                 "build_duration_ms": round((time.monotonic() - started) * 1000, 3)}
     util.write_json(manifest_path, manifest)
     return {"status": "BUILT", "task_id": task_id, "project": project,
@@ -396,4 +398,5 @@ def compile_context(*, repo: Path, task_id: str | None = None, project: str | No
             "output": {"markdown": str(current_md), "json": str(current_json)},
             "bytes": manifest["output_bytes"], "cache": manifest["cache"],
             "rejected_sensitive_items": metrics["rejected_sensitive_items"],
+            "unavailable_sources": manifest["unavailable_sources"],
             "build_duration_ms": manifest["build_duration_ms"], "source_revision": revision}
