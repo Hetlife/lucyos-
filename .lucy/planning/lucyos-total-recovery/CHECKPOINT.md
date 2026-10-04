@@ -73,3 +73,6 @@ This also clears the stale resume pointer (ISSUE-037):
 - Report: `18_AUDIT_20261004.md`. Operating plan for Sonnet (roles, waves, session loop, prompts): `19_SONNET_PLAN.md`. INDEX status column refreshed. New orders TR-2-06 (secrets escrow) and TR-C-05 (PR #2 salvage). New issues 045–048.
 - PR #2 is not mergeable (no merge base; it is a 2026-09-05 snapshot). Decision: salvage and close via TR-C-05. Agent tag push was refused, so the owner runs the tag command in TR-C-05 before closing.
 - Biggest unblocker: Fable F1, one override-batch PR to the baseline (ISSUE-047). Then the owner's Wave 0 on Lucy-den (probe 3, TR-1-08 live run, `./aion errors`, repoint `LUCYOS_AION_BIN`).
+
+## Update 2026-10-04 (F1 override batch)
+Branch `fable/F1-override-batch-20261004` adds `task_overrides` for TR-1-06, TR-2-04, TR-4-02, TR-4-05, TR-5-02, TR-5-03, TR-5-06, TR-5-07, TR-7-01, TR-C-01, TR-6-03, TR-C-03 (additions only, exact files). Deliberately not granted: TR-1-04 (waits for D-5), TR-4-05 beyond `db.py`/`worker.py`, TR-5-04 and TR-6-04 (need no protected file). A Sonnet session that needs another protected path stops with `BLOCKED_HIGH_MODEL_DECISION`. Re-freeze (TR-0-03, F2) still waits for the last protected merge: drift stays 6.

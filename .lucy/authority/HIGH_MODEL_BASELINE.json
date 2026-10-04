@@ -142,6 +142,48 @@
     ],
     "FABLE-10": [
       "aion_core/worker.py"
+    ],
+    "TR-1-06": [
+      "aion_core/worker.py"
+    ],
+    "TR-2-04": [
+      "scripts/check_portability.py",
+      "systemd/**"
+    ],
+    "TR-4-02": [
+      "aion_core/db.py",
+      "aion_core/agents.py",
+      "aion_core/worker.py"
+    ],
+    "TR-4-05": [
+      "aion_core/db.py",
+      "aion_core/worker.py"
+    ],
+    "TR-5-02": [
+      "aion_core/db.py"
+    ],
+    "TR-5-03": [
+      "aion_core/router.py"
+    ],
+    "TR-5-06": [
+      "aion_core/agents.py",
+      "aion_core/governor.py",
+      "aion_core/worker.py"
+    ],
+    "TR-5-07": [
+      "aion_core/config.py"
+    ],
+    "TR-7-01": [
+      "deploy/launchd/**"
+    ],
+    "TR-C-01": [
+      "deploy/queues/**"
+    ],
+    "TR-6-03": [
+      ".lucy/deployment/MARK2_DEPLOYMENT_CONTRACT.md"
+    ],
+    "TR-C-03": [
+      "aion_core/architecture.py"
     ]
   },
   "allowed_executor_scope": {
