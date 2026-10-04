@@ -22,7 +22,7 @@
 | [TR-3-01](TR-3-01.md) | WhatsApp via OpenClaw live from the phone | OWNER + OPENCLAW | TR-1-03 merged; TR-1-05 done | NO |  |
 | [TR-3-02](TR-3-02.md) | LucyNest authority decision | OWNER + FABLE | none | YES |  |
 | [TR-3-03](TR-3-03.md) | Merge LucyNest source as inactive, tested code | CLAUDE_CODE | TR-3-02 (may merge before it as inactive source) | YES |  |
-| [TR-3-04](TR-3-04.md) | Archive SCG/RPAB design docs; re-verify churn fix | CLAUDE_CODE | none | NO |  |
+| [TR-3-04](TR-3-04.md) | Archive SCG/RPAB design docs; re-verify churn fix | CLAUDE_CODE | none | NO | PARTLY (docs PR open; churn fix needs worker.py override) |
 | [TR-4-01](TR-4-01.md) | Install Ollama on the primary host | OWNER | none | NO | DONE (observed) |
 | [TR-4-02](TR-4-02.md) | Executor registry and portable worker scripts | CLAUDE_CODE | overrides recorded; TR-0-04 census (which binaries exist) | YES |  |
 | [TR-4-03](TR-4-03.md) | Context compiler live on one B task | CODEX | TR-0-05, TR-4-02 | NO |  |
