@@ -1,0 +1,78 @@
+{
+  "base": "e349bb03446452bace3a5225d990a73bae8160e1",
+  "kind": "planning_not_runtime_queue",
+  "first_batch": [
+    {
+      "id": "FM-01",
+      "depends": [],
+      "executor": "CODEX",
+      "lock": "runtime-control-plane",
+      "dispatch_scope": "isolated_or_read_only"
+    },
+    {
+      "id": "FM-02",
+      "depends": [],
+      "executor": "CLAUDE_CODE on Lucy-den",
+      "lock": "scripts/build_loop.sh",
+      "dispatch_scope": "isolated_or_read_only"
+    },
+    {
+      "id": "FM-03",
+      "depends": [],
+      "executor": "HIGH_CAPABILITY security review then CLAUDE_CODE",
+      "lock": "aion_core/backup.py; aion_core/cli.py",
+      "dispatch_scope": "isolated_or_read_only"
+    },
+    {
+      "id": "FM-04",
+      "depends": [],
+      "executor": "CLAUDE_CODE on Lucy-den",
+      "lock": "scripts/verify_installed_services.py",
+      "dispatch_scope": "isolated_or_read_only"
+    },
+    {
+      "id": "FM-05",
+      "depends": [],
+      "executor": "CODEX",
+      "lock": "lucynest-runtime",
+      "dispatch_scope": "isolated_or_read_only"
+    },
+    {
+      "id": "FM-06",
+      "depends": [],
+      "executor": "CODEX + deterministic Git",
+      "lock": "merge-ledger",
+      "dispatch_scope": "isolated_or_read_only"
+    },
+    {
+      "id": "FM-07",
+      "depends": [
+        "FM-01"
+      ],
+      "executor": "OPENCLAW + CODEX; owner phone for origin proof",
+      "lock": "canonical-approvals",
+      "dispatch_scope": "HOLD_UNTIL_CLEAN_RUNTIME"
+    },
+    {
+      "id": "FM-08",
+      "depends": [],
+      "executor": "CODEX fallback + deterministic",
+      "lock": "scripts/pre-commit",
+      "dispatch_scope": "isolated_fix"
+    }
+  ],
+  "serial_lanes": {
+    "worker": [
+      "TR-1-06",
+      "TR-4-02",
+      "TR-4-05",
+      "TR-5-06"
+    ],
+    "schema": [
+      "TR-4-02",
+      "TR-4-05",
+      "TR-5-02"
+    ]
+  },
+  "publication_dependency": "FM-08 repaired hook"
+}
