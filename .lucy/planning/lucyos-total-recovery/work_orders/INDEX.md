@@ -48,7 +48,7 @@
 | [TR-8-03](TR-8-03.md) | OpenClaw morning routine | OPENCLAW | TR-3-01 | NO | DONE (reported, routine live) |
 | [TR-8-04](TR-8-04.md) | Second workload: strategy-factory project via the phase-5 path | OWNER + CLAUDE_CODE | TR-5-02..07, TR-4-02 | YES | PARTLY (#96 definitions) |
 | [TR-C-01](TR-C-01.md) | Archive batch: stale work artefacts and decided proposals | DETERMINISTIC | override for deploy/queues | NO |  |
-| [TR-C-02](TR-C-02.md) | Archive the four unreachable contract-skeleton modules | CLAUDE_CODE | none | NO |  |
+| [TR-C-02](TR-C-02.md) | Archive the four unreachable contract-skeleton modules | CLAUDE_CODE | none | NO | PR open |
 | [TR-C-03](TR-C-03.md) | Consolidate skill-system design texts | CLAUDE_CODE | none | NO |  |
 | [TR-C-04](TR-C-04.md) | Retire the Fable launch pack (after D-8) | CLAUDE_CODE | owner decision D-8 | YES |  |
 | [TR-I-01](TR-I-01.md) | Control Center: task detail, agents view, project-scoped command | CLAUDE_CODE | none (project scoping waits for TR-5-03) | NO |  |

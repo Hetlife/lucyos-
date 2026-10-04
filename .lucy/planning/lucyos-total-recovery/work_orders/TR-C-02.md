@@ -1,5 +1,6 @@
 # TR-C-02 — Archive the four unreachable contract-skeleton modules
 
+**STATUS: PR open.**
 **Why:** `guardian.py`, `tempworker.py`, `intake.py`, `sync_outbox.py` have no runtime caller (ISSUE-033); they cost reading and manifest upkeep.
 **Current evidence:** EV-DEAD-MODULES; module manifests; baseline `aion_core_modules`
 **Executor:** CLAUDE_CODE

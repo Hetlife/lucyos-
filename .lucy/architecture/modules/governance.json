@@ -2,7 +2,7 @@
   "module": "governance",
   "purpose": "Health, budgets, autonomy, portability and repository verification.",
   "public_api": ["aion_core.health.run_all", "aion_core.metrics.budget_status"],
-  "owned_files": ["aion_core/health.py", "aion_core/metrics.py", "aion_core/milestones.py", "aion_core/autonomy.py", "aion_core/guardian.py", "aion_core/portability.py", "aion_core/usage_telemetry.py", "scripts/*.py"],
+  "owned_files": ["aion_core/health.py", "aion_core/metrics.py", "aion_core/milestones.py", "aion_core/autonomy.py", "aion_core/portability.py", "aion_core/usage_telemetry.py", "scripts/*.py"],
   "allowed_dependencies": ["business", "execution", "interfaces", "kernel.state", "kernel.tasks", "memory", "skills"],
   "forbidden_dependencies": [],
   "state_touched": ["Health, metrics, budgets and autonomy records in canonical SQLite", "Verification reports"],
