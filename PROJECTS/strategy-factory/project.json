@@ -1,0 +1,37 @@
+{
+  "schema_version": 1,
+  "project_id": "strategy-factory",
+  "workspace_id": "sevaaconnect",
+  "name": "Capital Engine (Strategy Factory)",
+  "objective": "Prove, with honest paper evidence, whether any systematic strategy across three asset classes (A shield: NSE ETFs + cash equities; B velocity: crypto; C derivatives: NSE index options, gated) beats its benchmark net of real cost and tax; only then earn real capital through the ladder. An evidence machine first, a money machine only if the evidence says so.",
+  "status": "ACTIVE",
+  "definition_path": "PROJECTS/strategy-factory/project.json",
+  "repos": ["github.com/hetlife/strategy-factory"],
+  "knowledge_roots": ["PROJECTS/strategy-factory/evidence"],
+  "handoff": {
+    "design": "strategy-factory:docs/capital_engine/00_DESIGN.md",
+    "work_orders": "strategy-factory:.autonomous/capital_engine/WORK_ORDERS.md",
+    "constitution": "strategy-factory:CLAUDE.md",
+    "contract": ".lucy/authority/LUCYOS_PLATFORM_AND_DATA_CONTRACTS.md#C9"
+  },
+  "policy": {
+    "max_model_class": "B",
+    "monthly_cap_inr": 500,
+    "daily_cap_inr": 100,
+    "allowed_executors": ["DET", "ollama", "claude-code"],
+    "data_class_ceiling": "CONFIDENTIAL",
+    "approval_required_kinds": ["real_money", "trading_live", "broker_credentials", "derivatives", "crypto_purchase", "production_deploy"],
+    "standing_scope": "GREEN: research, data, backtests, paper trading, risk modelling, monitoring, docs, workflows (free GitHub Actions). AMBER: anything metered. RED (fresh owner sentence every time, see 00_DESIGN.md section 8): real capital, broker/exchange code, derivatives logic, deposits/withdrawals, crypto purchases.",
+    "schedules": [
+      {"cron": "weekdays 18:15 IST", "command": "github-actions factory.yml update (runs in GitHub, not here)"},
+      {"cron": "sunday 10:00 IST", "command": "github-actions factory.yml report"},
+      {"cron": "*/15", "command": "github-actions supervisor.yml health_check (detection only)"}
+    ]
+  },
+  "integrations": [
+    {"skill_id": "risk.trading", "scope": "project", "enabled": false, "note": "paper/sandbox boundary; stays disabled until section 8 authorizations exist"},
+    {"skill_id": "risk.real-money", "scope": "project", "enabled": false},
+    {"skill_id": "dev.github", "scope": "project", "enabled": false, "scopes": ["read:repo"], "note": "enable per TR-8-04 once the integration layer (TR-5-04) exists"}
+  ],
+  "owner_notes": "Het, 2026-10-03: 'three classes under the strategy factory, run on LucyOS as a project; low-risk 50% safeguards the other two; crypto and F&O for higher returns; build it so it can eventually trade real money; low-token models finish the work.' Recorded in strategy-factory:.autonomous/het_directives.md."
+}
