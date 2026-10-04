@@ -14,8 +14,11 @@ backups are unencrypted exactly as before, and say so in their log line.
 """
 from __future__ import annotations
 
+import getpass
 import hashlib
 import hmac
+import io
+import os
 import secrets
 import sqlite3
 import tarfile
@@ -25,6 +28,9 @@ from pathlib import Path
 from . import bootstrap, config, db, util
 
 KEEP = 14
+SECRETS_KEEP = 7
+ESCROW_PASSPHRASE_ENV = "LUCYOS_SECRETS_ESCROW_PASSPHRASE"
+_MIN_ESCROW_PASSPHRASE = 8
 PASSPHRASE_SECRET_NAME = "BACKUP_PASSPHRASE"
 
 _ENCRYPTED_MAGIC = b"LUCYOSENC1"
@@ -107,7 +113,8 @@ def create() -> Path:
         src.backup(target)
         target.close()
 
-        with tarfile.open(dest, "w:gz") as tar:
+        buf = io.BytesIO()
+        with tarfile.open(fileobj=buf, mode="w:gz") as tar:
             tar.add(snapshot, arcname="state/aion.sqlite3")
             for name in config.DOCS:
                 f = root / name
@@ -120,12 +127,15 @@ def create() -> Path:
     # private_state is deliberately excluded: secrets never enter an archive
     # that might be copied to a shared drive.
 
+    # The archive is built in memory so a configured passphrase means plaintext
+    # never reaches disk (ISSUE-048).
+    raw = buf.getvalue()
     passphrase = _read_secret(PASSPHRASE_SECRET_NAME)
     if passphrase:
-        raw = dest.read_bytes()
         dest.write_bytes(encrypt_bytes(raw, passphrase))
         encrypted_note = "encrypted"
     else:
+        dest.write_bytes(raw)
         encrypted_note = f"unencrypted (no {PASSPHRASE_SECRET_NAME} configured)"
 
     _prune(dest_dir)
@@ -182,3 +192,64 @@ def verify(path: Path | None = None) -> dict:
     return {"ok": ok, "backup": path.name, "integrity": integrity,
             "tasks": tasks_n, "memories": mem_n,
             "detail": f"restored {path.name}: integrity={integrity}, {tasks_n} tasks, {mem_n} memories"}
+
+
+# --- secrets escrow (TR-2-06) -------------------------------------------------
+# `create()` leaves private_state out on purpose.  This is the one separate,
+# always-encrypted copy of it.  The passphrase must not live on the same disk,
+# so it is never read from the secret store and the command is not scheduled.
+
+def escrow_passphrase() -> str:
+    value = os.environ.get(ESCROW_PASSPHRASE_ENV) or getpass.getpass("Escrow passphrase (not stored): ")
+    if len(value) < _MIN_ESCROW_PASSPHRASE:
+        raise BackupError(f"escrow passphrase must be at least {_MIN_ESCROW_PASSPHRASE} characters")
+    return value
+
+
+def _escrow_dir() -> Path:
+    return config.home() / "BACKUPS" / "secrets"
+
+
+def _latest_escrow() -> Path | None:
+    files = sorted(_escrow_dir().glob("secrets-*.tar.gz.enc"))
+    return files[-1] if files else None
+
+
+def secrets_backup(passphrase: str) -> Path:
+    if len(passphrase or "") < _MIN_ESCROW_PASSPHRASE:
+        raise BackupError(f"escrow passphrase must be at least {_MIN_ESCROW_PASSPHRASE} characters")
+    src = config.home() / "private_state"
+    if not src.is_dir() or not any(src.iterdir()):
+        raise BackupError("no private_state to back up")
+    buf = io.BytesIO()
+    with tarfile.open(fileobj=buf, mode="w:gz") as tar:
+        tar.add(src, arcname="private_state")
+    blob = encrypt_bytes(buf.getvalue(), passphrase)
+    dest_dir = _escrow_dir()
+    dest_dir.mkdir(parents=True, exist_ok=True)
+    stamp = util.now().replace(":", "").replace("-", "")
+    dest = dest_dir / f"secrets-{stamp}.tar.gz.enc"
+    fd = os.open(dest, os.O_WRONLY | os.O_CREAT | os.O_TRUNC, 0o600)
+    with os.fdopen(fd, "wb") as f:
+        f.write(blob)
+    for old in sorted(dest_dir.glob("secrets-*.tar.gz.enc"))[:-SECRETS_KEEP]:
+        old.unlink()
+    db.log_event("aion", "backup.secrets", dest.name, f"{round(dest.stat().st_size / 1024, 1)} KB, encrypted")
+    return dest
+
+
+def secrets_verify(passphrase: str, path: Path | None = None) -> dict:
+    """Decrypt in memory and list member names.  Nothing is extracted or printed."""
+    path = path or _latest_escrow()
+    if path is None or not Path(path).is_file():
+        return {"ok": False, "detail": "no encrypted secrets backup exists yet", "members": []}
+    try:
+        raw = decrypt_bytes(Path(path).read_bytes(), passphrase)
+        with tarfile.open(fileobj=io.BytesIO(raw), mode="r:gz") as tar:
+            names = [m.name for m in tar.getmembers() if m.isfile()]
+    except (BackupError, tarfile.TarError, OSError) as exc:
+        return {"ok": False, "detail": f"{Path(path).name}: {exc}", "members": []}
+    unsafe = [n for n in names if n.startswith("/") or ".." in Path(n).parts]
+    if unsafe or not names:
+        return {"ok": False, "detail": f"{Path(path).name}: unsafe or empty archive", "members": []}
+    return {"ok": True, "detail": f"{Path(path).name}: decrypts, {len(names)} file(s)", "members": names}
