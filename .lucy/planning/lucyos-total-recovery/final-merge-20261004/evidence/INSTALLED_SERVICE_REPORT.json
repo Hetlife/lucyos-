@@ -29,5 +29,41 @@
       "status": "match"
     }
   ],
-  "changed_services": false
+  "changed_services": false,
+  "semantic_followup": {
+    "aion-bridge.service": {
+      "changed_directives": [
+        "Documentation",
+        "ExecStart",
+        "WorkingDirectory"
+      ],
+      "working_directory": "/home/scs-admin01/GitHub/Hetlife/lucyos-",
+      "active_state": "inactive"
+    },
+    "aion-interface.service": {
+      "changed_directives": [
+        "Documentation",
+        "ExecStart",
+        "WorkingDirectory"
+      ],
+      "working_directory": "/home/scs-admin01/GitHub/Hetlife/lucyos-",
+      "active_state": "inactive"
+    },
+    "aion-maintenance.service": {
+      "changed_directives": [
+        "Environment"
+      ]
+    },
+    "aion-work.service": {
+      "changed_directives": [
+        "Environment"
+      ]
+    }
+  },
+  "legacy_service_checkout": {
+    "head": "301ec61d5dc30948924aaea86dc7ae6656eb405e",
+    "branch": "feature/little-lucy-nebula-prep-20260920",
+    "dirty_entries": 10,
+    "preserved": true
+  }
 }
