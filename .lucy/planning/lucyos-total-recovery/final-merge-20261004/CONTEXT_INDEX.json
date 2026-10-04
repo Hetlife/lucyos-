@@ -1,0 +1,397 @@
+{
+  "base": "e349bb03446452bace3a5225d990a73bae8160e1",
+  "packets": {
+    "aion": [
+      {
+        "path": "aion_core/tasks.py",
+        "sha256": "a17e3e6b3680a0f5b8956959afec83f315608d0e0d77389b7256a3a678e3f73b",
+        "bytes": 31544,
+        "requires_function_slice": true
+      },
+      {
+        "path": "aion_core/sessions.py",
+        "sha256": "92b146360b80906920b003d5b94adc289f9590701c9e05690769f67d3a4ec2df",
+        "bytes": 7571,
+        "requires_function_slice": false
+      },
+      {
+        "path": "aion_core/resume.py",
+        "sha256": "1882539898599343c37b6503ab083da72034c926cffd418d236bc5f370e97828",
+        "bytes": 7451,
+        "requires_function_slice": false
+      }
+    ],
+    "openclaw": [
+      {
+        "path": "integrations/openclaw/lucyos/SKILL.md",
+        "sha256": "1c220b4d570ca7b55ee4ccb08d21ff6c52afebe69035cec3c18563785cc8b01e",
+        "bytes": 4900,
+        "requires_function_slice": false
+      },
+      {
+        "path": "aion_core/router.py",
+        "sha256": "cb7fc4250f751f9e4c54731e53dbf69dbeb5817aa0d43a6935c20400a6bc6dd8",
+        "bytes": 9436,
+        "requires_function_slice": false
+      }
+    ],
+    "ui": [
+      {
+        "path": "bridges/http_server.py",
+        "sha256": "02c92e7bc62bd0ab885b1c9c97dea79ee7c1ac3f846d2577c85a8b1d4a18c92b",
+        "bytes": 15487,
+        "requires_function_slice": false
+      },
+      {
+        "path": "aion_core/api.py",
+        "sha256": "dd70e72d827b04531462d3dc940e2678cf6fd9753c351001a964a520fec00068",
+        "bytes": 9970,
+        "requires_function_slice": false
+      },
+      {
+        "path": "web/app.js",
+        "sha256": "dbf4c21a58292db3af7b730d4d6887781283f110d8ce6d9a7e77dfd533b46a2a",
+        "bytes": 16756,
+        "requires_function_slice": true
+      },
+      {
+        "path": "web/index.html",
+        "sha256": "651fb59082aec10d8af68fe18f60f69057f7e1578d423e84fff20bc2671560d7",
+        "bytes": 4660,
+        "requires_function_slice": false
+      },
+      {
+        "path": "web/manifest.json",
+        "sha256": "941dfa55de85ef4f08c27b3128ca6dfec7fb38a03731da7acf7cd2f5d1c367e9",
+        "bytes": 176,
+        "requires_function_slice": false
+      },
+      {
+        "path": "web/service-worker.js",
+        "sha256": "3d5163c955fa249db75895c0de00d56b03ce7a44eb4f22ceb5a62247e62dbe17",
+        "bytes": 875,
+        "requires_function_slice": false
+      },
+      {
+        "path": "web/styles.css",
+        "sha256": "4f8d2562b63d9930494906c0cdc97c715ff9cbf62f301dbf13d9b8c331fbbf5f",
+        "bytes": 8038,
+        "requires_function_slice": false
+      }
+    ],
+    "db": [
+      {
+        "path": "aion_core/db.py",
+        "sha256": "a5f4c97443d33e15ab78bf0977047f6844069bdb9f5ed71666bbe94e5e46d209",
+        "bytes": 22595,
+        "requires_function_slice": true
+      },
+      {
+        "path": "aion_core/backup.py",
+        "sha256": "ab8fd05ad33c9f81db759edf1270b2bc7021184c6ec480a55fb2753d52aefcb0",
+        "bytes": 7338,
+        "requires_function_slice": false
+      }
+    ],
+    "authority": [
+      {
+        "path": "aion_core/approvals.py",
+        "sha256": "03042465ceca323106f8f2c31cadff4637a54dd706f3c8447fb29015a6aea8be",
+        "bytes": 4164,
+        "requires_function_slice": false
+      },
+      {
+        "path": "aion_core/router.py",
+        "sha256": "cb7fc4250f751f9e4c54731e53dbf69dbeb5817aa0d43a6935c20400a6bc6dd8",
+        "bytes": 9436,
+        "requires_function_slice": false
+      },
+      {
+        "path": "aion_core/security.py",
+        "sha256": "682a7f86246692737029cdbd066d47f21704b786ac140c8a460143708b3f5e78",
+        "bytes": 7839,
+        "requires_function_slice": false
+      },
+      {
+        "path": "aion_core/governor.py",
+        "sha256": "9f69cac28e9e3ee3390ca59a31d56c73ba855fb378dc3b0fe2301f8d370de934",
+        "bytes": 4739,
+        "requires_function_slice": false
+      }
+    ],
+    "context": [
+      {
+        "path": "aion_core/context.py",
+        "sha256": "057b3481bd98a6f078b743835ba654188bd35efcf4548d6b44e250c1799f83ec",
+        "bytes": 15719,
+        "requires_function_slice": false
+      },
+      {
+        "path": "aion_core/memory.py",
+        "sha256": "0550b935706d9deeda628ed3f3f49849c131d3c47c3909e9475319f70d07bacb",
+        "bytes": 5551,
+        "requires_function_slice": false
+      },
+      {
+        "path": "aion_core/skills.py",
+        "sha256": "0a531cb44c1fc21f764a263751fbe140e7417960d9e00a1a13774b14699051e3",
+        "bytes": 23209,
+        "requires_function_slice": true
+      },
+      {
+        "path": "aion_core/learnrepo.py",
+        "sha256": "6605930d34eef73bea7e16c084d05ebe768a509323a22e560d98efb2d603ff92",
+        "bytes": 31660,
+        "requires_function_slice": true
+      }
+    ],
+    "ops": [
+      {
+        "path": "aion_core/health.py",
+        "sha256": "6f615c675d17bfd8bef52dcb8d0e7dc8603d10c6a115c2e1c9b21ccf6d59dadc",
+        "bytes": 27881,
+        "requires_function_slice": true
+      },
+      {
+        "path": "aion_core/metrics.py",
+        "sha256": "e55bb3725c885526c67546e5269b1a6d42e991c43efbc5feac577771f29030fd",
+        "bytes": 5590,
+        "requires_function_slice": false
+      },
+      {
+        "path": "aion_core/usage_telemetry.py",
+        "sha256": "9aca0bb130b494d516e3a8d9e417360dda182fb4624ac721147e662459794e27",
+        "bytes": 3482,
+        "requires_function_slice": false
+      },
+      {
+        "path": "scripts/maintenance.sh",
+        "sha256": "7ade5b734a4be1f4b678fe4f2b4473a135ffec4a78cf556ec286cb1f66400f81",
+        "bytes": 1814,
+        "requires_function_slice": false
+      }
+    ],
+    "workers": [
+      {
+        "path": "aion_core/worker.py",
+        "sha256": "c9f4cd06ae8abf6b8156b8d5fee07d108d5d789070f7e310c9a5361c8b8d0bcf",
+        "bytes": 32933,
+        "requires_function_slice": true
+      },
+      {
+        "path": "aion_core/agents.py",
+        "sha256": "74771d5f8fcabb1387b8fb592124fe5bc09842f51266a382bd23fff870325c89",
+        "bytes": 6762,
+        "requires_function_slice": false
+      },
+      {
+        "path": "scripts/build_loop.sh",
+        "sha256": "ad4768ffcedcec774079bd68d93935734e7a9cfb3fb6c3aeb09305ac28f84132",
+        "bytes": 1180,
+        "requires_function_slice": false
+      }
+    ],
+    "project": [
+      {
+        "path": "aion_core/tasks.py",
+        "sha256": "a17e3e6b3680a0f5b8956959afec83f315608d0e0d77389b7256a3a678e3f73b",
+        "bytes": 31544,
+        "requires_function_slice": true
+      },
+      {
+        "path": "aion_core/db.py",
+        "sha256": "a5f4c97443d33e15ab78bf0977047f6844069bdb9f5ed71666bbe94e5e46d209",
+        "bytes": 22595,
+        "requires_function_slice": true
+      },
+      {
+        "path": "aion_core/context.py",
+        "sha256": "057b3481bd98a6f078b743835ba654188bd35efcf4548d6b44e250c1799f83ec",
+        "bytes": 15719,
+        "requires_function_slice": false
+      },
+      {
+        "path": "PROJECTS/sevaa-sales-os/experiments/EXP-001-paid-design-consult/EXPERIMENT.md",
+        "sha256": "05aec39120fd65188dc5c7d4cd521649b4686a34ceebf78481d018197998fac5",
+        "bytes": 8717,
+        "requires_function_slice": false
+      },
+      {
+        "path": "PROJECTS/sevaa-sales-os/experiments/EXP-001-paid-design-consult/PAYMENT_LINK.template.md",
+        "sha256": "31c3e4956815a8d8697fa6defcea111879adf2106546cb488f46e07dd61ce2cd",
+        "bytes": 805,
+        "requires_function_slice": false
+      },
+      {
+        "path": "PROJECTS/sevaa-sales-os/experiments/EXP-001-paid-design-consult/README.md",
+        "sha256": "bfefb60d66d925df7047727102ea6c26783ea9212e07a8ab5614ed7a13836865",
+        "bytes": 1747,
+        "requires_function_slice": false
+      },
+      {
+        "path": "PROJECTS/sevaa-sales-os/experiments/EXP-001-paid-design-consult/brief_template.md",
+        "sha256": "ec506fade46af1e67001af48d65b06a40c1f1d3dc683400bba4e5975ef44ed2a",
+        "bytes": 1285,
+        "requires_function_slice": false
+      },
+      {
+        "path": "PROJECTS/sevaa-sales-os/experiments/EXP-001-paid-design-consult/call_checklist.md",
+        "sha256": "739ff19fe0a248735ee87527c1b59c1ebc3ac52f54c0816b1075d144ac962942",
+        "bytes": 1686,
+        "requires_function_slice": false
+      },
+      {
+        "path": "PROJECTS/sevaa-sales-os/experiments/EXP-001-paid-design-consult/contacts.csv",
+        "sha256": "1bb55eddd31c205fce869c66ea9a157c8c5f803a976c6004ca55f03ce551a4b9",
+        "bytes": 56,
+        "requires_function_slice": false
+      },
+      {
+        "path": "PROJECTS/sevaa-sales-os/experiments/EXP-001-paid-design-consult/experiment.json",
+        "sha256": "ad8a5670d083a304cbd51b2a64eb379cce729269d052042e74aec0fd3fcad198",
+        "bytes": 2403,
+        "requires_function_slice": false
+      },
+      {
+        "path": "PROJECTS/sevaa-sales-os/experiments/EXP-001-paid-design-consult/outreach_message.md",
+        "sha256": "cc4a576662a6413cde34e237b9b35c2a0b969cd3c72efd8f93e7b5b576ea5fa1",
+        "bytes": 2140,
+        "requires_function_slice": false
+      },
+      {
+        "path": "PROJECTS/sevaa-sales-os/money_path.json",
+        "sha256": "76d4a1b90e56c974452caebdd9e63a8dcf9bad7f6cb3d0067c9c8f6f23975af6",
+        "bytes": 3890,
+        "requires_function_slice": false
+      },
+      {
+        "path": "PROJECTS/strategy-factory/README.md",
+        "sha256": "49f513472461615987b427a4aa98308c43a778c31399054c51de61077aa161d8",
+        "bytes": 1403,
+        "requires_function_slice": false
+      },
+      {
+        "path": "PROJECTS/strategy-factory/evidence/README.md",
+        "sha256": "57c800272bbb32c2dd7ed3c71a5070e93a4b9df35db1e2e6889ceaae1adeab76",
+        "bytes": 238,
+        "requires_function_slice": false
+      },
+      {
+        "path": "PROJECTS/strategy-factory/money_path.json",
+        "sha256": "9a6954fb670537a160bcbe0f2475cc841f811aeba80ba031525067522ff6a966",
+        "bytes": 5554,
+        "requires_function_slice": false
+      },
+      {
+        "path": "PROJECTS/strategy-factory/plans/plan-ce-phase0.json",
+        "sha256": "be0171fa53e18546240983a3aabe1acea1267674a504c3091f14f46c5c495ef9",
+        "bytes": 2717,
+        "requires_function_slice": false
+      },
+      {
+        "path": "PROJECTS/strategy-factory/project.json",
+        "sha256": "7c6f7f86a9a1897ae30ce99d50ee512cb8068390f1f6835c430ce0386e4cde94",
+        "bytes": 2752,
+        "requires_function_slice": false
+      }
+    ],
+    "deploy": [
+      {
+        "path": "scripts/install.sh",
+        "sha256": "d6d1aaa76a01faa12094fc0ab694b0f0aa5377e608009bec1af956fbd4449221",
+        "bytes": 1277,
+        "requires_function_slice": false
+      },
+      {
+        "path": "scripts/build_loop.sh",
+        "sha256": "ad4768ffcedcec774079bd68d93935734e7a9cfb3fb6c3aeb09305ac28f84132",
+        "bytes": 1180,
+        "requires_function_slice": false
+      },
+      {
+        "path": "systemd/README.md",
+        "sha256": "43a049b2ee51ddd3f5c49fe570026c940974acf8b7475168f46886192439d584",
+        "bytes": 772,
+        "requires_function_slice": false
+      },
+      {
+        "path": "systemd/aion-bridge.service",
+        "sha256": "e66c81f3543e1cd1a9c6be1b4c1eeec734ba0c851aeec3ae698f3af8b9f28218",
+        "bytes": 716,
+        "requires_function_slice": false
+      },
+      {
+        "path": "systemd/aion-interface.service",
+        "sha256": "77d20a952d55ad54a089702f7a191ba2a04c8bc72b644267a2f75962bf28b517",
+        "bytes": 460,
+        "requires_function_slice": false
+      },
+      {
+        "path": "systemd/aion-maintenance.service",
+        "sha256": "e56d4052c066b27352002e9bb365f6adec17caa45427a8ede7e444651b40a32e",
+        "bytes": 275,
+        "requires_function_slice": false
+      },
+      {
+        "path": "systemd/aion-maintenance.timer",
+        "sha256": "05880a17ef35aac46d9efa472e1e36b4fa4c58f51ac05fe088de025c4299bc94",
+        "bytes": 156,
+        "requires_function_slice": false
+      },
+      {
+        "path": "systemd/aion-work.service",
+        "sha256": "4ebb8252cdfa56fc8c4d0df1be6eaa500b03ae009fb40080019b482170f1ef4b",
+        "bytes": 230,
+        "requires_function_slice": false
+      },
+      {
+        "path": "systemd/aion-work.timer",
+        "sha256": "ae1996d4ae0276d1b81db03be11b3938c31e8511bb8885d8c4c12db789358a24",
+        "bytes": 170,
+        "requires_function_slice": false
+      },
+      {
+        "path": "systemd/mark2-drive.service",
+        "sha256": "db6d25ead0e96afc03faa0d1d65e8e670ac48a2a676694bcdf683b7ddbe154f3",
+        "bytes": 661,
+        "requires_function_slice": false
+      },
+      {
+        "path": "systemd/mark2-drive.timer",
+        "sha256": "a79c642874ffd6bdbcc70794b7f784d238b1674736c2e7f4d21de2a7f5ba41c1",
+        "bytes": 189,
+        "requires_function_slice": false
+      },
+      {
+        "path": "deploy/launchd/README.md",
+        "sha256": "a6f65f3ebb43d3f31ec9348acb0b4c74308fb36e243ae430240a5f31ef21ce2d",
+        "bytes": 3925,
+        "requires_function_slice": false
+      },
+      {
+        "path": "deploy/launchd/com.lucyos.aion-bridge.plist",
+        "sha256": "885599bfcf5b48706287a7f0fe81e6cfb2f61bb56e8d0d081efdd412081b85cc",
+        "bytes": 962,
+        "requires_function_slice": false
+      },
+      {
+        "path": "deploy/launchd/com.lucyos.aion-interface.plist",
+        "sha256": "5d6284cf028f483ac79524157d4ecadab39fc311700f9ec9613edc303d3a8b4c",
+        "bytes": 882,
+        "requires_function_slice": false
+      },
+      {
+        "path": "deploy/launchd/com.lucyos.aion-maintenance.plist",
+        "sha256": "060bd93d8d9b7ba157cd94c2019af6d5d1067aeba7d7af4d949b17d7b84e5918",
+        "bytes": 887,
+        "requires_function_slice": false
+      },
+      {
+        "path": "deploy/launchd/com.lucyos.aion-work.plist",
+        "sha256": "5af62f4d1ce7d880f422d75a8d66f35d5cf920facb3829397e525e9bff472fca",
+        "bytes": 760,
+        "requires_function_slice": false
+      }
+    ]
+  }
+}
