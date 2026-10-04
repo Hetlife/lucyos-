@@ -18,6 +18,7 @@ log() { "${AION}" session log "${SESSION}" --kind "$1" --text "$2" >/dev/null; }
 "${AION}" owner-setup    >/dev/null && log action "owner setup list refreshed"
 "${AION}" hands-off-evaluate >/dev/null && log action "yesterday hands-off evidence evaluated"
 "${AION}" learnrepo-run --mode nightly >/dev/null && log test "LearnRepo nightly deterministic health completed"
+python3 "${REPO}/scripts/sync_project_evidence.py" >/dev/null && log action "project evidence synced" || log failure "project evidence sync failed"
 if "${AION}" scan "${REPO}" >/dev/null; then
   log test "secret scan clean"
 else
