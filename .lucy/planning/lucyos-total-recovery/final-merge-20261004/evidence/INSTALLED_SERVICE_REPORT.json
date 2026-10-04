@@ -1,0 +1,33 @@
+{
+  "host": "Lucy-den",
+  "templates_base": "e349bb03446452bace3a5225d990a73bae8160e1",
+  "render_repo": "/home/scs-admin01/lucyos",
+  "comparison": "exact rendered bytes; mismatch alone is not semantic diagnosis",
+  "results": [
+    {
+      "unit": "aion-bridge.service",
+      "status": "different"
+    },
+    {
+      "unit": "aion-interface.service",
+      "status": "different"
+    },
+    {
+      "unit": "aion-maintenance.service",
+      "status": "different"
+    },
+    {
+      "unit": "aion-maintenance.timer",
+      "status": "match"
+    },
+    {
+      "unit": "aion-work.service",
+      "status": "different"
+    },
+    {
+      "unit": "aion-work.timer",
+      "status": "match"
+    }
+  ],
+  "changed_services": false
+}

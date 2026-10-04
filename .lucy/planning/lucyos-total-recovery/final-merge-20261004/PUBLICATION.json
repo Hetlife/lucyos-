@@ -13,18 +13,27 @@
     {
       "number": 107,
       "url": "https://github.com/Hetlife/lucyos-/pull/107",
-      "head": "5a081019fc586efe415d7dbd4685f2913fa88931"
+      "head": "ee821916c0c00c32e1b90b24cc40aac240c188c2"
     },
     {
       "number": 108,
       "url": "https://github.com/Hetlife/lucyos-/pull/108",
       "head": "5c44a8a5085d804255f850480f920c194c65f05f",
       "base": "task/TR-2-06-secrets-escrow"
+    },
+    {
+      "number": 109,
+      "url": "https://github.com/Hetlife/lucyos-/pull/109",
+      "head": "d2b22ab3694c4946a1f80a3672e355651ca24b12"
     }
   ],
   "ci_confirmed_success": [
     105,
     106,
-    107
+    107,
+    108
+  ],
+  "ci_pending": [
+    109
   ]
 }

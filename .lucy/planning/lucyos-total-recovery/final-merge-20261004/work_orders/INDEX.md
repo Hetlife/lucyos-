@@ -11,3 +11,6 @@
 | FM-07 | P1 | OPENCLAW + CODEX; owner phone for origin proof | FM-01 | canonical-approvals |
 
 Planning identifiers only. Reuse/bind canonical task/session before execution; this audit did not create parallel task infrastructure.
+
+
+FM-09: camera retry repair, held on verified source provenance; depends on FM-05.

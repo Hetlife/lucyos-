@@ -1,0 +1,17 @@
+{
+  "host": "Lucy-den",
+  "observed_local": "2026-10-04 20:57 IST",
+  "service": "lucy-nest-camera.service",
+  "unit_path": "/home/scs-admin01/.config/systemd/user/lucy-nest-camera.service",
+  "script_path": "/home/scs-admin01/lucy-nest-design-system/tools/camera_capture.py",
+  "script_sha256": "1bee3e929b1765b04651a0202ee5738cd99c873199a4ccb87a28ee4b795b9310",
+  "script_checkout_has_git_directory": false,
+  "device": "/dev/video0",
+  "device_exists": false,
+  "video_devices": [],
+  "unit_restart_policy": "always",
+  "unit_restart_seconds": 3,
+  "observed_restarts": 1007,
+  "conclusion": "Configured camera device absent; pipeline cannot open it. Source provenance and bounded retry repair remain unresolved.",
+  "changed_services_or_captured_images": false
+}

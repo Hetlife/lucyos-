@@ -59,6 +59,15 @@
       "executor": "CODEX fallback + deterministic",
       "lock": "scripts/pre-commit",
       "dispatch_scope": "isolated_fix"
+    },
+    {
+      "id": "FM-09",
+      "depends": [
+        "FM-05"
+      ],
+      "executor": "CODEX + deterministic; high-capability if ambiguous",
+      "lock": "lucynest-runtime",
+      "dispatch_scope": "HOLD_UNTIL_SOURCE_PROVENANCE_VERIFIED"
     }
   ],
   "serial_lanes": {
@@ -74,5 +83,12 @@
       "TR-5-02"
     ]
   },
-  "publication_dependency": "FM-08 repaired hook"
+  "publication_dependency": "FM-08 repaired hook",
+  "completed_preparation": {
+    "FM-02": "PR106; not deployed",
+    "FM-03": "PR108 stacked on PR102; not deployed",
+    "FM-04": "PR109; not deployed",
+    "FM-08": "PR105; not merged",
+    "FM-05": "diagnostics partial; physical E2E unproven"
+  }
 }
