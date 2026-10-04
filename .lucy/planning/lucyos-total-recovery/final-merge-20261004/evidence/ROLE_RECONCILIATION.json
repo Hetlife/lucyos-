@@ -1,0 +1,29 @@
+{
+  "observed": "2026-10-04",
+  "intended_primary": "Lucy-den",
+  "source_plan": "07_DEPLOYMENT_MAC_MIGRATION.md",
+  "counts": {
+    "den": 38,
+    "mark2": 35,
+    "shared": 35
+  },
+  "den_only": [
+    "TASK-3A07D915",
+    "TASK-77EAD62D",
+    "TASK-F8F6917D"
+  ],
+  "mark2_only": [],
+  "shared_status_differences": [
+    {
+      "task_id": "TASK-2A855C53",
+      "den_status": "DONE",
+      "mark2_status": "NEEDS_REVIEW"
+    },
+    {
+      "task_id": "TASK-89B0270A",
+      "den_status": "NEEDS_REVIEW",
+      "mark2_status": "WAITING"
+    }
+  ],
+  "decision": "preserve both; no blind import or overwrite; disable independent secondary dispatch only after service change gate"
+}

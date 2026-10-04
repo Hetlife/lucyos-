@@ -1,0 +1,10 @@
+# workers/routing/concurrency/recovery
+Status: PREPARED, review NOT claimed complete.
+Executor: deterministic inventory first, then bounded Claude Code review; high model only for security/ambiguity.
+Base: e349bb03446452bace3a5225d990a73bae8160e1.
+Read baseline then only: aion_core/worker.py, aion_core/agents.py, scripts/build_loop.sh.
+Relevant tests: tests/test_plan_worker.py, tests/test_context_worker_integration.py. Confirm paths exist; a missing name is a packet defect, not permission for a whole-repo scan. For directories select the exact relevant files in the manifest before dispatch.
+Known focus: FM-B01/04, ISSUE-030; loss/retry/exit semantics.
+Checklist: state transitions; race/idempotency; stale assumptions; error handling; duplicated state; security boundaries; input validation; contract mismatches; missing tests; machine paths; dead code/complexity.
+Return reproducible evidence and root-cause IDs, or NO FINDING with reviewed files/hashes. Do not fabricate a bug from a name.
+No code changes in review. Any fix needs its own exact allowlist/test/rollback order. Two matching failed attempts escalate. Model packet ceiling 6k tokens; split by function before exceeding.
