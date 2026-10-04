@@ -9,7 +9,7 @@
 | [TR-0-05](TR-0-05.md) | PR #73 (context compiler) verification and override | FABLE | none | YES | DONE |
 | [TR-0-06](TR-0-06.md) | Archive tags and branch-delete script | CODEX | none | NO |  |
 | [TR-1-01](TR-1-01.md) | CI: never cancel in-progress runs on main | FABLE | none | YES | DONE (#92) |
-| [TR-1-02](TR-1-02.md) | Boundary ratchet to zero warnings | CLAUDE_CODE | none | NO |  |
+| [TR-1-02](TR-1-02.md) | Boundary ratchet to zero warnings | CLAUDE_CODE | none | NO | PR open |
 | [TR-1-03](TR-1-03.md) | Governed `whatsapp` verb on the OpenClaw bridge | CLAUDE_CODE | none | YES | DONE (#89) |
 | [TR-1-04](TR-1-04.md) | Bridge service restart policy | CLAUDE_CODE | owner decision D-5; Fable adds `"TR-1-04": ["systemd/aion-br | NO |  |
 | [TR-1-05](TR-1-05.md) | Live E2E: OpenClaw -> status and approve on Lucy-den | OPENCLAW + OWNER | TR-1-03 merged and pulled on Lucy-den | NO | PARTLY (probe 3 + export missing) |

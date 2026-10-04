@@ -16,7 +16,6 @@ import json
 import os
 import platform
 import shutil
-import sqlite3
 import sys
 import tarfile
 from pathlib import Path
@@ -32,6 +31,14 @@ _PROBE_TOOLS = ("git", "python3", "sqlite3", "rclone", "ollama",
 
 def _tool_presence() -> dict:
     return {tool: shutil.which(tool) is not None for tool in _PROBE_TOOLS}
+
+
+def _sqlite_version() -> str:
+    """db.py owns the sqlite3 import; read the version through it (boundary rule)."""
+    if str(REPO) not in sys.path:
+        sys.path.insert(0, str(REPO))
+    from aion_core import db
+    return db.sqlite3.sqlite_version
 
 
 def _host_adapter_facts() -> dict:
@@ -61,7 +68,7 @@ def collect() -> dict:
         "cpu_count": os.cpu_count(),
         "disk_total_gb": round(disk.total / 1e9, 2),
         "disk_free_gb": round(disk.free / 1e9, 2),
-        "sqlite_version": sqlite3.sqlite_version,
+        "sqlite_version": _sqlite_version(),
         "has_gzip_tar_support": _has_gzip_tar_support(),
         "tooling": _tool_presence(),
     }
