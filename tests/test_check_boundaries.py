@@ -21,6 +21,10 @@ class TestBoundaryGuard(unittest.TestCase):
         report = json.loads((ROOT / "evidence/boundary_report.md").read_text().split("\n", 2)[2])
         self.assertIn("violations", report)
 
+    def test_repo_has_zero_boundary_findings(self):
+        # TR-1-02: the ratchet is at zero; a new finding must fail here, not hide in warnings.
+        self.assertEqual(load_guard().findings(), [])
+
     def test_strict_mode_fails_for_unmapped_violation(self):
         guard = load_guard()
         original_findings = guard.findings

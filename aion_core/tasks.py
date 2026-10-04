@@ -3,7 +3,6 @@ from __future__ import annotations
 
 import json
 import re
-import sqlite3
 import subprocess
 from contextlib import nullcontext
 from pathlib import Path
@@ -157,7 +156,7 @@ def create(title: str, **kw) -> str:
     return task_id
 
 
-def get(task_id: str) -> sqlite3.Row | None:
+def get(task_id: str) -> db.sqlite3.Row | None:
     return db.connect().execute("SELECT * FROM tasks WHERE task_id=?", (task_id,)).fetchone()
 
 
