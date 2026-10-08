@@ -56,6 +56,9 @@ for unit in aion-bridge.service aion-interface.service aion-maintenance.service 
 done
 
 systemctl --user daemon-reload
+# Rendered units must equal the repo templates; informative here, a gate in update flows.
+python3 "${REPO}/scripts/verify_installed_services.py" --repo "${REPO}" --aion-home "${AION_HOME}" \
+  --units-dir "${UNITS}" >/dev/null || echo "WARNING: installed units differ from templates (run scripts/verify_installed_services.py)"
 systemctl --user enable --now aion-maintenance.timer
 systemctl --user enable --now aion-work.timer
 echo "maintenance timer enabled (nightly)"
