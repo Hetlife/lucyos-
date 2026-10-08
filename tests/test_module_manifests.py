@@ -68,6 +68,12 @@ class ModuleManifestTests(unittest.TestCase):
         cls.tracked = git('-C', str(ROOT), 'ls-files', '-z').rstrip('\0').split('\0')
         cls.graph = json.loads((EVIDENCE / 'dependency_graph.json').read_text())
         cls.metrics = json.loads((EVIDENCE / 'complexity_map.json').read_text())['modules']
+        # S-41 evidence is a 2026-09-18 snapshot; modules archived since (TR-C-02) are no
+        # longer owned by any manifest, so drop them and their edges from the snapshot.
+        gone = {name for name, m in cls.metrics.items() if not (ROOT / m['path']).exists()}
+        cls.metrics = {n: m for n, m in cls.metrics.items() if n not in gone}
+        cls.graph = dict(cls.graph, edges=[e for e in cls.graph['edges']
+                                           if e[0] not in gone and e[1] not in gone])
 
     def check_schema(self, manifests):
         self.assertEqual(self.schema['type'], 'object')

@@ -1,6 +1,6 @@
 # TR-C-05 — Resolve PR #2 by salvage and close (never merge)
 
-**STATUS: OPEN.** Audit: `18_AUDIT_20261004.md` §6.
+**STATUS: README on PR; owner tags a968606 then closes #2.** Audit: `18_AUDIT_20261004.md` §6.
 **Why:** PR #2 (`claude/aion-whatsapp-control-1seild` @ `a968606`, 2026-09-05) has no merge base with `main` and is `dirty`. Merging it would replace a month of `main` with a September snapshot. Its remaining value is in a few branch-only files.
 **Current evidence:** `git merge-base origin/main a968606` → none; `branch_ledger.py` → UNRELATED; GitHub `mergeable_state: dirty`.
 **Executor:** CLAUDE_CODE (Sonnet S-IMPL) for the record; OWNER for the tag and the close
