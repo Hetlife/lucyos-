@@ -98,6 +98,9 @@ def _main(argv=None) -> int:
     sub.add_parser("seed", help="seed the opening objective, decisions and task queue")
     bk = sub.add_parser("backup", help="create a backup and restore-test it")
     bk.add_argument("--verify-only", action="store_true")
+    sb = sub.add_parser("secrets-backup", help="encrypted copy of private_state (passphrase from "
+                        "LUCYOS_SECRETS_ESCROW_PASSPHRASE or a prompt; never scheduled)")
+    sb.add_argument("--verify-only", action="store_true")
     sub.add_parser("openclaw-check", help="loopback reachability probe for an optional OpenClaw gateway")
     sub.add_parser("sevaa-reconcile", help="record newly verified-paid SEVAA payment links as revenue")
     sub.add_parser("export", help="write a portable archive of canonical state (no secrets)")
@@ -403,6 +406,17 @@ def _main(argv=None) -> int:
         if not args.verify_only:
             _print(f"created {backup.create()}")
         result = backup.verify()
+        _print(result["detail"])
+        return 0 if result["ok"] else 1
+    elif cmd == "secrets-backup":
+        try:
+            passphrase = backup.escrow_passphrase()
+            if not args.verify_only:
+                _print(f"created {backup.secrets_backup(passphrase)}")
+        except backup.BackupError as exc:
+            _print(str(exc))
+            return 1
+        result = backup.secrets_verify(passphrase)
         _print(result["detail"])
         return 0 if result["ok"] else 1
     elif cmd == "sevaa-reconcile":
