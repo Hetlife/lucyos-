@@ -279,15 +279,19 @@ def validate_agent_envelope(payload: dict, *, allowed_paths=(),
     """
     if not isinstance(payload, dict):
         raise PacketError("Lucy Envelope must be an object")
+    schema = json.loads(AGENT_ENVELOPE_SCHEMA.read_text(encoding="utf-8"))
     try:
         from jsonschema import Draft202012Validator, FormatChecker
     except ImportError:
-        raise PacketError("jsonschema is required; refusing unvalidated envelope") from None
-    schema = json.loads(AGENT_ENVELOPE_SCHEMA.read_text(encoding="utf-8"))
-    validator = Draft202012Validator(schema, format_checker=FormatChecker())
-    first = next(validator.iter_errors(payload), None)
-    if first is not None:
-        raise PacketError("invalid Lucy Envelope: " + first.message[:180])
+        try:
+            _schema_subset_check(payload, schema, root=AGENT_ENVELOPE_SCHEMA.parent)
+        except (ValueError, TypeError, RecursionError) as exc:
+            raise PacketError("invalid Lucy Envelope (stdlib schema): " + str(exc)[:180]) from None
+    else:
+        validator = Draft202012Validator(schema, format_checker=FormatChecker())
+        first = next(validator.iter_errors(payload), None)
+        if first is not None:
+            raise PacketError("invalid Lucy Envelope: " + first.message[:180])
     from datetime import datetime
     try:
         stamped = datetime.fromisoformat(payload["created_at"].replace("Z", "+00:00"))
@@ -554,3 +558,174 @@ def record_authenticated_agent_review(proposal: dict, review: dict, *,
     return {"status": "RECORDED", "event_ref": f"events/{event_id}",
             "task_id": review["task_id"], "triage": decision["state"],
             "task_pass_granted": False, "owner_approval_granted": False}
+
+
+# CI, clean macOS and a future Mac mini may have only Python's standard
+# library.  This validator implements precisely the JSON Schema keywords used
+# by the three frozen Lucy schemas, and REJECTS every unsupported construct.
+# When jsonschema is installed we prefer its full Draft 2020-12 engine.
+_SCHEMA_KEYS = frozenset({
+    "$schema", "$id", "$ref", "title", "description", "type", "const",
+    "enum", "required", "properties", "additionalProperties", "items",
+    "minLength", "maxLength", "pattern", "minItems", "maxItems",
+    "minProperties", "maxProperties", "minimum", "maximum", "format",
+    "allOf", "if", "then",
+})
+
+
+def _schema_subset_check(value, schema: dict, *, depth: int = 0,
+                         root: Path | None = None) -> None:
+    """Validate a JSON value against the fail-closed supported schema subset.
+
+    This validates structured JSON fields, NOT model prose.  It is intentionally
+    unable to fetch remote references or relax an unrecognized policy keyword.
+    Raises ValueError for both violations and unimplemented schema features.
+    """
+    if depth == 0:
+        _schema_subset_static_audit(schema)
+    if depth > 18 or not isinstance(schema, dict):
+        raise ValueError("schema invalid or too deeply nested")
+    unsupported = set(schema) - _SCHEMA_KEYS
+    if unsupported:
+        raise ValueError("unsupported schema constraints: " + ",".join(sorted(unsupported)))
+    if "$ref" in schema:
+        ref = schema["$ref"]
+        if ref != "agent-message.schema.json" or root is None:
+            raise ValueError("schema reference not approved")
+        target = root / ref
+        if target.is_symlink() or not target.is_file():
+            raise ValueError("schema reference missing or unsafe")
+        _schema_subset_check(value, json.loads(target.read_text("utf-8")),
+                             depth=depth + 1, root=root)
+    if "type" in schema:
+        expected = schema["type"]
+        allowed = [expected] if isinstance(expected, str) else expected
+        if not isinstance(allowed, list) or not allowed:
+            raise ValueError("schema type declaration invalid")
+        matched = False
+        for kind in allowed:
+            if kind == "object": matched |= isinstance(value, dict)
+            elif kind == "array": matched |= isinstance(value, list)
+            elif kind == "string": matched |= isinstance(value, str)
+            elif kind == "integer": matched |= isinstance(value, int) and not isinstance(value, bool)
+            elif kind == "number": matched |= isinstance(value, (int, float)) and not isinstance(value, bool)
+            elif kind == "boolean": matched |= isinstance(value, bool)
+            elif kind == "null": matched |= value is None
+            else: raise ValueError("unsupported JSON Schema type")
+        if not matched:
+            raise ValueError("type mismatch")
+    if "const" in schema and (type(value) is not type(schema["const"])
+                              or value != schema["const"]):
+        raise ValueError("constant mismatch")
+    if "enum" in schema:
+        if not isinstance(schema["enum"], list) or not any(
+                type(x) is type(value) and x == value for x in schema["enum"]):
+            raise ValueError("value outside enum")
+    if isinstance(value, str):
+        if "minLength" in schema and len(value) < schema["minLength"]:
+            raise ValueError("string too short")
+        if "maxLength" in schema and len(value) > schema["maxLength"]:
+            raise ValueError("string too long")
+        if "pattern" in schema and re.search(schema["pattern"], value) is None:
+            raise ValueError("pattern mismatch")
+        if "format" in schema:
+            if schema["format"] != "date-time":
+                raise ValueError("unsupported schema format")
+            from datetime import datetime
+            try:
+                dt = datetime.fromisoformat(value.replace("Z", "+00:00"))
+                if dt.tzinfo is None or dt.utcoffset() is None:
+                    raise ValueError("missing timezone")
+            except ValueError:
+                raise ValueError("invalid date-time format") from None
+    if isinstance(value, (int, float)) and not isinstance(value, bool):
+        if "minimum" in schema and value < schema["minimum"]:
+            raise ValueError("number below minimum")
+        if "maximum" in schema and value > schema["maximum"]:
+            raise ValueError("number above maximum")
+    if isinstance(value, list):
+        if "minItems" in schema and len(value) < schema["minItems"]:
+            raise ValueError("array too short")
+        if "maxItems" in schema and len(value) > schema["maxItems"]:
+            raise ValueError("array too long")
+        if "items" in schema:
+            for item in value:
+                _schema_subset_check(item, schema["items"], depth=depth + 1, root=root)
+    if isinstance(value, dict):
+        required = schema.get("required", [])
+        if not isinstance(required, list) or any(
+                not isinstance(key, str) for key in required):
+            raise ValueError("invalid schema required list")
+        if any(key not in value for key in required):
+            raise ValueError("required field missing")
+        if "minProperties" in schema and len(value) < schema["minProperties"]:
+            raise ValueError("object has too few properties")
+        if "maxProperties" in schema and len(value) > schema["maxProperties"]:
+            raise ValueError("object has too many properties")
+        fields = schema.get("properties", {})
+        if not isinstance(fields, dict):
+            raise ValueError("invalid schema properties")
+        extras = schema.get("additionalProperties", True)
+        if extras is False and set(value) - set(fields):
+            raise ValueError("unexpected object fields")
+        if extras is not False and extras is not True and not isinstance(extras, dict):
+            raise ValueError("unsupported additionalProperties rule")
+        for key, val in value.items():
+            if key in fields:
+                _schema_subset_check(val, fields[key], depth=depth + 1, root=root)
+            elif isinstance(extras, dict):
+                _schema_subset_check(val, extras, depth=depth + 1, root=root)
+    if "allOf" in schema:
+        if not isinstance(schema["allOf"], list):
+            raise ValueError("invalid allOf")
+        for part in schema["allOf"]:
+            _schema_subset_check(value, part, depth=depth + 1, root=root)
+    if "if" in schema:
+        if "then" not in schema:
+            raise ValueError("conditional schema without then")
+        try:
+            _schema_subset_check(value, schema["if"], depth=depth + 1, root=root)
+        except ValueError:
+            pass
+        else:
+            _schema_subset_check(value, schema["then"], depth=depth + 1, root=root)
+    elif "then" in schema:
+        raise ValueError("then without if")
+
+
+def _schema_subset_static_audit(schema: dict, *, depth: int = 0) -> None:
+    """Reject unknown/unsupported schema rules EVEN inside an unmatched if."""
+    if depth > 18 or not isinstance(schema, dict):
+        raise ValueError("invalid nested schema")
+    unknown = set(schema) - _SCHEMA_KEYS
+    if unknown:
+        raise ValueError("unsupported schema constraints: " + ",".join(sorted(unknown)))
+    if "format" in schema and schema["format"] != "date-time":
+        raise ValueError("unsupported schema format")
+    if "$ref" in schema and schema["$ref"] != "agent-message.schema.json":
+        raise ValueError("schema reference not approved")
+    if "type" in schema:
+        types = schema["type"]
+        types = [types] if isinstance(types, str) else types
+        if not isinstance(types, list) or not types or any(
+                t not in {"object", "array", "string", "integer", "number", "boolean", "null"}
+                for t in types):
+            raise ValueError("unsupported schema type")
+    if ("if" in schema) != ("then" in schema):
+        raise ValueError("unsupported incomplete conditional schema")
+    for key in ("items", "if", "then"):
+        if key in schema:
+            _schema_subset_static_audit(schema[key], depth=depth + 1)
+    for key in ("allOf",):
+        if key in schema:
+            if not isinstance(schema[key], list):
+                raise ValueError("invalid list of schema constraints")
+            for sub in schema[key]:
+                _schema_subset_static_audit(sub, depth=depth + 1)
+    if "properties" in schema:
+        if not isinstance(schema["properties"], dict):
+            raise ValueError("invalid schema properties")
+        for sub in schema["properties"].values():
+            _schema_subset_static_audit(sub, depth=depth + 1)
+    if isinstance(schema.get("additionalProperties"), dict):
+        _schema_subset_static_audit(schema["additionalProperties"], depth=depth + 1)
