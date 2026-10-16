@@ -336,6 +336,20 @@ def _main(argv=None) -> int:
     ctx.add_argument("--budget-bytes", type=int)
     ctx.add_argument("--since")
     ctx.add_argument("--json", action="store_true")
+    ctx.add_argument("--harness-role", choices=["deterministic", "cheap", "specialist", "reviewer"])
+    ctx.add_argument("--slice", action="append", default=[], metavar="PATH:START:END")
+    ctx.add_argument("--expected-sha")
+    env = sub.add_parser("envelope-validate", help="validate one untrusted Lucy Envelope v1 without side effects")
+    env.add_argument("file", help="JSON file; does not grant authority to mutate")
+    env.add_argument("--allowed-path", action="append", default=[])
+    arank = sub.add_parser("agent-rank", help="read-only AION registry reliability/cost candidates")
+    arank.add_argument("capability")
+    team = sub.add_parser("agent-team-plan", help="validate existing AION child task collaboration without claiming")
+    team.add_argument("parent_task_id")
+    team.add_argument("assignments_json")
+    dispute = sub.add_parser("agent-dispute", help="evidence triage for untrusted multi-agent reviews")
+    dispute.add_argument("proposal_json")
+    dispute.add_argument("reviews_json")
 
     cctx = sub.add_parser("context-compile", help="build read-only derived local context")
     cctx.add_argument("--task", default=None)
@@ -697,9 +711,44 @@ def _main(argv=None) -> int:
     elif cmd == "context":
         from . import context
         try:
-            _print(context.build(args.task_id, module=args.module, budget_bytes=args.budget_bytes,
-                                 since=args.since, json_output=args.json))
+            if args.harness_role:
+                if args.module or args.since:
+                    raise ValueError("--harness-role cannot combine with --module or --since")
+                slices = []
+                for item in args.slice:
+                    path, start, end = item.rsplit(":", 2)
+                    slices.append((path, int(start), int(end)))
+                _print(context.compile_agent_packet(
+                    args.task_id, role=args.harness_role, slices=slices,
+                    budget_bytes=args.budget_bytes or 8192, expected_sha=args.expected_sha))
+            else:
+                if args.slice or args.expected_sha:
+                    raise ValueError("--slice and --expected-sha require --harness-role")
+                _print(context.build(args.task_id, module=args.module, budget_bytes=args.budget_bytes,
+                                     since=args.since, json_output=args.json))
         except (ValueError, OSError) as exc:
+            raise CliError(security.redact(str(exc))) from None
+    elif cmd == "envelope-validate":
+        from . import packets
+        try:
+            data = json.loads(Path(args.file).read_text(encoding="utf-8"))
+            packets.validate_agent_envelope(data, allowed_paths=args.allowed_path)
+            _print({"status": "VALID", "authorized_mutation": False})
+        except (ValueError, OSError, packets.PacketError) as exc:
+            raise CliError(security.redact(str(exc))) from None
+    elif cmd in ("agent-rank", "agent-team-plan", "agent-dispute"):
+        from . import packets
+        try:
+            if cmd == "agent-rank":
+                _print(packets.rank_agent_candidates(args.capability))
+            elif cmd == "agent-team-plan":
+                body = json.loads(Path(args.assignments_json).read_text(encoding="utf-8"))
+                _print(packets.propose_agent_collaboration(args.parent_task_id, body))
+            else:
+                proposal = json.loads(Path(args.proposal_json).read_text(encoding="utf-8"))
+                reviews = json.loads(Path(args.reviews_json).read_text(encoding="utf-8"))
+                _print(packets.adjudicate_agent_reviews(proposal, reviews))
+        except (ValueError, OSError, packets.PacketError) as exc:
             raise CliError(security.redact(str(exc))) from None
     elif cmd == "context-compile":
         from .recall import context_compiler
