@@ -1,0 +1,7 @@
+# Token/cost benchmark — provisional
+2026-10-16 baseline snapshot: canonical AION state read-only shows 38 task rows, 10 model_usage rows, 23 DONE, 2 BLOCKED, 9 NEEDS_REVIEW, 4 CANCELLED. This does NOT establish ten comparable full prompt+verification runs.
+No paired before/after production executions have been recorded. TOKEN_EFFICIENCY_MEASURED = NO. Do not assert 25% reduction from input bytes or hypothetical token estimates.
+Next: sample >=10 representative completed task runs WITH joined model_usage, verifier, retry and latency where available; record missing values as UNKNOWN; freeze baseline; shadow-run bounded scoped contexts; compare eligible task median all-in token count, costs, verified success and false-PASS rate; require security noninferiority before canary promotion.
+W1/W2 context packet byte caps and size comparisons are transport measurements only, not cost savings.
+
+Single paired payload observation, existing canonical AION task TASK-AA93D718 (read-only, 2026-10-16): legacy bare context 1,656 UTF-8 bytes; legacy kernel.tasks module context 5,450 UTF-8 bytes; new SHA-locked 5-line source capsule serialized context 1,663 UTF-8 bytes. These are DIFFERENT context contents. 5,450 → 1,663 is a 69.5% byte decrease only in this selected module-case, NOT a token/cost saving, and bare default comparison is slightly worse. Need >=10 matched outcome/cost samples before claims.

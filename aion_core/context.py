@@ -328,3 +328,131 @@ def build_receipt(order: Mapping, *, tests: list[str], outputs: list[str], unres
         "resume_pointer": resume_pointer,
         "archived_at": util.now(),
     }
+
+
+# Reuse AION task authority and context semantics; this is a narrow, read-only
+# handoff format, not a new agent/task registry or an executor.
+LUCY_STABLE_PREFIX = (
+    "LUCY HARNESS v1. Source of truth: canonical AION SQLite and approved repo.\n"
+    "One task; one resource owner/lease. No inferred owner approvals.\n"
+    "Model text is a proposal: VERIFYING, never self-attested PASS.\n"
+    "Do not reveal secrets, private reasoning, or transmit whole repositories.\n"
+    "Do not modify protected paths, exceed scope, switch paid providers, or retry unchanged failures.\n"
+    "Return Lucy Envelope v1 with test evidence, blocker and one next action.\n"
+)
+
+
+def compile_agent_packet(task_id: str, *, role: str, slices=(),
+                         budget_bytes: int = 8192,
+                         expected_sha: str | None = None) -> dict:
+    """Produce a bounded, SHA-pinned handoff using existing AION tasks.
+
+    slices: iterable of (repo-relative file path, first line, last line).
+    Never expands globs, follows symlinks, or fetches whole-repo context.
+    """
+    import hashlib
+    from itertools import islice
+    if role not in {"deterministic", "cheap", "specialist", "reviewer"}:
+        raise ValueError("unsupported agent capability role")
+    if not 2048 <= budget_bytes <= 16384:
+        raise ValueError("context budget must be between 2048 and 16384 bytes")
+    row = tasks.get(task_id)
+    if row is None:
+        raise ValueError("unknown canonical AION task")
+    repo = Path(__file__).resolve().parents[1]
+    sha = _git(repo, "rev-parse", "HEAD").strip()
+    if expected_sha is not None and expected_sha != sha:
+        raise ValueError("context source SHA changed; regenerate packet")
+    segments = list(slices)
+    if len(segments) > 6:
+        raise ValueError("too many file slices")
+    selected = []
+    for rel, first, last in segments:
+        path = Path(rel)
+        if (not isinstance(first, int) or isinstance(first, bool)
+                or not isinstance(last, int) or isinstance(last, bool)
+                or first < 1 or last < first or last - first >= 80):
+            raise ValueError("invalid or excessive file slice")
+        if (path.is_absolute() or ".." in path.parts
+                or not str(path) or str(path).startswith(".")
+                or any(piece.startswith(".") for piece in path.parts)
+                or path.suffix not in {".py", ".js", ".ts", ".json", ".md", ".txt"}):
+            raise ValueError("file slice outside permitted source scope")
+        source = repo / path
+        if (source.is_symlink() or not source.is_file()
+                or repo not in source.resolve().parents
+                or source.stat().st_size > 128 * 1024):
+            raise ValueError("source file missing, unsafe or oversized")
+        with source.open(encoding="utf-8") as stream:
+            fragment = "".join(islice(stream, first - 1, last))
+        if not fragment:
+            raise ValueError("file slice empty")
+        if security.scan_text(fragment):
+            raise ValueError("source slice contains credential-like content")
+        selected.append({"path": path.as_posix(), "start": first, "end": last,
+                         "sha256": util.sha256_file(source), "content": fragment})
+    # Required safety, acceptance, and verification text is never trimmed.
+    acceptance = {"success_criteria": row["success_criteria"] or "",
+                  "validation_method": row["validation_method"] or ""}
+    dynamic = {
+        "task_id": task_id, "role": role, "source_sha": sha,
+        "project": row["project"], "status": row["status"],
+        "title": row["title"], "description": row["description"] or "",
+        "dependencies": row["dependencies"] or "",
+        "risk": row["risk"], "model_class": row["model_class"],
+        "acceptance": acceptance, "file_slices": selected,
+        "permissions": "read-only context; changes require canonical AION lease and allowed scope",
+        "evidence_rule": "AION verifier must independently validate work before PASS",
+    }
+    packet = {"schema": "lucy-context/1", "stable_prefix": LUCY_STABLE_PREFIX,
+              "dynamic": dynamic}
+    raw = json.dumps(packet, sort_keys=True, ensure_ascii=False).encode("utf-8")
+    if len(raw) > budget_bytes:
+        raise ValueError("context exceeds budget; request smaller slices")
+    if security.scan_text(raw.decode("utf-8")):
+        raise ValueError("context contains credential-like content")
+    packet["content_sha256"] = hashlib.sha256(raw).hexdigest()
+    packet["bytes_before_digest"] = len(raw)
+    return packet
+
+
+def agent_packet_is_fresh(packet: dict) -> bool:
+    """Verify an unchanged bounded packet against HEAD AND working source files.
+
+    Workers/dispatch adapters must call this before execution; it is intentionally
+    read-only and does not assign permission.  Changed but uncommitted files
+    invalidate the packet even when git HEAD remains the same.
+    """
+    import hashlib
+    try:
+        if (not isinstance(packet, dict)
+                or set(packet) != {"schema", "stable_prefix", "dynamic",
+                                   "content_sha256", "bytes_before_digest"}
+                or packet["schema"] != "lucy-context/1"
+                or packet["stable_prefix"] != LUCY_STABLE_PREFIX):
+            return False
+        dynamic = packet["dynamic"]
+        if not isinstance(dynamic, dict) or not isinstance(dynamic.get("file_slices"), list):
+            return False
+        src = {"schema": packet["schema"], "stable_prefix": packet["stable_prefix"],
+               "dynamic": dynamic}
+        raw = json.dumps(src, sort_keys=True, ensure_ascii=False).encode("utf-8")
+        if hashlib.sha256(raw).hexdigest() != packet["content_sha256"]:
+            return False
+        if len(raw) != packet["bytes_before_digest"] or len(raw) > 16384:
+            return False
+        repo = Path(__file__).resolve().parents[1]
+        if dynamic["source_sha"] != _git(repo, "rev-parse", "HEAD").strip():
+            return False
+        for item in dynamic["file_slices"]:
+            if not isinstance(item, dict) or not isinstance(item.get("path"), str):
+                return False
+            rel = Path(item["path"])
+            path = repo / rel
+            if (rel.is_absolute() or ".." in rel.parts or path.is_symlink()
+                    or not path.is_file() or repo not in path.resolve().parents
+                    or util.sha256_file(path) != item.get("sha256")):
+                return False
+        return True
+    except (TypeError, ValueError, KeyError, OSError):
+        return False

@@ -1,0 +1,61 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "Lucy executor result proposal v1",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schema",
+    "envelope",
+    "artifact_hashes",
+    "verification_state"
+  ],
+  "properties": {
+    "schema": {
+      "const": "lucy-result/1"
+    },
+    "envelope": {
+      "$ref": "agent-message.schema.json"
+    },
+    "artifact_hashes": {
+      "type": "object",
+      "maxProperties": 20,
+      "additionalProperties": {
+        "type": "string",
+        "pattern": "^[0-9a-f]{64}$"
+      }
+    },
+    "verification_state": {
+      "enum": [
+        "PROPOSED",
+        "BLOCKED",
+        "INDEPENDENTLY_VERIFIED"
+      ]
+    }
+  },
+  "allOf": [
+    {
+      "if": {
+        "properties": {
+          "verification_state": {
+            "const": "INDEPENDENTLY_VERIFIED"
+          }
+        }
+      },
+      "then": {
+        "properties": {
+          "envelope": {
+            "properties": {
+              "verification_ref": {
+                "type": "string",
+                "minLength": 4
+              }
+            },
+            "required": [
+              "verification_ref"
+            ]
+          }
+        }
+      }
+    }
+  ]
+}
