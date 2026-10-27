@@ -7,6 +7,7 @@ repository or the whole chat history.  This is the main token-waste control.
 from __future__ import annotations
 
 import ast
+import hashlib
 import json
 from pathlib import Path
 import re
@@ -33,12 +34,23 @@ def build(task_id: str, *, module: str | None = None,
         "ORDER BY created_at DESC LIMIT 3", (task_id, row["project"])).fetchall()
     route = agents.route(row["model_class"].lower() if row["model_class"] else "code",
                          complexity=min(5, row["priority"] + 1))
+    # The worker prepends the full executing-model instruction block. Repeating
+    # that block in WHY IT MATTERS duplicates context without adding evidence.
+    # Canonical AION SQLite keeps the original unmodified description.
+    description = row["description"] or "not recorded"
+    marker = "PROMPT FOR THE EXECUTING MODEL:"
+    if marker in description:
+        background, _, instruction = description.partition(marker)
+        digest = hashlib.sha256(instruction.strip().encode("utf-8")).hexdigest()[:16]
+        description = ((background.strip() + " " if background.strip() else "")
+                       + "[Full executing-model instructions supplied separately "
+                         "by the existing AION worker; SHA256 prefix " + digest + "]")
     lines = [
         f"# WORK ORDER {task_id}",
         "",
         f"TASK_ID: {task_id}",
         f"OBJECTIVE: {row['title']}",
-        f"WHY IT MATTERS: {row['description'] or 'not recorded'}",
+        f"WHY IT MATTERS: {description}",
         f"PROJECT: {row['project']}",
         f"STATUS: {row['status']}   PRIORITY: {row['priority']}   VALUE: {tasks.value(row)}",
         f"ASSIGNED CLASS: {row['model_class']} (router suggests {route['model_class']}: {route['reason']})",
