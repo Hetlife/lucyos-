@@ -120,6 +120,47 @@ class SyncEvidenceTest(unittest.TestCase):
         self.assertNotEqual(rc, 0)
         self.assertIn("not allowed", err)
 
+    def _mirror_dest(self):
+        return self.home / "PROJECTS" / "demo" / "repo"
+
+    def test_new_clone_is_full_and_mirror_line_printed_once(self):
+        _git(self.work, "commit", "--allow-empty", "-m", "second")
+        _git(self.work, "push", "origin", "HEAD:main")
+        rc, out, _ = self._run()
+        self.assertEqual(rc, 0)
+        self.assertFalse((self._mirror_dest() / ".git" / "shallow").exists())
+        lines = [ln for ln in out.splitlines() if ln.startswith("mirror:")]
+        self.assertEqual(lines, ["mirror: demo commits=2 latest_run=none yet archive_files=0"])
+        self.assertIn("COPIED", out)  # existing output format untouched
+
+    def test_shallow_clone_is_unshallowed(self):
+        _git(self.work, "commit", "--allow-empty", "-m", "second")
+        _git(self.work, "push", "origin", "HEAD:main")
+        dest = self._mirror_dest()
+        dest.parent.mkdir(parents=True)
+        # file:// is required: git ignores --depth for plain local paths.
+        subprocess.run(["git", "clone", "--depth", "1", "file://" + str(self.bare), str(dest)],
+                       check=True, capture_output=True)
+        self.assertTrue((dest / ".git" / "shallow").is_file())
+        rc, out, _ = self._run()
+        self.assertEqual(rc, 0)
+        self.assertFalse((dest / ".git" / "shallow").exists())
+        self.assertIn("commits=2 ", out)
+        rc, out, _ = self._run()  # idempotent: a second run on the now-full clone is fine
+        self.assertEqual(rc, 0)
+        self.assertIn("commits=2 ", out)
+
+    def test_mirror_line_reports_archive_and_latest_run(self):
+        runs = self.work / "factory_state" / "archive" / "runs"
+        runs.mkdir(parents=True)
+        (runs / "2026-10.jsonl").write_text('{"ts_utc": "2026-10-30T10:00:00Z"}\n')
+        (runs / "2026-11.jsonl").write_text(
+            '{"ts_utc": "2026-11-05T10:00:00Z"}\n{"ts_utc": "2026-11-06T10:00:00Z"}\n')
+        self._commit("archive")
+        rc, out, _ = self._run()
+        self.assertEqual(rc, 0)
+        self.assertIn("mirror: demo commits=2 latest_run=2026-11-06T10:00:00Z archive_files=2", out)
+
     def test_github_shorthand_becomes_https_url(self):
         self.assertEqual(sync.clone_url("github.com/hetlife/strategy-factory"),
                          "https://github.com/hetlife/strategy-factory")

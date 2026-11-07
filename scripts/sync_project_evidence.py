@@ -8,13 +8,15 @@ them into `PROJECTS/<id>/evidence/` where the checks look. Deterministic, no
 model, no network beyond `git`.
 
 For each PROJECTS/<id>/project.json with a "repos" list:
-  1. shallow-clone (or `git pull --ff-only`) into $AION_HOME/PROJECTS/<id>/repo
+  1. full-clone (or `git pull --ff-only`) into $AION_HOME/PROJECTS/<id>/repo;
+     a clone left shallow by an older version is unshallowed once (CE-6-03)
   2. copy <repo>/.autonomous/capital_engine/EVIDENCE/*.md -> PROJECTS/<id>/evidence/
      only when the content changed
   3. REFUSE any packet in which aion_core.security finds credential-shaped
      content (printed as a WARNING, never copied)
 
-One line per file: COPIED / SKIPPED (unchanged) / REFUSED.
+One line per file: COPIED / SKIPPED (unchanged) / REFUSED, then one line per
+project: `mirror: <id> commits=<n> latest_run=<ts|none yet> archive_files=<n>`.
 Exit 0 on success (refusals are reported, not failures); 1 on any git failure.
 """
 from __future__ import annotations
@@ -32,6 +34,7 @@ sys.path.insert(0, str(REPO))
 from aion_core import security  # noqa: E402  (reuse the one scanner; never a second one)
 
 EVIDENCE_SUBDIR = Path(".autonomous") / "capital_engine" / "EVIDENCE"
+ARCHIVE_SUBDIR = Path("factory_state") / "archive"  # written by the project's Actions runs (CE-6-01)
 # Only https GitHub shorthand, https URLs, or an absolute local path (tests/mirrors).
 _SHORTHAND = re.compile(r"^(?:https://)?github\.com/([\w.-]+)/([\w.-]+?)(?:\.git)?/?$")
 
@@ -68,10 +71,14 @@ def git(*args: str) -> subprocess.CompletedProcess:
 def update_clone(url: str, dest: Path, branch: str | None) -> str | None:
     """Clone or fast-forward. Returns an error string, or None on success."""
     if (dest / ".git").exists():
+        if (dest / ".git" / "shallow").is_file():  # old --depth 1 clone: fetch the full history once
+            r = git("-C", str(dest), "fetch", "--unshallow")
+            if r.returncode != 0:
+                return r.stderr.strip() or r.stdout.strip() or "git failed"
         r = git("-C", str(dest), "pull", "--ff-only")
     else:
         dest.parent.mkdir(parents=True, exist_ok=True)
-        cmd = ["clone", "--depth", "1"] + (["--branch", branch] if branch else []) + [url, str(dest)]
+        cmd = ["clone"] + (["--branch", branch] if branch else []) + [url, str(dest)]
         r = git(*cmd)
     return None if r.returncode == 0 else (r.stderr.strip() or r.stdout.strip() or "git failed")
 
@@ -99,6 +106,24 @@ def sync_packets(src_dir: Path, out_dir: Path, dry_run: bool) -> list[str]:
             dest.write_bytes(data)
         lines.append(f"  {'WOULD COPY' if dry_run else 'COPIED    '}  {src.name}")
     return lines
+
+
+def mirror_line(pid: str, dest: Path) -> str:
+    """One-line summary of what the mirror holds: history depth and the archive."""
+    r = git("-C", str(dest), "rev-list", "--count", "HEAD")
+    commits = r.stdout.strip() if r.returncode == 0 and r.stdout.strip() else "unknown"
+    archive = dest / ARCHIVE_SUBDIR
+    files = [p for p in archive.rglob("*") if p.is_file()] if archive.is_dir() else []
+    latest = "none yet"
+    runs = sorted((archive / "runs").glob("*.jsonl")) if archive.is_dir() else []
+    if runs:  # month files sort chronologically; the newest line is the last one in the last file
+        try:
+            lines = [ln for ln in runs[-1].read_text(encoding="utf-8").splitlines() if ln.strip()]
+            if lines:
+                latest = str(json.loads(lines[-1]).get("ts_utc") or "unreadable")
+        except (OSError, ValueError, AttributeError):
+            latest = "unreadable"
+    return f"mirror: {pid} commits={commits} latest_run={latest} archive_files={len(files)}"
 
 
 def main(argv: list[str] | None = None) -> int:
@@ -135,6 +160,7 @@ def main(argv: list[str] | None = None) -> int:
                 continue
             for line in sync_packets(dest / EVIDENCE_SUBDIR, pj.parent / "evidence", args.dry_run):
                 print(line)
+            print(mirror_line(pid, dest))
             break  # one repo per project holds the packets; first that works wins
     return 1 if failed else 0
 
