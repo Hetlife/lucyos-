@@ -11,6 +11,11 @@ AION="${REPO}/aion"
 MAX_TASKS="${AION_LOOP_MAX_TASKS:-10}"
 
 "${AION}" boot >/dev/null 2>&1
+boot_status=$?
+if [ "$boot_status" -ne 0 ]; then
+  echo "AION boot failed (exit ${boot_status}); work was not started" >&2
+  exit "$boot_status"
+fi
 
 # A major milestone is a decision point for the owner, not a checkpoint to
 # drive past. Stop and let them look.
@@ -22,10 +27,11 @@ if [ -n "${REACHED}" ] && [ "${REACHED}" != "none" ]; then
 fi
 
 "${AION}" work --max "${MAX_TASKS}"
+work_status=$?
 "${AION}" sync-docs >/dev/null 2>&1
 # Best-effort, deterministic supervisor surface for phone/agent observability.
 # Advisory only: a rendering failure must never stall the canonical work loop.
 if ! "${AION}" supervisor >/dev/null 2>&1; then
   echo "warning: supervisor snapshot failed" >&2
 fi
-exit 0
+exit "$work_status"
