@@ -89,5 +89,40 @@ class SecretsEscrowTest(AionTest):
         self.assertTrue(all(name is None for name, mode in opened if "w" in mode), opened)
 
 
+    def test_existing_permissive_archive_is_preserved_and_refused(self):
+        stamp = "2026-10-04T00:00:00+00:00"
+        dest = config.home() / "BACKUPS" / "secrets"
+        dest.mkdir(parents=True)
+        old = dest / "secrets-20261004T000000+0000.tar.gz.enc"
+        old.write_bytes(b"previous archive")
+        old.chmod(0o644)
+        with mock.patch.object(backup.util, "now", return_value=stamp):
+            with self.assertRaises(backup.BackupError):
+                backup.secrets_backup(PASS)
+        self.assertEqual(old.read_bytes(), b"previous archive")
+        self.assertEqual(sorted(p.name for p in dest.iterdir()), [old.name])
+
+    def test_symlink_collision_does_not_overwrite_target(self):
+        dest = config.home() / "BACKUPS" / "secrets"
+        dest.mkdir(parents=True)
+        target = config.home() / "unrelated-fixture"
+        target.write_bytes(b"untouched")
+        link = dest / "secrets-20261004T000000+0000.tar.gz.enc"
+        link.symlink_to(target)
+        with mock.patch.object(backup.util, "now", return_value="2026-10-04T00:00:00+00:00"):
+            with self.assertRaises(backup.BackupError):
+                backup.secrets_backup(PASS)
+        self.assertEqual(target.read_bytes(), b"untouched")
+        self.assertTrue(link.is_symlink())
+        self.assertEqual(sorted(p.name for p in dest.iterdir()), [link.name])
+
+    def test_failed_publication_leaves_no_partial_archive(self):
+        dest = config.home() / "BACKUPS" / "secrets"
+        with mock.patch.object(backup.os, "link", side_effect=OSError("publication failed")):
+            with self.assertRaises(OSError):
+                backup.secrets_backup(PASS)
+        self.assertEqual(list(dest.iterdir()), [])
+
+
 if __name__ == "__main__":
     unittest.main()

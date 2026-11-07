@@ -229,9 +229,22 @@ def secrets_backup(passphrase: str) -> Path:
     dest_dir.mkdir(parents=True, exist_ok=True)
     stamp = util.now().replace(":", "").replace("-", "")
     dest = dest_dir / f"secrets-{stamp}.tar.gz.enc"
-    fd = os.open(dest, os.O_WRONLY | os.O_CREAT | os.O_TRUNC, 0o600)
-    with os.fdopen(fd, "wb") as f:
-        f.write(blob)
+    # Build a complete 0600 file in this directory, then publish exclusively.
+    # link() refuses any existing name (including symlinks), unlike replace()
+    # or O_TRUNC. A clock collision must never overwrite an earlier escrow.
+    fd, staged_name = tempfile.mkstemp(prefix=".secrets-", dir=dest_dir)
+    staged = Path(staged_name)
+    try:
+        with os.fdopen(fd, "wb") as f:
+            f.write(blob)
+            f.flush()
+            os.fsync(f.fileno())
+        try:
+            os.link(staged, dest)
+        except FileExistsError as exc:
+            raise BackupError("secrets backup name already exists; retry later") from exc
+    finally:
+        staged.unlink(missing_ok=True)
     for old in sorted(dest_dir.glob("secrets-*.tar.gz.enc"))[:-SECRETS_KEEP]:
         old.unlink()
     db.log_event("aion", "backup.secrets", dest.name, f"{round(dest.stat().st_size / 1024, 1)} KB, encrypted")
