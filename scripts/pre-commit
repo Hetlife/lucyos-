@@ -4,6 +4,12 @@
 set -euo pipefail
 REPO="$(git rev-parse --show-toplevel)"
 
+# Hooks export repository-local Git variables. Tests create temporary repos;
+# never let their git commands inherit the committing repository's index.
+while IFS= read -r git_local_var; do
+  unset "$git_local_var"
+done < <(git rev-parse --local-env-vars)
+
 if ! "${REPO}/aion" scan "${REPO}"; then
   echo
   echo "COMMIT BLOCKED: credential-shaped content found above."
