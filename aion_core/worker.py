@@ -320,6 +320,10 @@ def _work_locked(max_tasks: int, session_id: str | None, summary: dict) -> dict:
         summary["requeued"] = requeued
 
     own_session = session_id is None
+    if own_session and tasks.next_task() is None:
+        # An idle timer tick must leave no session row or log file behind.
+        summary["stopped"] = "no ready task"
+        return summary
     if own_session:
         session_id = sessions.start("openclaw", model_class="DET",
                                     objective=f"autonomous execution of up to {max_tasks} tasks")
@@ -456,7 +460,10 @@ def _execute(task, cls: str, *, dry_run: bool, session_id: str | None) -> dict:
     # but before RUNNING or any executor/model call.  Failure therefore leaves a
     # visible, recoverable BLOCKED task and never starts uncontextualized work.
     try:
-        prepared_context = prepare_task_context(task)
+        # Deterministic steps run a fixed command and take no model input, so a
+        # compiler fault must not block them (TR-1-06).  Model classes stay fail-closed.
+        prepared_context = (None if task["exec_command"] or cls == "DET"
+                            else prepare_task_context(task))
     except Exception as exc:
         # This is an execution trust boundary: an unexpected compiler/cache/
         # filesystem defect must hold the task too, never fall through to an
@@ -473,8 +480,9 @@ def _execute(task, cls: str, *, dry_run: bool, session_id: str | None) -> dict:
     tasks.update(task_id, status="RUNNING", started_at=util.now())
     if session_id:
         sessions.log(session_id, "action", f"{task_id} [{cls}] {task['title']}; "
-                     f"context={prepared_context['status']} "
-                     f"revision={prepared_context['source_revision'][:12]}")
+                     + (f"context={prepared_context['status']} "
+                        f"revision={prepared_context['source_revision'][:12]}"
+                        if prepared_context else "context=not needed (deterministic)"))
 
     try:
         produced = _do_work(task, cls, prepared_context=prepared_context)
@@ -596,14 +604,13 @@ def _worker_prompt(task, prepared_context: dict) -> str:
 
 def _do_work(task, cls: str, *, prepared_context: dict | None = None) -> dict:
     """Deterministic steps run their command; model steps run their prompt."""
-    prepared_context = prepared_context or prepare_task_context(task)
     if task["exec_command"]:
         result = run_command(task["exec_command"])
         return {"ok": result["ok"], "output": result["output"],
-                "how": f"ran `{result['cmd']}` with context "
-                       f"{prepared_context['source_revision'][:12]}", "model": "shell"}
+                "how": f"ran `{result['cmd']}`", "model": "shell"}
     if cls == "DET":
         return {"ok": False, "output": "a DET step has no exec_command — the plan is incomplete"}
+    prepared_context = prepared_context or prepare_task_context(task)
 
     prompt = _worker_prompt(task, prepared_context)
 

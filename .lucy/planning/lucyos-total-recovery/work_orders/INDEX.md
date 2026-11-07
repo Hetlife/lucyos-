@@ -13,7 +13,7 @@
 | [TR-1-03](TR-1-03.md) | Governed `whatsapp` verb on the OpenClaw bridge | CLAUDE_CODE | none | YES | DONE (#89) |
 | [TR-1-04](TR-1-04.md) | Bridge service restart policy | CLAUDE_CODE | owner decision D-5; Fable adds `"TR-1-04": ["systemd/aion-br | NO |  |
 | [TR-1-05](TR-1-05.md) | Live E2E: OpenClaw -> status and approve on Lucy-den | OPENCLAW + OWNER | TR-1-03 merged and pulled on Lucy-den | NO | PARTLY (probe 3 + export missing) |
-| [TR-1-06](TR-1-06.md) | Decouple DET execution from the context compiler | CLAUDE_CODE | override `"TR-1-06": ["aion_core/worker.py"]` | YES |  |
+| [TR-1-06](TR-1-06.md) | Decouple DET execution from the context compiler | CLAUDE_CODE | override `"TR-1-06": ["aion_core/worker.py"]` | YES | PR open |
 | [TR-2-01](TR-2-01.md) | Clean-machine proof script | CLAUDE_CODE | none | NO |  |
 | [TR-2-02](TR-2-02.md) | Configurable Drive remote and nightly encrypted backup push | CLAUDE_CODE | none | NO |  |
 | [TR-2-03](TR-2-03.md) | Restore drill on Mark-2 from a Lucy-den archive | CODEX | TR-2-02 live | NO |  |
