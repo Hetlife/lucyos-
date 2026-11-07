@@ -76,3 +76,6 @@ This also clears the stale resume pointer (ISSUE-037):
 
 ## Update 2026-10-04 (F1 override batch)
 Branch `fable/F1-override-batch-20261004` adds `task_overrides` for TR-1-06, TR-2-04, TR-4-02, TR-4-05, TR-5-02, TR-5-03, TR-5-06, TR-5-07, TR-7-01, TR-C-01, TR-6-03, TR-C-03 (additions only, exact files). Deliberately not granted: TR-1-04 (waits for D-5), TR-4-05 beyond `db.py`/`worker.py`, TR-5-04 and TR-6-04 (need no protected file). A Sonnet session that needs another protected path stops with `BLOCKED_HIGH_MODEL_DECISION`. Re-freeze (TR-0-03, F2) still waits for the last protected merge: drift stays 6.
+
+## Update 2026-11-07
+Wave 1 and F1 merged; main 843 tests OK, boundaries 0, authority drift still 6. Next-phase plan: `20_NEXT_PHASE_PLAN.md` (prove → stabilize → governed loop → bounded autonomy → ship). Open PRs: #109, #111.
