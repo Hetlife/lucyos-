@@ -142,7 +142,17 @@ aion secrets list         # names only, never values
 ```
 
 Secrets are excluded from backups on purpose, so an archive copied to a shared
-drive carries no credentials. Back up `private_state/` separately and encrypted.
+drive carries no credentials. Back up `private_state/` separately and encrypted:
+
+```bash
+LUCYOS_SECRETS_ESCROW_PASSPHRASE=... aion secrets-backup   # or omit it to get a hidden prompt
+aion secrets-backup --verify-only                          # decrypts in memory, lists file names only
+```
+
+The passphrase is never read from the secret store and the command is never
+scheduled: the passphrase must live somewhere other than this disk (your head
+or a password manager). Copy the `BACKUPS/secrets/*.tar.gz.enc` file off this
+machine (USB, or scp over the tailnet).
 
 ## Backup and restore
 
