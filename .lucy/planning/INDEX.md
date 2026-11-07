@@ -24,9 +24,44 @@ Read CURRENT documents only. HISTORICAL and UNMARKED files are evidence, not ins
 | CURRENT | `.lucy/planning/lucyos-total-recovery/17_CRITICAL_PATH.md` |
 | CURRENT | `.lucy/planning/lucyos-total-recovery/18_AUDIT_20261004.md` |
 | CURRENT | `.lucy/planning/lucyos-total-recovery/19_SONNET_PLAN.md` |
+| CURRENT | `.lucy/planning/lucyos-total-recovery/20_LIVE_RECOVERY_CONTEXT_20261027.md` |
+| CURRENT | `.lucy/planning/lucyos-total-recovery/20_NEXT_PHASE_PLAN.md` |
 | CURRENT | `.lucy/planning/lucyos-total-recovery/CHECKPOINT.md` |
 | CURRENT | `.lucy/planning/lucyos-total-recovery/START_PROMPTS.md` |
 | CURRENT | `.lucy/planning/lucyos-total-recovery/evidence/EVIDENCE_INDEX.md` |
+| CURRENT | `.lucy/planning/lucyos-total-recovery/final-merge-20261004/00_BASELINE_CONTEXT.md` |
+| CURRENT | `.lucy/planning/lucyos-total-recovery/final-merge-20261004/01_ACCOMPLISHMENT_MATRIX.md` |
+| CURRENT | `.lucy/planning/lucyos-total-recovery/final-merge-20261004/02_MERGE_LEDGER.md` |
+| CURRENT | `.lucy/planning/lucyos-total-recovery/final-merge-20261004/03_BUG_REGISTER.md` |
+| CURRENT | `.lucy/planning/lucyos-total-recovery/final-merge-20261004/04_E2E_GAPS.md` |
+| CURRENT | `.lucy/planning/lucyos-total-recovery/final-merge-20261004/05_CRITICAL_PATH.md` |
+| CURRENT | `.lucy/planning/lucyos-total-recovery/final-merge-20261004/06_EXECUTOR_ROUTING.md` |
+| CURRENT | `.lucy/planning/lucyos-total-recovery/final-merge-20261004/07_ACCEPTANCE_GATES.md` |
+| CURRENT | `.lucy/planning/lucyos-total-recovery/final-merge-20261004/08_CLEANUP_REGISTER.md` |
+| CURRENT | `.lucy/planning/lucyos-total-recovery/final-merge-20261004/09_OWNER_SUMMARY.md` |
+| CURRENT | `.lucy/planning/lucyos-total-recovery/final-merge-20261004/10_EXECUTION_RECEIPT.md` |
+| CURRENT | `.lucy/planning/lucyos-total-recovery/final-merge-20261004/README.md` |
+| CURRENT | `.lucy/planning/lucyos-total-recovery/final-merge-20261004/evidence/PR102_SECURITY_REVIEW.md` |
+| CURRENT | `.lucy/planning/lucyos-total-recovery/final-merge-20261004/review_packets/aion.md` |
+| CURRENT | `.lucy/planning/lucyos-total-recovery/final-merge-20261004/review_packets/authority.md` |
+| CURRENT | `.lucy/planning/lucyos-total-recovery/final-merge-20261004/review_packets/context.md` |
+| CURRENT | `.lucy/planning/lucyos-total-recovery/final-merge-20261004/review_packets/db.md` |
+| CURRENT | `.lucy/planning/lucyos-total-recovery/final-merge-20261004/review_packets/deploy.md` |
+| CURRENT | `.lucy/planning/lucyos-total-recovery/final-merge-20261004/review_packets/openclaw.md` |
+| CURRENT | `.lucy/planning/lucyos-total-recovery/final-merge-20261004/review_packets/ops.md` |
+| CURRENT | `.lucy/planning/lucyos-total-recovery/final-merge-20261004/review_packets/project.md` |
+| CURRENT | `.lucy/planning/lucyos-total-recovery/final-merge-20261004/review_packets/ui.md` |
+| CURRENT | `.lucy/planning/lucyos-total-recovery/final-merge-20261004/review_packets/workers.md` |
+| CURRENT | `.lucy/planning/lucyos-total-recovery/final-merge-20261004/work_orders/FM-01.md` |
+| CURRENT | `.lucy/planning/lucyos-total-recovery/final-merge-20261004/work_orders/FM-02.md` |
+| CURRENT | `.lucy/planning/lucyos-total-recovery/final-merge-20261004/work_orders/FM-03.md` |
+| CURRENT | `.lucy/planning/lucyos-total-recovery/final-merge-20261004/work_orders/FM-04.md` |
+| CURRENT | `.lucy/planning/lucyos-total-recovery/final-merge-20261004/work_orders/FM-05.md` |
+| CURRENT | `.lucy/planning/lucyos-total-recovery/final-merge-20261004/work_orders/FM-06.md` |
+| CURRENT | `.lucy/planning/lucyos-total-recovery/final-merge-20261004/work_orders/FM-07.md` |
+| CURRENT | `.lucy/planning/lucyos-total-recovery/final-merge-20261004/work_orders/FM-08.md` |
+| CURRENT | `.lucy/planning/lucyos-total-recovery/final-merge-20261004/work_orders/FM-09.md` |
+| CURRENT | `.lucy/planning/lucyos-total-recovery/final-merge-20261004/work_orders/INDEX.md` |
 | CURRENT | `.lucy/planning/lucyos-total-recovery/work_orders/INDEX.md` |
 | CURRENT | `.lucy/planning/lucyos-total-recovery/work_orders/TR-0-01.md` |
 | CURRENT | `.lucy/planning/lucyos-total-recovery/work_orders/TR-0-02.md` |
@@ -116,4 +151,4 @@ Read CURRENT documents only. HISTORICAL and UNMARKED files are evidence, not ins
 | HISTORICAL | `docs/internal/health-audit/ISSUE_REGISTER.md` |
 | HISTORICAL | `docs/internal/health-audit/SONNET_EXECUTION_QUEUE.md` |
 
-Counts: CURRENT=79, HISTORICAL=32
+Counts: CURRENT=114, HISTORICAL=32
