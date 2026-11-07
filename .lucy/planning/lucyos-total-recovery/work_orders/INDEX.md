@@ -38,7 +38,7 @@
 | [TR-5-07](TR-5-07.md) | Scoped secrets resolver | CLAUDE_CODE | TR-5-02 | YES |  |
 | [TR-6-01](TR-6-01.md) | Mark-2 DC-1 deploy at the named SHA | CODEX | TR-0-03 wrote the SHA | YES |  |
 | [TR-6-02](TR-6-02.md) | Clean-machine proof on a fresh Mark-2 user | CODEX | TR-2-01 | NO |  |
-| [TR-6-03](TR-6-03.md) | Cherry-pick verify_installed_services.py | CLAUDE_CODE | none | NO |  |
+| [TR-6-03](TR-6-03.md) | Cherry-pick verify_installed_services.py | CLAUDE_CODE | none | NO | PR open |
 | [TR-6-04](TR-6-04.md) | update.sh with verify and rollback | CLAUDE_CODE | TR-6-03 | YES |  |
 | [TR-7-01](TR-7-01.md) | launchd aion-work periodic loop | CLAUDE_CODE | override | NO |  |
 | [TR-7-02](TR-7-02.md) | Execute the Mac runbook on the mini | OWNER + CODEX | phases 2, 4, 6; TR-7-01 | YES |  |
