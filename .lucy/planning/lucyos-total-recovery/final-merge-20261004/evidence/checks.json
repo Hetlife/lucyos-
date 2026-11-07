@@ -1,0 +1,20 @@
+{
+  "base_sha": "e349bb03446452bace3a5225d990a73bae8160e1",
+  "tests": {
+    "ran": 813,
+    "skipped": 1,
+    "exit": 0,
+    "seconds": 153.249
+  },
+  "ci_run": 37209086211,
+  "ci": "success",
+  "authority": "six hash drifts",
+  "boundary": 0,
+  "portability": 0,
+  "secret_scan": "clean",
+  "build_loop_repro": {
+    "worker_exit": 7,
+    "wrapper_exit": 0,
+    "production_touched": false
+  }
+}

@@ -1,0 +1,69 @@
+{
+  "host": "Lucy-den",
+  "templates_base": "e349bb03446452bace3a5225d990a73bae8160e1",
+  "render_repo": "/home/scs-admin01/lucyos",
+  "comparison": "exact rendered bytes; mismatch alone is not semantic diagnosis",
+  "results": [
+    {
+      "unit": "aion-bridge.service",
+      "status": "different"
+    },
+    {
+      "unit": "aion-interface.service",
+      "status": "different"
+    },
+    {
+      "unit": "aion-maintenance.service",
+      "status": "different"
+    },
+    {
+      "unit": "aion-maintenance.timer",
+      "status": "match"
+    },
+    {
+      "unit": "aion-work.service",
+      "status": "different"
+    },
+    {
+      "unit": "aion-work.timer",
+      "status": "match"
+    }
+  ],
+  "changed_services": false,
+  "semantic_followup": {
+    "aion-bridge.service": {
+      "changed_directives": [
+        "Documentation",
+        "ExecStart",
+        "WorkingDirectory"
+      ],
+      "working_directory": "/home/scs-admin01/GitHub/Hetlife/lucyos-",
+      "active_state": "inactive"
+    },
+    "aion-interface.service": {
+      "changed_directives": [
+        "Documentation",
+        "ExecStart",
+        "WorkingDirectory"
+      ],
+      "working_directory": "/home/scs-admin01/GitHub/Hetlife/lucyos-",
+      "active_state": "inactive"
+    },
+    "aion-maintenance.service": {
+      "changed_directives": [
+        "Environment"
+      ]
+    },
+    "aion-work.service": {
+      "changed_directives": [
+        "Environment"
+      ]
+    }
+  },
+  "legacy_service_checkout": {
+    "head": "301ec61d5dc30948924aaea86dc7ae6656eb405e",
+    "branch": "feature/little-lucy-nebula-prep-20260920",
+    "dirty_entries": 10,
+    "preserved": true
+  }
+}
