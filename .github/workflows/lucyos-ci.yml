@@ -33,7 +33,10 @@ env:
 jobs:
   code-and-test:
     name: code-and-test (py${{ matrix.python-version }})
-    runs-on: ubuntu-latest
+    # ubuntu-latest moved to 26.04, which has no Python 3.9 build (main was red on
+    # every push from 2026-11-07). 3.9 stays in the matrix because it is the
+    # macOS system python; only that leg is pinned to the last image that has it.
+    runs-on: ${{ matrix.python-version == '3.9' && 'ubuntu-24.04' || 'ubuntu-latest' }}
     timeout-minutes: 10
     strategy:
       fail-fast: false

@@ -13,7 +13,7 @@
 | [TR-1-03](TR-1-03.md) | Governed `whatsapp` verb on the OpenClaw bridge | CLAUDE_CODE | none | YES | DONE (#89) |
 | [TR-1-04](TR-1-04.md) | Bridge service restart policy | CLAUDE_CODE | owner decision D-5; Fable adds `"TR-1-04": ["systemd/aion-br | NO |  |
 | [TR-1-05](TR-1-05.md) | Live E2E: OpenClaw -> status and approve on Lucy-den | OPENCLAW + OWNER | TR-1-03 merged and pulled on Lucy-den | NO | PARTLY (probe 3 + export missing) |
-| [TR-1-06](TR-1-06.md) | Decouple DET execution from the context compiler | CLAUDE_CODE | override `"TR-1-06": ["aion_core/worker.py"]` | YES |  |
+| [TR-1-06](TR-1-06.md) | Decouple DET execution from the context compiler | CLAUDE_CODE | override `"TR-1-06": ["aion_core/worker.py"]` | YES | PR #115 open (lands via TR-R-01) |
 | [TR-2-01](TR-2-01.md) | Clean-machine proof script | CLAUDE_CODE | none | NO |  |
 | [TR-2-02](TR-2-02.md) | Configurable Drive remote and nightly encrypted backup push | CLAUDE_CODE | none | NO |  |
 | [TR-2-03](TR-2-03.md) | Restore drill on Mark-2 from a Lucy-den archive | CODEX | TR-2-02 live | NO |  |
@@ -38,7 +38,7 @@
 | [TR-5-07](TR-5-07.md) | Scoped secrets resolver | CLAUDE_CODE | TR-5-02 | YES |  |
 | [TR-6-01](TR-6-01.md) | Mark-2 DC-1 deploy at the named SHA | CODEX | TR-0-03 wrote the SHA | YES |  |
 | [TR-6-02](TR-6-02.md) | Clean-machine proof on a fresh Mark-2 user | CODEX | TR-2-01 | NO |  |
-| [TR-6-03](TR-6-03.md) | Cherry-pick verify_installed_services.py | CLAUDE_CODE | none | NO | PR open |
+| [TR-6-03](TR-6-03.md) | Cherry-pick verify_installed_services.py | CLAUDE_CODE | none | NO | DONE (`a6b9fd4`; PR #109 superseded, close) |
 | [TR-6-04](TR-6-04.md) | update.sh with verify and rollback | CLAUDE_CODE | TR-6-03 | YES |  |
 | [TR-7-01](TR-7-01.md) | launchd aion-work periodic loop | CLAUDE_CODE | override | NO |  |
 | [TR-7-02](TR-7-02.md) | Execute the Mac runbook on the mini | OWNER + CODEX | phases 2, 4, 6; TR-7-01 | YES |  |
@@ -59,3 +59,4 @@
 | [TR-C-05](TR-C-05.md) | Resolve PR #2 by salvage and close (never merge) | CLAUDE_CODE + OWNER | none | NO | PR open (owner tag + close pending) |
 
 55 work orders. Status column refreshed 2026-10-04 (`18_AUDIT_20261004.md` §5); the roles and wave order are in `19_SONNET_PLAN.md`. Phases: 0 reality, 1 control plane, 2 runtime, 3 interfaces, 4 executors, 5 projects, 6 deployment, 7 Mac, 8 value, C cleanup, I interface.
+| [TR-R-01](TR-R-01.md) | Land the verified integration batch; main CI green | OWNER + FABLE | none | YES (#111) | READY |
