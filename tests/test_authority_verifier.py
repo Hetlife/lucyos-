@@ -87,6 +87,28 @@ class TestAuthorityVerifier(unittest.TestCase):
         self.assertEqual(r.returncode, 1)
         self.assertIn("constitutional", r.stdout)
 
+    def test_tr_style_task_id_reaches_its_override(self):
+        # ISSUE-049: the F1 batch recorded overrides under TR-* ids, but the id
+        # pattern only knew S/FABLE/OWNER/CODEX, so those overrides were dead letters.
+        self.baseline["task_overrides"]["TR-1-06"] = ["aion_core/db.py"]
+        self._write_baseline()
+        git(self.tmp, "checkout", "-q", "integration")
+        self._commit("record TR override on base")
+        git(self.tmp, "checkout", "-q", "-b", "task/TR-1-06-det-context-decoupling")
+        (self.tmp / "aion_core/db.py").write_text("import sqlite3\n# changed\n")
+        self._commit("touch db")
+        r = run(["strict", "--base", "integration", "--branch", "task/TR-1-06-det-context-decoupling"], self.tmp)
+        self.assertEqual(r.returncode, 0, r.stdout)
+        self.assertIn('"task_id": "TR-1-06"', r.stdout)
+
+    def test_tr_style_task_id_without_override_still_fails(self):
+        git(self.tmp, "checkout", "-q", "-b", "task/TR-C-09-thing")
+        (self.tmp / "aion_core/db.py").write_text("import sqlite3\n# changed\n")
+        self._commit("touch db")
+        r = run(["strict", "--base", "integration", "--branch", "task/TR-C-09-thing"], self.tmp)
+        self.assertEqual(r.returncode, 1)
+        self.assertIn("no override", r.stdout)
+
     def test_undeclared_task_id_fails(self):
         (self.tmp / "aion_core/db.py").write_text("import sqlite3\n# changed\n")
         self._commit("no task id")

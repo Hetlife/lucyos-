@@ -41,7 +41,7 @@ CONSTITUTIONAL = (
     ".github/workflows/lucyos-ci.yml",
     "scripts/verify_authority.py",
 )
-TASK_ID = re.compile(r"\b((?:S|FABLE|OWNER|CODEX)-\d{1,4})\b")
+TASK_ID = re.compile(r"\b((?:S|FABLE|OWNER|CODEX)-\d{1,4}|TR-[0-9A-Z]-\d{1,2})\b")
 FORBIDDEN_IMPORTS = re.compile(
     r"^\+\s*(?:from|import)\s+(apscheduler|celery|schedule|crontab|croniter|langchain|"
     r"langgraph|autogen|crewai|llama_index|haystack|prefect|airflow|dramatiq|rq)\b")
