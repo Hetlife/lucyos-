@@ -85,3 +85,9 @@ Wave 1 and F1 merged; main 843 tests OK, boundaries 0, authority drift still 6. 
 - Found and fixed on branch `fable/recovery-audit-20261114` (owner merges with admin bypass): ISSUE-049 main CI red since 11-07 (py3.9 runner), ISSUE-050 TR-* overrides unmatchable by the verifier.
 - Verified: #115 + #111 + `task/fix-codex-worker-portable-20261102` + the fix merge cleanly, 897 tests OK. #109 is superseded by `a6b9fd4`.
 - Next: `work_orders/TR-R-01.md`, then TR-0-03 re-freeze, TR-7-01, Stage A1–A3 on Lucy-den.
+
+## Update 2026-11-14 (later)
+- Owner merged #116, #117, #111, #115. `main` = `8e81cc2`: 897 tests OK, CI green on all required checks.
+- Branch `fable/refreeze-and-mac-worker-20261114`: TR-7-01 (worker plist `StartInterval` 600) and TR-0-03 re-freeze, authority drift 7 -> 0. Owner merges with admin bypass (baseline is constitutional).
+- Still open: close #109; owner-run branch deletion (77 CONTAINED, 8 PATCH_IN_BASE; agents cannot delete refs, ISSUE-046); Stage A1-A3 on Lucy-den; TR-5-01/5-02 projects.
+
