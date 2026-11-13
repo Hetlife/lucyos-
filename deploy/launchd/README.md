@@ -7,7 +7,7 @@ directly.
 
 | systemd source | plist | launchd key(s) |
 |---|---|---|
-| `aion-work.service` + `aion-work.timer` | `com.lucyos.aion-work.plist` | `RunAtLoad` |
+| `aion-work.service` + `aion-work.timer` | `com.lucyos.aion-work.plist` | `RunAtLoad` + `StartInterval` 600 |
 | `aion-maintenance.service` + `aion-maintenance.timer` | `com.lucyos.aion-maintenance.plist` | `StartCalendarInterval` |
 | `aion-bridge.service` | `com.lucyos.aion-bridge.plist` | `RunAtLoad` + `KeepAlive` |
 | `aion-interface.service` | `com.lucyos.aion-interface.plist` | `RunAtLoad` + `KeepAlive` |
@@ -17,20 +17,13 @@ cron) and are intentionally **not** mirrored here.
 
 ## Scheduling differences from systemd — documented, not invented
 
-- **`aion-work`**: the systemd timer uses `OnBootSec=2min` (first run two
-  minutes after boot) plus `OnUnitInactiveSec=10min` (re-run ten minutes
-  after the previous run finishes). launchd has no single key that means
-  "run once after boot, then again after the last run goes idle for N
-  minutes" — `StartInterval` is wall-clock periodic regardless of whether
-  the previous run is still active, which is a different guarantee, and
-  `StartCalendarInterval` is calendar-based, not idle-based. Rather than
-  approximate this with a key that means something subtly different, this
-  plist only sets `RunAtLoad`: the build loop starts once when the agent
-  loads (at login, or whenever `launchctl load`/`bootstrap` is run) and
-  `scripts/build_loop.sh` is itself responsible for its own internal loop
-  and exit conditions, exactly as it already is on Linux. If continuous
-  re-launch after every exit is wanted later, that is a `KeepAlive` change,
-  made deliberately, not folded into this translation.
+- **`aion-work`**: the systemd timer uses `OnBootSec=2min` plus
+  `OnUnitInactiveSec=10min` (re-run ten minutes after the previous run
+  finishes). `scripts/build_loop.sh` is a single pass, not a loop, so the
+  plist sets `RunAtLoad` and `StartInterval` 600. The difference from
+  systemd: the interval is wall-clock, not measured from the end of the
+  last run. launchd does not start a second copy while one is still
+  running, so a long pass simply skips a tick.
 - **`aion-maintenance`**: `OnCalendar=*-*-* 03:15:00` maps directly onto
   `StartCalendarInterval = {Hour: 3, Minute: 15}` — no gap here.
 - **`RandomizedDelaySec=600`** (jitter) on the systemd timer has no launchd
