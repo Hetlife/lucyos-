@@ -1,0 +1,22 @@
+TASK TASK-3484CBDD APPROVAL A-<n>
+### work --max 3
+{'attempted': 1, 'done': 1, 'failed': 0, 'stopped': None}
+  {'task_id': 'TASK-3484CBDD', 'status': 'DONE', 'class': 'DET', 'evidence': 'ran `python3 scripts/touch_marker.py work/e2e/marker` with context d519cfabeb74: `test -f work/e2e/marker` exited 0; no output'}
+  skip {'task_id': 'TASK-918013D7', 'why': 'class C — reserved for a strong session'}
+  skip {'task_id': 'TASK-4753E0EB', 'why': 'class C — reserved for a strong session'}
+{'task_id': 'TASK-3484CBDD', 'status': 'DONE', 'retry_count': 0, 'last_error': '', 'ev': 'ran `python3 scripts/touch_marker.py work/e2e/marker` with context d519cfabeb74: `test -f work/e2e/marker` exited 0; no output', 'completed_at': '2026-11-13T19:17:09+00:00'}
+sessions 2 events 37
+### loose msg
+Nothing was decided. To decide A-<n>, reply with exactly APPROVE A-<n> or DENY A-<n> and nothing else.
+RECOMMENDATION: APPROVE
+
+REPLY: APPROVE A-<n>  or  DENY A-<n>
+### exact APPROVE
+A-<n> approved. e2e probe approval
+{'approval_id': 'A-<n>', 'created_at': '2026-11-13T19:17:09+00:00', 'decided_at': '2026-11-13T19:17:10+00:00', 'project': 'default', 'action': 'e2e probe approval', 'why': 'proof', 'owner_action': '', 'cost': 'none', 'max_downside': '', 'expected_benefit': '', 'reversibility': 'none', 'prepared': 'none', 'resumes': 'none', 'recommendation': 'APPROVE', 'status': 'APPROVED', 'decided_by': 'openclaw:
+### restart
+boot rc=0
+AION STATUS · 2026-11-13T19:17:10+00:00
+System: degraded — secret_store, authority
+Tasks: 7 ready to run, 0 running, 0 blocked or waiting, 1 done
+Money: ₹0.0 real revenue, ₹0.0 cost, ₹0.0 net

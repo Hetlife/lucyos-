@@ -26,6 +26,7 @@ Read CURRENT documents only. HISTORICAL and UNMARKED files are evidence, not ins
 | CURRENT | `.lucy/planning/lucyos-total-recovery/19_SONNET_PLAN.md` |
 | CURRENT | `.lucy/planning/lucyos-total-recovery/20_LIVE_RECOVERY_CONTEXT_20261027.md` |
 | CURRENT | `.lucy/planning/lucyos-total-recovery/20_NEXT_PHASE_PLAN.md` |
+| CURRENT | `.lucy/planning/lucyos-total-recovery/21_REALITY_AUDIT_20261114.md` |
 | CURRENT | `.lucy/planning/lucyos-total-recovery/CHECKPOINT.md` |
 | CURRENT | `.lucy/planning/lucyos-total-recovery/START_PROMPTS.md` |
 | CURRENT | `.lucy/planning/lucyos-total-recovery/evidence/EVIDENCE_INDEX.md` |
@@ -118,6 +119,7 @@ Read CURRENT documents only. HISTORICAL and UNMARKED files are evidence, not ins
 | CURRENT | `.lucy/planning/lucyos-total-recovery/work_orders/TR-C-05.md` |
 | CURRENT | `.lucy/planning/lucyos-total-recovery/work_orders/TR-I-01.md` |
 | CURRENT | `.lucy/planning/lucyos-total-recovery/work_orders/TR-I-02.md` |
+| CURRENT | `.lucy/planning/lucyos-total-recovery/work_orders/TR-R-01.md` |
 | HISTORICAL | `.lucy/execution/NIGHT_HANDOFF_20260916.md` |
 | HISTORICAL | `.lucy/execution/SONNET_FOLLOWUPS_20260930.md` |
 | HISTORICAL | `.lucy/execution/SONNET_GET_LUCY_RUNNING_20260930.md` |
@@ -151,4 +153,4 @@ Read CURRENT documents only. HISTORICAL and UNMARKED files are evidence, not ins
 | HISTORICAL | `docs/internal/health-audit/ISSUE_REGISTER.md` |
 | HISTORICAL | `docs/internal/health-audit/SONNET_EXECUTION_QUEUE.md` |
 
-Counts: CURRENT=114, HISTORICAL=32
+Counts: CURRENT=116, HISTORICAL=32

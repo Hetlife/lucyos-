@@ -79,3 +79,9 @@ Branch `fable/F1-override-batch-20261004` adds `task_overrides` for TR-1-06, TR-
 
 ## Update 2026-11-07
 Wave 1 and F1 merged; main 843 tests OK, boundaries 0, authority drift still 6. Next-phase plan: `20_NEXT_PHASE_PLAN.md` (prove → stabilize → governed loop → bounded autonomy → ship). Open PRs: #109, #111.
+
+## Update 2026-11-14 (reality audit delta, Fable, cloud sandbox)
+- Report: `21_REALITY_AUDIT_20261114.md`. Hosts were not reachable; every host fact above this line is still as old as its own date.
+- Found and fixed on branch `fable/recovery-audit-20261114` (owner merges with admin bypass): ISSUE-049 main CI red since 11-07 (py3.9 runner), ISSUE-050 TR-* overrides unmatchable by the verifier.
+- Verified: #115 + #111 + `task/fix-codex-worker-portable-20261102` + the fix merge cleanly, 897 tests OK. #109 is superseded by `a6b9fd4`.
+- Next: `work_orders/TR-R-01.md`, then TR-0-03 re-freeze, TR-7-01, Stage A1–A3 on Lucy-den.

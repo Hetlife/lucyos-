@@ -2,15 +2,15 @@
 set -euo pipefail
 
 PROMPT_FILE="${1:?usage: aion_codex_worker.sh <prompt-file>}"
-REPO="${AION_REPO:-/root/lucyos}"
-CODEX_BIN="${CODEX_BIN:-/root/.openclaw/tools/node/bin/codex}"
+REPO="${AION_REPO:-$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)}"
+CODEX_BIN="${CODEX_BIN:-$(command -v codex || true)}"
 
 [ -f "$PROMPT_FILE" ] || { echo "prompt file missing" >&2; exit 2; }
 [ -x "$CODEX_BIN" ] || { echo "codex executable unavailable" >&2; exit 3; }
 
 {
   cat <<'EOF'
-You are AION's class-B implementation worker on Mark-2.
+You are AION's class-B implementation worker.
 Execute the supplied work order; do not merely explain what could be done.
 Work only inside the provided repository workspace unless the work order explicitly names another safe local output.
 Do not read or expose secrets, private_state, browser data, OAuth tokens, credentials, or unrelated personal files.

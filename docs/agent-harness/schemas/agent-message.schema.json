@@ -1,0 +1,362 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://lucyos.local/schemas/agent-message/1",
+  "title": "Lucy Envelope v1 \u2014 advisory only, never authorization",
+  "type": "object",
+  "additionalProperties": false,
+  "properties": {
+    "message_schema": {
+      "const": "lucy-envelope/1"
+    },
+    "message_id": {
+      "type": "string",
+      "pattern": "^[A-Za-z0-9][A-Za-z0-9._:-]{2,79}$"
+    },
+    "task_id": {
+      "type": "string",
+      "pattern": "^TASK-[A-Za-z0-9-]{4,76}$"
+    },
+    "parent_task_id": {
+      "type": [
+        "string",
+        "null"
+      ],
+      "maxLength": 80
+    },
+    "correlation_id": {
+      "type": "string",
+      "minLength": 3,
+      "maxLength": 80
+    },
+    "idempotency_key": {
+      "type": "string",
+      "minLength": 8,
+      "maxLength": 128
+    },
+    "sender": {
+      "type": "string",
+      "minLength": 2,
+      "maxLength": 64
+    },
+    "recipient": {
+      "type": "string",
+      "minLength": 2,
+      "maxLength": 64
+    },
+    "type": {
+      "enum": [
+        "REQUEST",
+        "RESULT",
+        "BLOCKER",
+        "REVIEW",
+        "APPROVAL_REQUIRED",
+        "HEARTBEAT"
+      ]
+    },
+    "status": {
+      "enum": [
+        "QUEUED",
+        "CLAIMED",
+        "RUNNING",
+        "VERIFYING",
+        "PASS",
+        "FAIL",
+        "BLOCKED",
+        "ESCALATED",
+        "CANCELLED"
+      ]
+    },
+    "created_at": {
+      "type": "string",
+      "format": "date-time",
+      "maxLength": 40
+    },
+    "company_id": {
+      "type": [
+        "string",
+        "null"
+      ],
+      "maxLength": 80
+    },
+    "project_id": {
+      "type": [
+        "string",
+        "null"
+      ],
+      "maxLength": 80
+    },
+    "baseline_ref": {
+      "type": [
+        "string",
+        "null"
+      ],
+      "maxLength": 160
+    },
+    "summary": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 600
+    },
+    "artifact_refs": {
+      "type": "array",
+      "maxItems": 12,
+      "items": {
+        "type": "string",
+        "minLength": 4,
+        "maxLength": 180
+      }
+    },
+    "evidence_refs": {
+      "type": "array",
+      "maxItems": 12,
+      "items": {
+        "type": "string",
+        "minLength": 4,
+        "maxLength": 180
+      }
+    },
+    "changed_paths": {
+      "type": "array",
+      "maxItems": 20,
+      "items": {
+        "type": "string",
+        "minLength": 1,
+        "maxLength": 180
+      }
+    },
+    "tests": {
+      "type": "array",
+      "maxItems": 16,
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "command",
+          "status"
+        ],
+        "properties": {
+          "command": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 280
+          },
+          "status": {
+            "enum": [
+              "NOT_RUN",
+              "PASS",
+              "FAIL",
+              "BLOCKED"
+            ]
+          },
+          "evidence_ref": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "maxLength": 180
+          }
+        }
+      }
+    },
+    "risk": {
+      "type": [
+        "string",
+        "null"
+      ],
+      "maxLength": 180
+    },
+    "limits": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "max_tokens": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 1000000
+        },
+        "max_cost_inr": {
+          "type": "number",
+          "minimum": 0
+        },
+        "max_retries": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 3
+        }
+      }
+    },
+    "requested_next_action": {
+      "type": [
+        "string",
+        "null"
+      ],
+      "maxLength": 320
+    },
+    "retry_class": {
+      "enum": [
+        "NONE",
+        "TRANSIENT",
+        "NEW_HYPOTHESIS",
+        "ESCALATE"
+      ]
+    },
+    "redacted": {
+      "const": true
+    },
+    "verification_ref": {
+      "type": [
+        "string",
+        "null"
+      ],
+      "maxLength": 180
+    },
+    "review_position": {
+      "enum": [
+        "SUPPORT",
+        "CHALLENGE",
+        "UNCERTAIN"
+      ]
+    },
+    "review_target": {
+      "type": "string",
+      "minLength": 3,
+      "maxLength": 80
+    },
+    "review_issue": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 400
+    }
+  },
+  "required": [
+    "message_schema",
+    "message_id",
+    "task_id",
+    "correlation_id",
+    "idempotency_key",
+    "sender",
+    "recipient",
+    "type",
+    "status",
+    "created_at",
+    "summary",
+    "evidence_refs",
+    "artifact_refs",
+    "changed_paths",
+    "tests",
+    "requested_next_action",
+    "retry_class",
+    "redacted"
+  ],
+  "allOf": [
+    {
+      "if": {
+        "properties": {
+          "type": {
+            "enum": [
+              "RESULT",
+              "BLOCKER"
+            ]
+          }
+        },
+        "required": [
+          "type"
+        ]
+      },
+      "then": {
+        "properties": {
+          "requested_next_action": {
+            "type": "string",
+            "minLength": 2
+          }
+        }
+      }
+    },
+    {
+      "if": {
+        "properties": {
+          "status": {
+            "enum": [
+              "PASS",
+              "FAIL",
+              "BLOCKED"
+            ]
+          }
+        },
+        "required": [
+          "status"
+        ]
+      },
+      "then": {
+        "properties": {
+          "evidence_refs": {
+            "minItems": 1
+          }
+        }
+      }
+    },
+    {
+      "if": {
+        "properties": {
+          "status": {
+            "const": "PASS"
+          }
+        },
+        "required": [
+          "status"
+        ]
+      },
+      "then": {
+        "required": [
+          "verification_ref"
+        ],
+        "properties": {
+          "verification_ref": {
+            "type": "string",
+            "minLength": 4
+          }
+        }
+      }
+    },
+    {
+      "if": {
+        "properties": {
+          "type": {
+            "const": "REVIEW"
+          }
+        },
+        "required": [
+          "type"
+        ]
+      },
+      "then": {
+        "required": [
+          "review_position",
+          "review_target"
+        ],
+        "properties": {
+          "evidence_refs": {
+            "minItems": 1
+          }
+        }
+      }
+    },
+    {
+      "if": {
+        "properties": {
+          "review_position": {
+            "const": "CHALLENGE"
+          }
+        },
+        "required": [
+          "review_position"
+        ]
+      },
+      "then": {
+        "required": [
+          "review_issue"
+        ]
+      }
+    }
+  ]
+}
