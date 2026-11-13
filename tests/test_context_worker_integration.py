@@ -31,7 +31,7 @@ class ContextWorkerIntegrationTest(AionTest):
         packet = json.loads((self.tmp / "context/current/CURRENT_CONTEXT.json").read_text())
         self.assertEqual(packet["task_id"], task_id)
 
-    def test_deterministic_task_compiles_context_before_command(self):
+    def test_deterministic_task_runs_command_without_compiling_context(self):
         task_id = tasks.create(
             "Run bounded local check", project="LucyOS", status="READY",
             model_class="DET", kind="verify", exec_command="echo checked",
@@ -40,9 +40,8 @@ class ContextWorkerIntegrationTest(AionTest):
         result = worker.work(max_tasks=1)
 
         self.assertEqual(result["done"], 1)
-        packet = json.loads((self.tmp / "context/current/CURRENT_CONTEXT.json").read_text())
-        self.assertEqual(packet["task_id"], task_id)
-        self.assertIn("with context", tasks.get(task_id)["evidence"])
+        self.assertFalse((self.tmp / "context/current/CURRENT_CONTEXT.json").exists())
+        self.assertIn("ran `echo checked`", tasks.get(task_id)["evidence"])
 
     def test_cached_task_reuses_context_and_state_change_refreshes_it(self):
         task_id = self._task()
@@ -92,6 +91,34 @@ class ContextWorkerIntegrationTest(AionTest):
         self.assertEqual(result["results"][0]["status"], "BLOCKED")
         self.assertEqual(tasks.get(task_id)["status"], "BLOCKED")
         self.assertIn("disabled", tasks.get(task_id)["last_error"])
+
+    def test_det_task_runs_with_compiler_disabled(self):
+        # TR-1-06: deterministic steps never need the model-context compiler.
+        task_id = tasks.create("echo", project="LucyOS", status="READY", model_class="DET",
+                               kind="verify", exec_command="echo checked", validation_command="test -d .",
+                               success_criteria="command is verified")
+        db.set_meta(worker.CONTEXT_COMPILER_FLAG, "0")
+        with patch("aion_core.worker.prepare_task_context") as prep:
+            result = worker.work(max_tasks=1)
+        prep.assert_not_called()
+        self.assertEqual(result["results"][0]["status"], "DONE", result)
+        self.assertEqual(tasks.get(task_id)["status"], "DONE")
+
+    def test_model_task_still_blocked_with_compiler_disabled(self):
+        task_id = self._task()
+        db.set_meta(worker.CONTEXT_COMPILER_FLAG, "0")
+        result = worker.work(max_tasks=1)
+        self.assertFalse(result["results"][0]["worker_started"])
+        self.assertEqual(tasks.get(task_id)["status"], "BLOCKED")
+
+    def test_empty_queue_opens_no_session(self):
+        # The timer fires every 10 minutes; an idle run must leave no trace.
+        count = lambda: db.connect().execute("SELECT COUNT(*) FROM sessions").fetchone()[0]
+        before = count()
+        result = worker.work(max_tasks=1)
+        self.assertEqual(result["stopped"], "no ready task")
+        self.assertEqual(result["attempted"], 0)
+        self.assertEqual(count(), before)
 
     def test_prompt_security_is_checked_again_at_worker_boundary(self):
         task_id = self._task()
