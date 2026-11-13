@@ -95,6 +95,9 @@ class LaunchdUnitsTest(unittest.TestCase):
         work = _load("com.lucyos.aion-work.plist")
         self.assertTrue(work.get("RunAtLoad"))
         self.assertNotIn("StartCalendarInterval", work)
+        # TR-7-01: build_loop.sh is a single pass, so without an interval the
+        # Mac worker ran once at load and never again. Matches the 10-minute timer.
+        self.assertEqual(work.get("StartInterval"), 600)
 
         maint = _load("com.lucyos.aion-maintenance.plist")
         self.assertEqual(maint.get("StartCalendarInterval"), {"Hour": 3, "Minute": 15})
