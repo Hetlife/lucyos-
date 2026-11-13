@@ -1,0 +1,5 @@
+# Routing and cost boundary — design, NOT deployed
+Reuse aion_core/agents.py, worker.py, governor.py, model_usage, capabilities and configured cloud_worker_cmd. No second router, provider fallback, scheduler or budget authority.
+R0 local deterministic git/hash/parsing/tests; R1 cheap/free read-only only when healthy; R2 bounded specialist coding via existing configured executor; R3 authorized cross-system tasks; R4 high-capability architecture/security reviewer; R5 owner-only gated changes.
+Discover provider availability/quota at dispatch. Do not equate a chat subscription with usable API quota. Never silently switch to unapproved paid provider. If unavailable, BLOCK that task while running independently eligible R0 jobs.
+Limit context bytes, retries and output fields. Record full input/output/cache tokens and verifier/retry overhead in canonical model_usage; price UNKNOWN when unmeasured. Circuits/backoff and real provider pricing require separate reviewed W3; no production routing changes in W1/W2.
